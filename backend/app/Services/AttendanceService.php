@@ -1,0 +1,160 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Attendance;
+use App\Models\AttendanceLog;
+use App\Models\User;
+use App\Notifications\StudentScannedNotification;
+
+class AttendanceService
+{
+    public function __construct(
+        private readonly SettingsService $settings
+    ) {}
+
+    public function processScan(string $idNumber): array
+    {
+        $user = User::with(['roles', 'studentProfile'])->where('id_number', $idNumber)->first();
+
+        if (!$user) {
+            return ['error' => 'User not found', 'code' => 404];
+        }
+
+        $date = now()->toDateString();
+        $time = now()->toTimeString();
+        $timeStr = now()->format('H:i');
+
+        $startTime = $this->settings->get('school_start_time', '08:00');
+        $pmTimeOutStr = $this->settings->get('school_end_time', '16:00');
+
+        $attendance = Attendance::forDate($date)->forUser($user->id)->first();
+
+        $type = 'Time In';
+        $status = 'present';
+        $logType = 'in';
+
+        if ($attendance) {
+            if ($timeStr >= $pmTimeOutStr) {
+                if (!$attendance->time_out) {
+                    $attendance->time_out = $time;
+                    $attendance->pm_status = 'present';
+                    $attendance->save();
+                    $type = 'Time Out';
+                    $logType = 'out';
+                    $status = 'present';
+                } else {
+                    $type = 'Time Out (Re-entry)';
+                    $logType = 'out';
+                    $status = $attendance->pm_status ?? 'present';
+                }
+            } else {
+                $lastLog = AttendanceLog::where('user_id', $user->id)
+                    ->whereDate('scanned_at', now()->toDateString())
+                    ->orderBy('scanned_at', 'desc')
+                    ->first();
+
+                $logType = ($lastLog && $lastLog->type === 'in') ? 'out' : 'in';
+                $type = $logType === 'in' ? 'Time In (Log)' : 'Time Out (Log)';
+                $status = 'present';
+            }
+        } else {
+            $logType = 'in';
+            $type = 'Time In';
+
+            if ($timeStr < '12:00') {
+                $amStatus = ($timeStr < $startTime) ? 'present' : 'late';
+                Attendance::create([
+                    'user_id' => $user->id,
+                    'date'    => $date,
+                    'time_in' => $time,
+                    'am_status' => $amStatus,
+                    'status'  => $amStatus,
+                ]);
+                $status = $amStatus;
+            } else {
+                Attendance::create([
+                    'user_id' => $user->id,
+                    'date'    => $date,
+                    'time_in' => $time,
+                    'am_status' => 'absent',
+                    'pm_status' => 'present',
+                    'status'  => 'late',
+                ]);
+                $status = 'late';
+            }
+        }
+
+        AttendanceLog::create([
+            'user_id' => $user->id,
+            'type' => $logType,
+            'scanned_at' => now(),
+        ]);
+
+        if ($user->hasRole('student') && $user->studentProfile && $user->studentProfile->teacher_id) {
+            $teacher = User::find($user->studentProfile->teacher_id);
+            if ($teacher) {
+                $teacher->notify(new StudentScannedNotification(
+                    $user->name,
+                    $type,
+                    now()->format('h:i A'),
+                    $status
+                ));
+            }
+        }
+
+        return ['success' => true, 'user' => $user, 'type' => $type, 'status' => $status];
+    }
+
+    public function getTodayStats(?string $date = null): array
+    {
+        $date = $date ?: now()->toDateString();
+
+        $statusCounts = Attendance::forDate($date)
+            ->selectRaw('status, COUNT(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
+        $present = (int) $statusCounts->get('present', 0);
+        $late = (int) $statusCounts->get('late', 0);
+
+        $totalUsers = User::whereHas('roles', fn($q) => $q->whereIn('name', ['student', 'teacher']))->count();
+        $totalPresent = $present + $late;
+        $absent = max(0, $totalUsers - $totalPresent);
+
+        $roleCounts = \DB::table('attendances')
+            ->join('model_has_roles', 'attendances.user_id', '=', 'model_has_roles.model_id')
+            ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
+            ->where('attendances.date', $date)
+            ->where('model_has_roles.model_type', User::class)
+            ->select('roles.name', \DB::raw('COUNT(DISTINCT attendances.user_id) as count'))
+            ->groupBy('roles.name')
+            ->pluck('count', 'name');
+
+        $startDate = now()->subDays(6)->toDateString();
+        $trend = Attendance::where('date', '>=', $startDate)
+            ->withStatus(['present', 'late'])
+            ->selectRaw('date, COUNT(*) as value')
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get()
+            ->map(fn($row) => [
+                'name' => \Carbon\Carbon::parse($row->date)->format('D'),
+                'value' => (int) $row->value,
+            ]);
+
+        return [
+            'overview' => [
+                'present' => $present,
+                'late' => $late,
+                'absent' => $absent,
+            ],
+            'distribution' => [
+                'students' => (int) $roleCounts->get('student', 0),
+                'teachers' => (int) $roleCounts->get('teacher', 0),
+            ],
+            'trend' => $trend,
+            'total_users' => $totalUsers,
+        ];
+    }
+}
