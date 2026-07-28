@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScanFace, CheckCircle2, XCircle, GraduationCap, Users, Clock, User } from 'lucide-react';
@@ -19,22 +19,43 @@ interface ScanResponse {
   };
 }
 
+interface CachedUser {
+  id: number;
+  name: string;
+  photo_url: string | null;
+  role: string;
+  grade?: string;
+  section?: string;
+  subject?: string;
+  contact_number?: string;
+}
+
 export default function GuardScanner() {
   const [inputValue, setInputValue] = useState('');
   const [recentScan, setRecentScan] = useState<ScanResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const userCacheRef = useRef<Map<string, CachedUser>>(new Map());
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    api.get<Record<string, CachedUser>>('/api/scan/cache-all').then((res) => {
+      const map = new Map<string, CachedUser>();
+      for (const [idNumber, user] of Object.entries(res.data)) {
+        map.set(idNumber, user);
+      }
+      userCacheRef.current = map;
+    }).catch(() => {});
+  }, []);
 
   const getImageUrl = (path: string | undefined | null) => {
     if (!path) return '';
     if (path.startsWith('http')) return path;
     const cleanPath = path.replace(/^\/?storage\//, '');
-    return `http://${window.location.hostname}:8000/storage/${cleanPath}`;
+    return `/storage/${cleanPath}`;
   };
 
-  // Keep focus on input for the scanner
   useEffect(() => {
     const focusInterval = setInterval(() => {
       if (document.activeElement !== inputRef.current) {
@@ -44,46 +65,61 @@ export default function GuardScanner() {
     return () => clearInterval(focusInterval);
   }, []);
 
-  const scanMutation = useMutation({
-    mutationFn: async (id_number: string) => {
-      const response = await api.post('/api/scan', { id_number });
-      return response.data as ScanResponse;
-    },
-    onSuccess: (data, variables) => {
-      setRecentScan(data);
-      setError(null);
-      
-      // Fire the heavy logging logic in the background completely detached from the UI thread!
-      api.post('/api/scan/log', { id_number: variables }).catch((err) => {
-        console.error("Background logging failed", err);
+  const doScan = (idNumber: string) => {
+    const cached = userCacheRef.current.get(idNumber);
+    if (cached) {
+      setRecentScan({
+        message: 'Scan registered',
+        type: 'Scan',
+        status: 'Processing...',
+        user: {
+          name: cached.name,
+          photo_url: cached.photo_url || undefined,
+          role: cached.role,
+          profile: cached.role === 'student'
+            ? { grade: cached.grade, section: cached.section }
+            : { subject: cached.subject, contact_number: cached.contact_number },
+        },
       });
+      setError(null);
 
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = setTimeout(() => {
         setRecentScan(null);
         setError(null);
       }, 3000);
-      
-      // Also invalidate stats so dashboard is updated in background
+
       queryClient.invalidateQueries({ queryKey: ['attendanceStats'] });
-    },
-    onError: (err: any) => {
-      setRecentScan(null);
-      setError(err.response?.data?.message || 'Scan failed');
-      
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(() => {
-        setRecentScan(null);
+
+      api.post('/api/scan', { id_number: idNumber }).catch(() => {});
+    } else {
+      api.post('/api/scan/lookup', { id_number: idNumber }).then((res) => {
+        setRecentScan(res.data as ScanResponse);
         setError(null);
-      }, 3000);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(() => {
+          setRecentScan(null);
+          setError(null);
+        }, 3000);
+        queryClient.invalidateQueries({ queryKey: ['attendanceStats'] });
+        api.post('/api/scan', { id_number: idNumber }).catch(() => {});
+      }).catch((err) => {
+        setRecentScan(null);
+        setError(err.response?.data?.message || 'Scan failed');
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(() => {
+          setRecentScan(null);
+          setError(null);
+        }, 3000);
+      });
     }
-  });
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       if (inputValue.trim()) {
-        scanMutation.mutate(inputValue.trim());
+        doScan(inputValue.trim());
         setInputValue('');
       }
     }

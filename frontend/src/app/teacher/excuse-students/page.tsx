@@ -313,7 +313,7 @@ export default function TeacherExcuseStudents() {
                   <div>
                     <h3 className="text-[11px] font-bold uppercase tracking-wider text-[#6B7280] dark:text-slate-400 mb-2">Attachment</h3>
                     <a 
-                      href={`http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:8000/storage/${selectedLetter.attachment_path}`} 
+                      href={`/storage/${selectedLetter.attachment_path}`} 
                       target="_blank" 
                       rel="noreferrer"
                       className="flex items-center gap-3 px-4 py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-[#111827] dark:text-white font-bold text-[14px] rounded-xl transition-colors w-full group"

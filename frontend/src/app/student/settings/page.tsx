@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { SecuritySettings } from '@/components/settings/security-settings';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Shield, Palette, MessageSquare, Star, Settings as SettingsIcon, Bell, Send, Lock, Smartphone, Moon, Sun, Monitor, User } from 'lucide-react';
 import { useTheme } from 'next-themes';
@@ -9,6 +10,16 @@ import { useTheme } from 'next-themes';
 export default function StudentSettings() {
   const [activeTab, setActiveTab] = useState('profile');
   const { theme, setTheme } = useTheme();
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get('tab');
+      if (tab) {
+        setTimeout(() => setActiveTab(tab), 0);
+      }
+    }
+  }, []);
   
   // Dummy states for interactions
   const [emailNotif, setEmailNotif] = useState(true);
@@ -72,31 +83,11 @@ export default function StudentSettings() {
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
               <div className="space-y-4">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2 mb-4">
                   <Lock className="w-4 h-4 text-maroon-600" />
                   Change Password
                 </h3>
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Current Password</label>
-                    <input type="password" placeholder="••••••••" className="mt-1 w-full bg-slate-50 dark:bg-[#0f1115] border border-slate-200 dark:border-white/10 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-maroon-500/50" />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 dark:text-slate-300">New Password</label>
-                      <input type="password" placeholder="••••••••" className="mt-1 w-full bg-slate-50 dark:bg-[#0f1115] border border-slate-200 dark:border-white/10 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-maroon-500/50" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Confirm New Password</label>
-                      <input type="password" placeholder="••••••••" className="mt-1 w-full bg-slate-50 dark:bg-[#0f1115] border border-slate-200 dark:border-white/10 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-maroon-500/50" />
-                    </div>
-                  </div>
-                </div>
-                <div className="flex justify-end">
-                  <button className="bg-maroon-600 hover:bg-maroon-700 text-white px-5 py-2 rounded-lg font-bold shadow-sm transition-colors text-sm">
-                    Update Password
-                  </button>
-                </div>
+                <SecuritySettings />
               </div>
               
               <div className="border-t border-slate-100 dark:border-white/5 pt-6">

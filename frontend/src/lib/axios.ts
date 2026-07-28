@@ -32,6 +32,8 @@ api.interceptors.response.use(
 
     if (error.response.status === 401 && typeof window !== 'undefined') {
       localStorage.removeItem('token');
+      localStorage.removeItem('needs_password_change');
+      localStorage.removeItem('user_role');
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
@@ -39,6 +41,8 @@ api.interceptors.response.use(
 
     if (error.response.status === 403 && data?.message === 'blocked' && typeof window !== 'undefined') {
       localStorage.removeItem('token');
+      localStorage.removeItem('needs_password_change');
+      localStorage.removeItem('user_role');
       if (window.location.pathname !== '/') {
         window.location.href = '/?blocked=true';
       }
@@ -46,6 +50,8 @@ api.interceptors.response.use(
 
     if (error.response.status === 503 && data?.message === 'maintenance' && typeof window !== 'undefined') {
       localStorage.removeItem('token');
+      localStorage.removeItem('needs_password_change');
+      localStorage.removeItem('user_role');
       localStorage.setItem('toast_message', 'System Maintenance: You were safely logged out.');
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';

@@ -18,6 +18,11 @@ const urlBase64ToUint8Array = (base64String: string) => {
 
 export const usePushNotifications = () => {
     useEffect(() => {
+        const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+        if (!VAPID_PUBLIC_KEY) {
+            return;
+        }
+
         const initPush = async () => {
             if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
                 return;
@@ -25,19 +30,12 @@ export const usePushNotifications = () => {
 
             try {
                 const registration = await navigator.serviceWorker.register('/sw.js');
-                
-                // Only request permission if it hasn't been denied
+
                 if (Notification.permission === 'denied') return;
 
                 if (Notification.permission !== 'granted') {
                     const permission = await Notification.requestPermission();
                     if (permission !== 'granted') return;
-                }
-
-                const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-                if (!VAPID_PUBLIC_KEY) {
-                    console.warn('VAPID Public Key missing - push notifications disabled');
-                    return;
                 }
 
                 let subscription = await registration.pushManager.getSubscription();
@@ -49,18 +47,14 @@ export const usePushNotifications = () => {
                     });
                 }
 
-                // Some browsers/environments cause Axios to hang or fail when deeply cloning PushSubscription.
-                // Converting it explicitly to JSON safely avoids these Axios timeout bugs.
                 const subJSON = subscription.toJSON ? subscription.toJSON() : JSON.parse(JSON.stringify(subscription));
 
                 await api.post('/api/push-subscriptions', subJSON);
-            } catch (error) {
-                console.warn('Push notification subscription failed/timed out:', error);
+            } catch {
+                // Push notifications are non-critical — fail silently
             }
         };
 
-        // Only run after login is verified/user exists, but for simplicity, we do it in a layout 
-        // that requires auth.
         initPush();
     }, []);
 };

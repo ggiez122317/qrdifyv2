@@ -13,7 +13,7 @@ class StudentProfile extends Model
     protected $fillable = [
         'user_id',
         'grade',
-        'section',
+        'section_id',
         'parent_name',
         'parent_phone',
         'teacher_id',
@@ -33,5 +33,13 @@ class StudentProfile extends Model
     public function teacher(): BelongsTo
     {
         return $this->belongsTo(User::class, 'teacher_id');
+    }
+
+    /**
+     * The section this student belongs to.
+     */
+    public function section(): BelongsTo
+    {
+        return $this->belongsTo(Section::class, 'section_id');
     }
 }

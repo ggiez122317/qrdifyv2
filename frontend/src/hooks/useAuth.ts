@@ -25,6 +25,8 @@ export function useAuth() {
     },
     onSettled: () => {
       localStorage.removeItem('token');
+      localStorage.removeItem('needs_password_change');
+      localStorage.removeItem('user_role');
       queryClient.clear();
       router.push('/login');
     },

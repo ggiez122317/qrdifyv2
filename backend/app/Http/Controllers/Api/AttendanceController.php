@@ -5,11 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ScanRequest;
 use App\Http\Resources\AttendanceResource;
-use App\Jobs\ProcessAttendanceLog;
 use App\Models\Attendance;
-use App\Models\User;
 use App\Services\AttendanceService;
 use App\Services\SettingsService;
+use App\Services\ScanCacheService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -17,54 +16,67 @@ class AttendanceController extends Controller
 {
     public function __construct(
         private readonly AttendanceService $attendanceService,
-        private readonly SettingsService $settings
+        private readonly SettingsService $settings,
+        private readonly ScanCacheService $scanCache
     ) {}
 
-    /**
-     * Record a scan (Time In or Time Out).
-     * Reads late threshold from system settings instead of hardcoded values.
-     */
-    public function scan(ScanRequest $request): JsonResponse
+    public function lookup(ScanRequest $request): JsonResponse
     {
-        // 1. Instantly fetch user and return response
-        $user = User::with(['roles', 'studentProfile', 'teacherProfile'])->where('id_number', $request->id_number)->first();
+        $cachedUser = $this->scanCache->find($request->id_number);
 
-        if (!$user) {
+        if (!$cachedUser) {
             return response()->json(['message' => 'User not found'], 404);
         }
 
-        $responseData = [
-            'message' => "Scan registered",
+        return response()->json([
+            'message' => 'Scan registered',
             'type'    => 'Scan',
-            'status'  => 'Processing...', // Since it's no longer shown on the stripped down UI
+            'status'  => 'Processing...',
             'user'    => [
-                'name'      => $user->name,
-                'photo_url' => $user->photo_url,
-                'role'      => $user->getRoleNames()->first(),
-                'profile'   => $user->hasRole('student')
-                    ? $user->studentProfile
-                    : ($user->hasRole('teacher') ? $user->teacherProfile : null),
+                'name'      => $cachedUser['name'],
+                'photo_url' => $cachedUser['photo_url'],
+                'role'      => $cachedUser['role'],
+                'profile'   => $cachedUser['role'] === 'student'
+                    ? ['grade' => $cachedUser['grade'], 'section' => $cachedUser['section']]
+                    : ['subject' => $cachedUser['subject'], 'contact_number' => $cachedUser['contact_number']],
             ],
-        ];
-
-        return response()->json($responseData);
+        ]);
     }
 
-    /**
-     * Log attendance via queued job for non-blocking response.
-     * Validates the id_number exists before dispatching to avoid silent failures.
-     */
-    public function log(ScanRequest $request): JsonResponse
+    public function cacheAll(): JsonResponse
     {
-        $exists = User::where('id_number', $request->id_number)->exists();
+        return response()->json(
+            $this->scanCache->all()
+        );
+    }
 
-        if (!$exists) {
+    public function scan(ScanRequest $request): JsonResponse
+    {
+        $cachedUser = $this->scanCache->find($request->id_number);
+
+        if (!$cachedUser) {
             return response()->json(['message' => 'User not found'], 404);
         }
 
-        ProcessAttendanceLog::dispatch($request->id_number);
+        $result = $this->attendanceService->processScan($request->id_number, $cachedUser);
 
-        return response()->json(['message' => 'Processing attendance'], 202);
+        if (isset($result['error'])) {
+            return response()->json(['message' => $result['error']], $result['code']);
+        }
+
+        return response()->json([
+            'message' => "{$result['type']} — {$result['status']}",
+            'type'    => $result['type'],
+            'status'  => $result['status'],
+            'user'    => [
+                'name'      => $result['name'],
+                'photo_url' => $result['photo_url'],
+                'role'      => $result['role'],
+                'profile'   => $result['role'] === 'student'
+                    ? ['grade' => $cachedUser['grade'], 'section' => $cachedUser['section']]
+                    : ['subject' => $cachedUser['subject'], 'contact_number' => $cachedUser['contact_number']],
+            ],
+        ]);
     }
 
     /**
@@ -78,7 +90,7 @@ class AttendanceController extends Controller
         $search = $request->get('search');
         $status = $request->get('status');
 
-        $query = Attendance::with(['user:id,name,photo_url,id_number', 'user.roles', 'user.student_profile', 'user.teacher_profile'])
+        $query = Attendance::with(['user:id,name,photo_url,id_number', 'user.roles', 'user.studentProfile', 'user.teacherProfile'])
             ->forDate($date);
 
         if ($search) {

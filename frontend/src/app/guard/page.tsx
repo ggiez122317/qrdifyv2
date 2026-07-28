@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable @next/next/no-img-element */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
@@ -9,7 +9,6 @@ import { Clock, UserCheck, UserX, Calendar, ChevronDown, Check, ArrowUp, ScanFac
 
 interface StatsResponse {
   overview: {
-    early: number;
     present: number;
     late: number;
     absent: number;
@@ -57,13 +56,15 @@ export default function GuardStation() {
   });
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
-  // Fetch real-time stats
+  // Fetch stats with auto-polling for near real-time updates
+  const isToday = selectedDate === new Date().toISOString().split('T')[0];
   const { data: stats } = useQuery<StatsResponse>({
     queryKey: ['attendanceStats', selectedDate],
     queryFn: async () => {
       const res = await api.get('/api/attendance/stats', { params: { date: selectedDate } });
       return res.data;
-    }
+    },
+    refetchInterval: isToday ? 15000 : false, // Poll every 15s for today's data
   });
 
   const { data: user } = useQuery({
@@ -80,19 +81,9 @@ export default function GuardStation() {
     queryFn: async () => {
       const res = await api.get('/api/attendance/today', { params: { date: selectedDate } });
       return res.data;
-    }
+    },
+    refetchInterval: isToday ? 15000 : false, // Poll every 15s for today's data
   });
-
-  useEffect(() => {
-    // const echo = getEcho();
-    // if (echo) {
-    //   echo.channel('attendance')
-    //       .listen('.AttendanceLogged', () => {
-    //          queryClient.invalidateQueries({ queryKey: ['attendanceStats'] });
-    //          queryClient.invalidateQueries({ queryKey: ['recentScans'] });
-    //       });
-    // }
-  }, [queryClient]);
 
 
 
@@ -101,11 +92,10 @@ export default function GuardStation() {
   const attendanceData = stats ? [
     { name: 'Present', value: stats.overview.present, color: '#10b981' },
     { name: 'Late', value: stats.overview.late, color: '#f59e0b' },
-    { name: 'Early', value: stats.overview.early, color: '#14b8a6' },
     { name: 'Absent', value: stats.overview.absent, color: '#ef4444' },
   ] : [];
 
-  const totalAttendance = stats ? (stats.overview.present + stats.overview.late + stats.overview.early + stats.overview.absent) : 0;
+  const totalAttendance = stats ? (stats.overview.present + stats.overview.late + stats.overview.absent) : 0;
   const displayAttendanceData = totalAttendance === 0 
     ? [{ name: 'No Data', value: 1, color: '#f8fafc' }] 
     : attendanceData;
@@ -147,7 +137,7 @@ export default function GuardStation() {
       if (!path) return null;
       if (path.startsWith('http')) return path;
       const cleanPath = path.replace(/^\/?storage\//, '');
-      return `http://${window.location.hostname}:8000/storage/${cleanPath}`;
+      return `/storage/${cleanPath}`;
     };
 
     return {
@@ -191,14 +181,14 @@ export default function GuardStation() {
           
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden">
              <div className="flex justify-between items-start mb-2">
-                <h3 className="text-sm font-extrabold tracking-wider text-emerald-500 uppercase">Early</h3>
+                <h3 className="text-sm font-extrabold tracking-wider text-emerald-500 uppercase">Total Scanned</h3>
                 <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center">
                   <Clock className="w-5 h-5 text-emerald-500" strokeWidth={2.5} />
                 </div>
              </div>
-             <p className="text-4xl font-extrabold text-slate-800 mb-4">{stats?.overview.early || 0}</p>
+             <p className="text-4xl font-extrabold text-slate-800 mb-4">{(stats?.overview.present ?? 0) + (stats?.overview.late ?? 0)}</p>
              <p className="text-xs font-medium text-slate-400 flex items-center gap-1">
-               <span className="text-slate-300">—</span> 0% from yesterday
+               <span className="text-slate-300">—</span> Students & Teachers
              </p>
           </div>
 
@@ -235,7 +225,7 @@ export default function GuardStation() {
                   <UserX className="w-5 h-5 text-red-500" strokeWidth={2.5} />
                 </div>
              </div>
-             <p className="text-4xl font-extrabold text-slate-800 mb-4">{stats?.overview.absent || 2}</p>
+             <p className="text-4xl font-extrabold text-slate-800 mb-4">{stats?.overview.absent ?? 0}</p>
              <p className="text-xs font-medium text-slate-400 flex items-center gap-1">
                <ArrowUp className="w-3 h-3 text-red-500" strokeWidth={3} /> <span className="text-red-500 font-bold tracking-tight">100%</span> from yesterday
              </p>
@@ -277,10 +267,10 @@ export default function GuardStation() {
                     </PieChart>
                   </ResponsiveContainer>
                   {/* Center Text */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                     <span className="text-4xl font-extrabold text-slate-800 tracking-tighter">0%</span>
+                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                     <span className="text-4xl font-extrabold text-slate-800 tracking-tighter">{totalUsers > 0 ? Math.round(((stats?.overview.present ?? 0) + (stats?.overview.late ?? 0)) / totalUsers * 100) : 0}%</span>
                      <span className="text-sm font-medium text-slate-500 mt-1">Attendance Rate</span>
-                  </div>
+                   </div>
                </div>
 
                {/* Custom Legend */}

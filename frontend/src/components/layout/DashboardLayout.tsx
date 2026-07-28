@@ -7,11 +7,11 @@ import api from '@/lib/axios';
 import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { 
-  Bell, 
-  LayoutDashboard, 
-  Users, 
-  Settings, 
+import {
+  Bell,
+  LayoutDashboard,
+  Users,
+  Settings,
   LogOut, 
   Menu,
   ScanFace,
@@ -19,6 +19,7 @@ import {
   GraduationCap,
   Briefcase,
   UserSquare,
+  UserPlus,
   BarChart3,
   FileTerminal,
   ShieldCheck,
@@ -39,6 +40,7 @@ import {
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import { PasswordAlert } from '@/components/ui/password-alert';
 import { useTheme } from 'next-themes';
 
 interface DashboardLayoutProps {
@@ -70,6 +72,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       await api.post('/api/logout');
     } catch {}
     localStorage.removeItem('token');
+    localStorage.removeItem('needs_password_change');
+    localStorage.removeItem('user_role');
     router.push('/login');
   };
 
@@ -78,6 +82,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       await api.post('/api/logout');
     } catch {}
     localStorage.removeItem('token');
+    localStorage.removeItem('needs_password_change');
+    localStorage.removeItem('user_role');
     window.location.href = '/?idle=true';
   });
 
@@ -140,7 +146,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       return res.data.data ?? [];
     },
     enabled: !!user,
-    refetchInterval: 10000,
+    refetchInterval: 15000,
   });
 
   const unreadCount = notifications.filter((n: { read_at: string | null }) => n.read_at === null).length;
@@ -215,6 +221,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       { name: 'Leave Management', href: '/principal/leaves', icon: CalendarOff },
       { name: 'School Map', href: '/principal/map', icon: MapPinned }
     ] : isTeacher ? [
+      { name: 'Add Students', href: '/teacher/students', icon: UserPlus },
       { name: 'Assigned Class', href: '/teacher/assigned-class', icon: Users },
       { name: 'Assigned Students', href: '/teacher/assigned-students', icon: GraduationCap },
       { name: 'Absent Today', href: '/teacher/absent', icon: UserMinus },
@@ -606,6 +613,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </header>
 
         {/* Page Content */}
+        <PasswordAlert />
         <main className="flex-1 overflow-auto p-6 md:p-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[1400px] mx-auto">
             {children}

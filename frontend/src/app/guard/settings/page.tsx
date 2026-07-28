@@ -1,15 +1,26 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import api from '@/lib/axios';
-import { MessageSquare, Star, Info, CheckCircle2, Loader2 } from 'lucide-react';
+import { MessageSquare, Star, Info, CheckCircle2, Loader2, Shield } from 'lucide-react';
+import { SecuritySettings } from '@/components/settings/security-settings';
 
-type Tab = 'feedback' | 'reviews' | 'about';
+type Tab = 'feedback' | 'reviews' | 'about' | 'account';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<Tab>('feedback');
   const [isSuccess, setIsSuccess] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get('tab') as Tab;
+      if (tab) {
+        setTimeout(() => setActiveTab(tab as Tab), 0);
+      }
+    }
+  }, []);
 
   const [feedbackForm, setFeedbackForm] = useState({ content: '' });
   const [reviewForm, setReviewForm] = useState({ content: '', rating: 5 });
@@ -71,6 +82,13 @@ export default function SettingsPage() {
               >
                 <Info className={`w-5 h-5 ${activeTab === 'about' ? 'text-maroon-600' : 'text-slate-400'}`} />
                 About Qridify
+              </button>
+              <button 
+                onClick={() => setActiveTab('account')}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-colors text-left ${activeTab === 'account' ? 'bg-red-50 text-maroon-700' : 'text-slate-600 hover:bg-slate-50'}`}
+              >
+                <Shield className={`w-5 h-5 ${activeTab === 'account' ? 'text-maroon-600' : 'text-slate-400'}`} />
+                Account Security
               </button>
             </nav>
           </div>
@@ -196,6 +214,13 @@ export default function SettingsPage() {
                     &copy; 2026 Qridify. All rights reserved.
                   </p>
                 </div>
+              </div>
+            )}
+
+            {activeTab === 'account' && (
+              <div className="animate-in fade-in duration-300">
+                <h2 className="text-xl font-extrabold text-slate-800 mb-6 border-b border-slate-100 pb-4">Account Security</h2>
+                <SecuritySettings />
               </div>
             )}
           </div>

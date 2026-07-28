@@ -17,6 +17,7 @@ class UserResource extends JsonResource
             'photo_url' => $this->photo_url,
             'roles' => $this->getRoleNames(),
             'is_blocked' => $this->is_blocked,
+            'needs_password_change' => (bool) $this->needs_password_change,
             'student_profile' => $this->whenLoaded('studentProfile', fn() => new StudentProfileResource($this->studentProfile)),
             'teacher_profile' => $this->whenLoaded('teacherProfile', fn() => new TeacherProfileResource($this->teacherProfile)),
             'created_at' => $this->created_at,

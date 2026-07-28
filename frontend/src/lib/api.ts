@@ -47,6 +47,5 @@ export const api = {
     today: (params?: { page?: number; per_page?: number }) =>
       apiClient.get<PaginatedResponse<Attendance>>('/api/attendance/today', { params }),
     stats: () => apiClient.get<AttendanceStats>('/api/attendance/stats'),
-    log: (id_number: string) => apiClient.post<{ message: string }>('/api/scan/log', { id_number }),
   },
 };

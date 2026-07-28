@@ -25,6 +25,12 @@ class AuthController extends Controller
             ], 401);
         }
 
+        if ($user->is_blocked) {
+            return response()->json([
+                'message' => 'blocked'
+            ], 403);
+        }
+
         if (\Illuminate\Support\Facades\Cache::get('maintenance_mode', false)) {
             if (!$user->hasAnyRole(['admin', 'super-admin'])) {
                 return response()->json([
@@ -54,6 +60,23 @@ class AuthController extends Controller
     {
         return response()->json([
             'user' => new UserResource($request->user()),
+        ]);
+    }
+
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'password' => 'required|min:8|confirmed',
+        ]);
+
+        $user = $request->user();
+        $user->password = Hash::make($request->password);
+        $user->needs_password_change = false;
+        $user->save();
+
+        return response()->json([
+            'message' => 'Password updated successfully',
+            'user' => new UserResource($user),
         ]);
     }
 }

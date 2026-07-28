@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import api from '@/lib/axios';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Settings as SettingsIcon, Clock, Bell, Save, CheckCircle2, Info, ChevronDown, Sun, Sunrise, LogOut, Send } from 'lucide-react';
+import { Settings as SettingsIcon, Clock, Bell, Save, CheckCircle2, Info, ChevronDown, Sun, Sunrise, LogOut, Send, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { SecuritySettings } from '@/components/settings/security-settings';
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState({
@@ -36,7 +37,7 @@ export default function SettingsPage() {
     fetchSettings();
   }, []);
 
-  const handleChange = (key: string, value: any) => {
+  const handleChange = (key: string, value: string | boolean) => {
     setSettings(prev => ({ ...prev, [key]: value }));
     setSaveSuccess(false);
   };
@@ -104,7 +105,7 @@ export default function SettingsPage() {
           <div className="flex flex-col space-y-1">
             <CardTitle className="text-slate-800 text-[17px] font-extrabold">School Hours & Attendance Thresholds</CardTitle>
             <CardDescription className="text-[13px] font-medium text-slate-500">
-              Define when the school opens, closes, and when a student is officially marked as "<span className="text-amber-600 font-bold">Late</span>".
+              Define when the school opens, closes, and when a student is officially marked as &quot;<span className="text-amber-600 font-bold">Late</span>&quot;.
             </CardDescription>
           </div>
         </CardHeader>
@@ -181,7 +182,7 @@ export default function SettingsPage() {
                 <div className="flex flex-col">
                   <h4 className="font-bold text-slate-900 text-[15px]">About Late Threshold</h4>
                   <p className="text-[13px] font-medium text-slate-600 mt-2 leading-relaxed">
-                    Any scan time as the student's first entry after the late threshold will be automatically counted as <span className="font-bold text-amber-600">Late</span> by the system.
+                    Any scan time as the student&apos;s first entry after the late threshold will be automatically counted as <span className="font-bold text-amber-600">Late</span> by the system.
                   </p>
                 </div>
               </div>
@@ -276,6 +277,24 @@ export default function SettingsPage() {
             
           </div>
 
+        </CardContent>
+      </Card>
+
+      {/* Account Security Settings */}
+      <Card className="border-none shadow-sm rounded-2xl bg-white overflow-hidden">
+        <CardHeader className="bg-slate-50/50 border-b border-slate-100 px-8 py-5 flex flex-row items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
+            <ShieldCheck className="w-5 h-5 text-slate-600" />
+          </div>
+          <div className="flex flex-col space-y-1">
+            <CardTitle className="text-slate-800 text-[17px] font-extrabold">Account Security</CardTitle>
+            <CardDescription className="text-[13px] font-medium text-slate-500">
+              Update your password to keep your account secure.
+            </CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent className="p-8">
+          <SecuritySettings />
         </CardContent>
       </Card>
 

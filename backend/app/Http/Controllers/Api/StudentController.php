@@ -50,9 +50,9 @@ class StudentController extends Controller
         // Search filter
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'ILIKE', "%{$search}%")
-                  ->orWhere('id_number', 'ILIKE', "%{$search}%")
-                  ->orWhere('email', 'ILIKE', "%{$search}%");
+                $q->where('name', 'LIKE', "%{$search}%")
+                  ->orWhere('id_number', 'LIKE', "%{$search}%")
+                  ->orWhere('email', 'LIKE', "%{$search}%");
             });
         }
 
@@ -111,7 +111,8 @@ class StudentController extends Controller
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['message' => 'Error creating student', 'error' => $e->getMessage()], 500);
+            logger()->error('Error creating student', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error creating student. Please try again.'], 500);
         }
     }
 
@@ -174,7 +175,8 @@ class StudentController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['message' => 'Error updating student', 'error' => $e->getMessage()], 500);
+            logger()->error('Error updating student', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error updating student. Please try again.'], 500);
         }
     }
 
@@ -235,7 +237,8 @@ class StudentController extends Controller
     }
 
     /**
-     * Detailed attendance record for charts and analysis
+     * Detailed attendance record for charts and analysis.
+     * Uses SQL aggregates instead of loading all records into PHP memory.
      */
     public function attendanceRecord(Request $request): JsonResponse
     {
@@ -244,15 +247,20 @@ class StudentController extends Controller
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
-        $attendances = Attendance::forUser($user->id)
-            ->orderBy('date', 'asc')
-            ->get();
+        // 1. Overall Distribution — single aggregate query
+        $summary = Attendance::forUser($user->id)
+            ->selectRaw("
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) as present,
+                SUM(CASE WHEN status = 'absent' THEN 1 ELSE 0 END) as absent,
+                SUM(CASE WHEN status = 'late' THEN 1 ELSE 0 END) as late
+            ")
+            ->first();
 
-        // 1. Overall Distribution (Pie Chart)
-        $total = $attendances->count();
-        $present = $attendances->where('status', 'present')->count();
-        $absent = $attendances->where('status', 'absent')->count();
-        $late = $attendances->where('status', 'late')->count();
+        $total = (int) $summary->total;
+        $present = (int) $summary->present;
+        $absent = (int) $summary->absent;
+        $late = (int) $summary->late;
 
         $distribution = [
             ['name' => 'Present', 'value' => $present, 'color' => '#10b981'],
@@ -260,32 +268,38 @@ class StudentController extends Controller
             ['name' => 'Late', 'value' => $late, 'color' => '#f59e0b'],
         ];
 
-        // 2. Monthly Trend (Bar Chart)
-        $monthlyTrendRaw = $attendances->groupBy(function($att) {
-            return \Carbon\Carbon::parse($att->date)->format('Y-m');
-        });
+        // 2. Monthly Trend — single aggregate query grouped by month
+        $monthlyTrend = Attendance::forUser($user->id)
+            ->selectRaw("
+                DATE_FORMAT(date, '%Y-%m') as month,
+                SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) as present,
+                SUM(CASE WHEN status = 'absent' THEN 1 ELSE 0 END) as absent,
+                SUM(CASE WHEN status = 'late' THEN 1 ELSE 0 END) as late
+            ")
+            ->groupByRaw("DATE_FORMAT(date, '%Y-%m')")
+            ->orderByRaw("DATE_FORMAT(date, '%Y-%m')")
+            ->get()
+            ->map(fn($row) => [
+                'month' => \Carbon\Carbon::parse($row->month . '-01')->format('M Y'),
+                'present' => (int) $row->present,
+                'absent' => (int) $row->absent,
+                'late' => (int) $row->late,
+            ]);
 
-        $monthlyTrend = [];
-        foreach ($monthlyTrendRaw as $month => $records) {
-            $monthlyTrend[] = [
-                'month' => \Carbon\Carbon::parse($month . '-01')->format('M Y'),
-                'present' => $records->where('status', 'present')->count(),
-                'absent' => $records->where('status', 'absent')->count(),
-                'late' => $records->where('status', 'late')->count(),
-            ];
-        }
+        // 3. Paginated history (only load what's needed, not all records)
+        $perPage = min((int) $request->get('per_page', 50), 100);
+        $history = Attendance::forUser($user->id)
+            ->orderByDesc('date')
+            ->paginate($perPage);
 
-        // 3. Paginated details (if requested, otherwise just history)
-        $history = $attendances->sortByDesc('date')->values()->map(function($att) {
-            return [
-                'id'       => $att->id,
-                'date'     => $att->date,
-                'time_in'  => $att->time_in,
-                'time_out' => $att->time_out,
-                'status'   => ucfirst($att->status),
-                'remarks'  => $att->remarks,
-            ];
-        });
+        $history->getCollection()->transform(fn($att) => [
+            'id'       => $att->id,
+            'date'     => $att->date,
+            'time_in'  => $att->time_in,
+            'time_out' => $att->time_out,
+            'status'   => ucfirst($att->status),
+            'remarks'  => $att->remarks,
+        ]);
 
         return response()->json([
             'summary' => [

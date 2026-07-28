@@ -222,7 +222,7 @@ export default function StudentExcuseLetter() {
                           <div className="flex items-center justify-end gap-3">
                             {letter.attachment_path && (
                               <a 
-                                href={`http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:8000/storage/${letter.attachment_path}`} 
+                                href={`/storage/${letter.attachment_path}`} 
                                 target="_blank" 
                                 rel="noreferrer" 
                                 className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors"

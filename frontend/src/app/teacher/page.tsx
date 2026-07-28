@@ -13,8 +13,8 @@ import { useEffect, useState } from 'react';
 const getAvatarUrl = (url: string | null) => {
   if (!url) return null;
   if (url.startsWith('http')) return url;
-  if (url.startsWith('/')) return `http://localhost:8000${url}`;
-  return `http://localhost:8000/storage/${url}`;
+  if (url.startsWith('/')) return url;
+  return `/storage/${url}`;
 };
 
 // Custom Tooltip for the chart

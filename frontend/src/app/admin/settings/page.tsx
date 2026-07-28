@@ -1,12 +1,23 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LifeBuoy, User, ChevronDown, Paperclip, Send, Settings2 } from "lucide-react";
+import { SecuritySettings } from '@/components/settings/security-settings';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('support');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get('tab');
+      if (tab) {
+        setTimeout(() => setActiveTab(tab), 0);
+      }
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] p-6 lg:p-10 font-sans selection:bg-[#7a1315] selection:text-white animate-in fade-in zoom-in-95 duration-500">
@@ -130,12 +141,9 @@ export default function SettingsPage() {
           )}
 
           {activeTab === 'account' && (
-            <div className="bg-white rounded-[24px] border border-slate-100 shadow-[0_8px_30px_rgba(0,0,0,0.04)] overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 p-8 sm:p-10 flex flex-col items-center justify-center min-h-[400px] text-center">
-              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
-                <User className="w-10 h-10 text-slate-300" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-800 mb-2">Account Settings</h3>
-              <p className="text-[15px] font-medium text-slate-500 max-w-sm">This section is currently under development. You will soon be able to update your profile and password here.</p>
+            <div className="bg-white rounded-[24px] border border-slate-100 shadow-[0_8px_30px_rgba(0,0,0,0.04)] overflow-hidden p-8 sm:p-10 min-h-[400px]">
+              <h3 className="text-xl font-bold text-slate-800 mb-6 border-b border-slate-100 pb-4">Account Security</h3>
+              <SecuritySettings />
             </div>
           )}
 

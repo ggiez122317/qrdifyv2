@@ -5,6 +5,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Settings as SettingsIcon, Bell, Save, CheckCircle2, User, Mail, Phone, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { SecuritySettings } from '@/components/settings/security-settings';
 
 export default function TeacherSettingsPage() {
   const [settings, setSettings] = useState({
@@ -149,16 +150,11 @@ export default function TeacherSettingsPage() {
               </div>
             </div>
 
-            <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 flex items-start gap-4">
-              <div className="w-8 h-8 rounded-full bg-white border border-blue-200 flex items-center justify-center shrink-0 mt-0.5">
-                <ShieldCheck className="w-4 h-4 text-blue-500" strokeWidth={2.5} />
-              </div>
-              <div className="flex flex-col">
-                <h4 className="font-bold text-slate-900 text-[15px]">Security Notice</h4>
-                <p className="text-[13px] font-medium text-slate-600 mt-2 leading-relaxed">
-                  Your password can only be reset by the school administrator. Please contact the Principal&apos;s office if you need to update your credentials.
-                </p>
-              </div>
+            <div className="mt-8 border-t border-slate-100 pt-8">
+              <h4 className="font-bold text-slate-900 text-[16px] mb-6 flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-[#a81616]" /> Account Security
+              </h4>
+              <SecuritySettings />
             </div>
             
           </CardContent>

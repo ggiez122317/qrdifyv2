@@ -13,12 +13,26 @@ class AttendanceService
         private readonly SettingsService $settings
     ) {}
 
-    public function processScan(string $idNumber): array
+    public function processScan(string $idNumber, ?array $cachedUser = null): array
     {
-        $user = User::with(['roles', 'studentProfile'])->where('id_number', $idNumber)->first();
+        if ($cachedUser) {
+            $userId    = $cachedUser['id'];
+            $userName  = $cachedUser['name'];
+            $role      = $cachedUser['role'];
+            $teacherId = $cachedUser['teacher_id'] ?? null;
+            $photoUrl  = $cachedUser['photo_url'] ?? null;
+        } else {
+            $user = User::with(['roles', 'studentProfile'])->where('id_number', $idNumber)->first();
 
-        if (!$user) {
-            return ['error' => 'User not found', 'code' => 404];
+            if (!$user) {
+                return ['error' => 'User not found', 'code' => 404];
+            }
+
+            $userId    = $user->id;
+            $userName  = $user->name;
+            $role      = $user->getRoleNames()->first();
+            $teacherId = ($role === 'student' && $user->studentProfile) ? $user->studentProfile->teacher_id : null;
+            $photoUrl  = $user->photo_url;
         }
 
         $date = now()->toDateString();
@@ -28,7 +42,7 @@ class AttendanceService
         $startTime = $this->settings->get('school_start_time', '08:00');
         $pmTimeOutStr = $this->settings->get('school_end_time', '16:00');
 
-        $attendance = Attendance::forDate($date)->forUser($user->id)->first();
+        $attendance = Attendance::forDate($date)->forUser($userId)->first();
 
         $type = 'Time In';
         $status = 'present';
@@ -49,7 +63,7 @@ class AttendanceService
                     $status = $attendance->pm_status ?? 'present';
                 }
             } else {
-                $lastLog = AttendanceLog::where('user_id', $user->id)
+                $lastLog = AttendanceLog::where('user_id', $userId)
                     ->whereDate('scanned_at', now()->toDateString())
                     ->orderBy('scanned_at', 'desc')
                     ->first();
@@ -65,7 +79,7 @@ class AttendanceService
             if ($timeStr < '12:00') {
                 $amStatus = ($timeStr < $startTime) ? 'present' : 'late';
                 Attendance::create([
-                    'user_id' => $user->id,
+                    'user_id' => $userId,
                     'date'    => $date,
                     'time_in' => $time,
                     'am_status' => $amStatus,
@@ -74,7 +88,7 @@ class AttendanceService
                 $status = $amStatus;
             } else {
                 Attendance::create([
-                    'user_id' => $user->id,
+                    'user_id' => $userId,
                     'date'    => $date,
                     'time_in' => $time,
                     'am_status' => 'absent',
@@ -86,16 +100,16 @@ class AttendanceService
         }
 
         AttendanceLog::create([
-            'user_id' => $user->id,
+            'user_id' => $userId,
             'type' => $logType,
             'scanned_at' => now(),
         ]);
 
-        if ($user->hasRole('student') && $user->studentProfile && $user->studentProfile->teacher_id) {
-            $teacher = User::find($user->studentProfile->teacher_id);
+        if ($role === 'student' && $teacherId) {
+            $teacher = User::find($teacherId);
             if ($teacher) {
                 $teacher->notify(new StudentScannedNotification(
-                    $user->name,
+                    $userName,
                     $type,
                     now()->format('h:i A'),
                     $status
@@ -103,7 +117,22 @@ class AttendanceService
             }
         }
 
-        return ['success' => true, 'user' => $user, 'type' => $type, 'status' => $status];
+        event(new \App\Events\AttendanceLogged([
+            'user_name' => $userName,
+            'type' => $type,
+            'status' => $status,
+            'time' => now()->format('h:i A'),
+        ]));
+
+        return [
+            'success' => true,
+            'user_id'  => $userId,
+            'name'     => $userName,
+            'photo_url' => $photoUrl,
+            'type'     => $type,
+            'status'   => $status,
+            'role'     => $role,
+        ];
     }
 
     public function getTodayStats(?string $date = null): array

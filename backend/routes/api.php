@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\TeacherController;
 use App\Http\Controllers\Api\PrincipalController;
 use App\Http\Controllers\Api\PhotoBoothController;
 use App\Http\Controllers\Api\SettingsController;
+use App\Http\Controllers\Teacher\TeacherStudentController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\VisitorController;
@@ -24,7 +25,8 @@ $registerPublicRoutes = function () {
     });
 
     Route::post('/scan', [AttendanceController::class, 'scan'])->middleware('throttle:300,1');
-    Route::post('/scan/log', [AttendanceController::class, 'log'])->middleware('throttle:300,1');
+    Route::post('/scan/lookup', [AttendanceController::class, 'lookup'])->middleware('throttle:300,1');
+    Route::get('/scan/cache-all', [AttendanceController::class, 'cacheAll']);
 };
 
 $registerPublicRoutes();
@@ -33,6 +35,7 @@ Route::prefix('v1')->group($registerPublicRoutes);
 $registerAuthenticatedRoutes = function () {
     // Auth info
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/change-password', [AuthController::class, 'changePassword']);
     Route::get('/me', [AuthController::class, 'me']);
     
     // Notifications (Shared)
@@ -89,6 +92,10 @@ $registerAuthenticatedRoutes = function () {
         Route::get('/teacher/leaves', [TeacherController::class, 'getLeaves']);
         Route::post('/teacher/leaves', [TeacherController::class, 'submitLeave']);
         Route::delete('/teacher/leaves/{id}', [TeacherController::class, 'deleteLeave']);
+
+        // Teacher Student Management
+        Route::get('/teacher/students/options', [TeacherStudentController::class, 'options']);
+        Route::apiResource('teacher/students', TeacherStudentController::class)->except(['create', 'edit', 'show']);
     });
 
     /**
@@ -166,5 +173,5 @@ $registerAuthenticatedRoutes = function () {
     });
 };
 
-Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckMaintenanceMode::class, 'throttle:60,1'])->group($registerAuthenticatedRoutes);
-Route::prefix('v1')->middleware(['auth:sanctum', \App\Http\Middleware\CheckMaintenanceMode::class, 'throttle:60,1'])->group($registerAuthenticatedRoutes);
+Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckBlockedUser::class, \App\Http\Middleware\CheckMaintenanceMode::class, 'throttle:60,1'])->group($registerAuthenticatedRoutes);
+Route::prefix('v1')->middleware(['auth:sanctum', \App\Http\Middleware\CheckBlockedUser::class, \App\Http\Middleware\CheckMaintenanceMode::class, 'throttle:60,1'])->group($registerAuthenticatedRoutes);

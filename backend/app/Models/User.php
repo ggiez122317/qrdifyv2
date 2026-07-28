@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -58,15 +59,8 @@ class User extends Authenticatable
     // ─── Relationships ─────────────────────────────────────
 
     /**
-     * Student profile (snake_case — kept for backward compatibility).
-     */
-    public function student_profile(): HasOne
-    {
-        return $this->hasOne(StudentProfile::class);
-    }
-
-    /**
-     * Student profile (camelCase — Laravel convention).
+     * Student profile.
+     * Laravel auto-maps both 'studentProfile' and 'student_profile' to this method.
      */
     public function studentProfile(): HasOne
     {
@@ -74,15 +68,8 @@ class User extends Authenticatable
     }
 
     /**
-     * Teacher profile (snake_case — kept for backward compatibility).
-     */
-    public function teacher_profile(): HasOne
-    {
-        return $this->hasOne(TeacherProfile::class);
-    }
-
-    /**
-     * Teacher profile (camelCase — Laravel convention).
+     * Teacher profile.
+     * Laravel auto-maps both 'teacherProfile' and 'teacher_profile' to this method.
      */
     public function teacherProfile(): HasOne
     {
@@ -136,5 +123,44 @@ class User extends Authenticatable
     public function scopeTeachers(Builder $query): Builder
     {
         return $query->whereHas('roles', fn($q) => $q->where('name', 'teacher'));
+    }
+
+    /**
+     * Sections where this user (teacher) is the adviser.
+     */
+    public function advisedSections(): HasMany
+    {
+        return $this->hasMany(Section::class, 'adviser_id');
+    }
+
+    /**
+     * Subjects taught by this user (teacher) to students.
+     * We can define a belongsToMany relationship through student_subject pivot table.
+     */
+    public function taughtSubjects(): BelongsToMany
+    {
+        return $this->belongsToMany(Subject::class, 'student_subject', 'teacher_id', 'subject_id')
+                    ->withPivot('student_id')
+                    ->distinct();
+    }
+
+    /**
+     * Students taught by this user (teacher) across different subjects.
+     */
+    public function studentsTaught(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'student_subject', 'teacher_id', 'student_id')
+                    ->withPivot('subject_id')
+                    ->distinct();
+    }
+
+    /**
+     * Subjects taken by this user (student).
+     */
+    public function subjects(): BelongsToMany
+    {
+        return $this->belongsToMany(Subject::class, 'student_subject', 'student_id', 'subject_id')
+                    ->withPivot('teacher_id')
+                    ->withTimestamps();
     }
 }

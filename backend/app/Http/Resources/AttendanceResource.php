@@ -18,7 +18,6 @@ class AttendanceResource extends JsonResource
             'status' => $this->status,
             'am_status' => $this->am_status,
             'pm_status' => $this->pm_status,
-            'remarks' => $this->remarks,
             'user' => $this->whenLoaded('user', fn() => new UserResource($this->user)),
             'created_at' => $this->created_at,
         ];

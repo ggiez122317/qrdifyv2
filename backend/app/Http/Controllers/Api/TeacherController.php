@@ -46,9 +46,9 @@ class TeacherController extends Controller
         // Search filter
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'ILIKE', "%{$search}%")
-                  ->orWhere('id_number', 'ILIKE', "%{$search}%")
-                  ->orWhere('email', 'ILIKE', "%{$search}%");
+                $q->where('name', 'LIKE', "%{$search}%")
+                  ->orWhere('id_number', 'LIKE', "%{$search}%")
+                  ->orWhere('email', 'LIKE', "%{$search}%");
             });
         }
 
@@ -105,7 +105,8 @@ class TeacherController extends Controller
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['message' => 'Error creating teacher', 'error' => $e->getMessage()], 500);
+            logger()->error('Error creating teacher', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error creating teacher. Please try again.'], 500);
         }
     }
 
@@ -166,7 +167,8 @@ class TeacherController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['message' => 'Error updating teacher', 'error' => $e->getMessage()], 500);
+            logger()->error('Error updating teacher', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error updating teacher. Please try again.'], 500);
         }
     }
 
@@ -368,7 +370,13 @@ class TeacherController extends Controller
             ->get()
             ->keyBy(fn($row) => $row->grade . '|' . $row->section);
 
-        $classes->transform(function ($c) use ($user, $today, $classAttendance) {
+        // Pre-fetch today's schedule ONCE instead of inside the loop (was N+1)
+        $todaySchedules = \App\Models\Schedule::where('user_id', $user->id)
+            ->where('type', 'class')
+            ->where('day_of_week', now()->dayOfWeek)
+            ->get();
+
+        $classes->transform(function ($c) use ($user, $today, $classAttendance, $todaySchedules) {
             $key = $c->grade . '|' . $c->section;
             $stats = $classAttendance->get($key);
 
@@ -377,10 +385,7 @@ class TeacherController extends Controller
             $lateInClass = $stats->late_count ?? 0;
             $absentInClass = $totalInClass - ($presentInClass + $lateInClass);
 
-            $scheduleInfo = \App\Models\Schedule::where('user_id', $user->id)
-                ->where('type', 'class')
-                ->where('day_of_week', now()->dayOfWeek)
-                ->first();
+            $scheduleInfo = $todaySchedules->first();
 
             $startTime = $scheduleInfo?->start_time ? \Carbon\Carbon::parse($scheduleInfo->start_time)->format('g:i A') : null;
             $endTime = $scheduleInfo?->end_time ? \Carbon\Carbon::parse($scheduleInfo->end_time)->format('g:i A') : null;
@@ -481,7 +486,7 @@ class TeacherController extends Controller
         }]);
 
         if ($search = $request->get('search')) {
-            $query->where('name', 'ILIKE', "%{$search}%");
+            $query->where('name', 'LIKE', "%{$search}%");
         }
 
         $students = $query->orderBy('name')->paginate($perPage);
@@ -612,12 +617,14 @@ class TeacherController extends Controller
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
+        $perPage = min((int) $request->get('per_page', 50), 100);
+
         $letters = ExcuseLetter::where('teacher_id', $user->id)
             ->with(['student' => function ($query) {
                 $query->select('id', 'name', 'photo_url')->with('studentProfile:user_id,grade,section');
             }])
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate($perPage);
 
         return response()->json($letters);
     }
@@ -733,10 +740,12 @@ class TeacherController extends Controller
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
+        $perPage = min((int) $request->get('per_page', 50), 100);
+
         $leaves = TeacherLeave::with('teacher:id,name')
             ->where('teacher_id', $user->id)
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate($perPage);
 
         return response()->json($leaves);
     }

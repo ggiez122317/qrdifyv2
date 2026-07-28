@@ -20,23 +20,34 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState(false);
 
+  const handleSuccessfulLogin = (data: any) => {
+    localStorage.setItem('token', data.access_token);
+    api.defaults.headers.common['Authorization'] = `Bearer ${data.access_token}`;
+    queryClient.clear();
+    
+    const role = data.user.roles[0];
+    if (role === 'super-admin') router.push('/admin');
+    else if (role === 'principal') router.push('/principal');
+    else if (role === 'teacher') router.push('/teacher');
+    else if (role === 'guard') router.push('/guard');
+    else if (role === 'student') router.push('/student');
+    else router.push('/');
+  };
+
   const loginMutation = useMutation({
     mutationFn: async () => {
       const response = await api.post('/api/login', { email, password });
       return response.data;
     },
     onSuccess: (data) => {
-      localStorage.setItem('token', data.access_token);
-      api.defaults.headers.common['Authorization'] = `Bearer ${data.access_token}`;
-      queryClient.clear();
-      
-      const role = data.user.roles[0];
-      if (role === 'super-admin') router.push('/admin');
-      else if (role === 'principal') router.push('/principal');
-      else if (role === 'teacher') router.push('/teacher');
-      else if (role === 'guard') router.push('/guard');
-      else if (role === 'student') router.push('/student');
-      else router.push('/');
+      if (data.user.needs_password_change) {
+        localStorage.setItem('needs_password_change', 'true');
+        localStorage.setItem('user_role', data.user.roles[0]);
+      } else {
+        localStorage.removeItem('needs_password_change');
+        localStorage.removeItem('user_role');
+      }
+      handleSuccessfulLogin(data);
     },
     onError: (err: { response?: { data?: { message?: string } } }) => {
       const msg = err.response?.data?.message;
@@ -364,6 +375,7 @@ export default function LoginPage() {
           </div>
         </DialogContent>
       </Dialog>
+
     </div>
   );
 }

@@ -1,0 +1,189 @@
+<?php
+
+namespace App\Http\Controllers\Teacher;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+
+use App\Models\User;
+use App\Models\StudentProfile;
+use App\Models\Section;
+use App\Models\Subject;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+
+class TeacherStudentController extends Controller
+{
+    /**
+     * Get students assigned to this teacher (either as adviser or subject teacher).
+     */
+    public function index(Request $request)
+    {
+        $teacher = $request->user();
+
+        // Find students where the teacher is their adviser (via section) OR subject teacher (via pivot)
+        $students = User::whereHas('roles', fn($q) => $q->where('name', 'student'))
+            ->where(function ($query) use ($teacher) {
+                // As Adviser
+                $query->whereHas('studentProfile.section', function ($q) use ($teacher) {
+                    $q->where('adviser_id', $teacher->id);
+                });
+                // As Adviser (Legacy fallback)
+                $query->orWhereHas('studentProfile', function ($q) use ($teacher) {
+                    $q->where('teacher_id', $teacher->id);
+                });
+                // As Subject Teacher
+                $query->orWhereHas('subjects', function ($q) use ($teacher) {
+                    $q->where('teacher_id', $teacher->id);
+                });
+            })
+            ->with(['studentProfile.section', 'subjects' => function($q) use ($teacher) {
+                $q->where('student_subject.teacher_id', $teacher->id);
+            }])
+            ->get();
+
+        return response()->json($students);
+    }
+
+    /**
+     * Create a new student and assign them.
+     */
+    public function store(Request $request)
+    {
+        $teacher = $request->user();
+        
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'id_number' => 'nullable|string|unique:users,id_number',
+            'grade' => 'required|string',
+            'section_id' => 'required|exists:sections,id',
+            'parent_name' => 'nullable|string',
+            'parent_phone' => 'nullable|string',
+            'subjects' => 'nullable|array',
+            'subjects.*' => 'exists:subjects,id',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            // Create user
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'id_number' => $validated['id_number'],
+                'password' => Hash::make('password123'),
+                'needs_password_change' => true,
+            ]);
+            $user->assignRole('student');
+
+            // Create profile
+            StudentProfile::create([
+                'user_id' => $user->id,
+                'grade' => $validated['grade'],
+                'section_id' => $validated['section_id'],
+                'parent_name' => $validated['parent_name'],
+                'parent_phone' => $validated['parent_phone'],
+                'teacher_id' => $teacher->id, // legacy field
+            ]);
+
+            // Assign subjects if any (with this teacher as the subject teacher)
+            if (!empty($validated['subjects'])) {
+                foreach ($validated['subjects'] as $subjectId) {
+                    $user->subjects()->attach($subjectId, ['teacher_id' => $teacher->id]);
+                }
+            }
+
+            DB::commit();
+            return response()->json(['message' => 'Student added successfully', 'student' => $user->load('studentProfile.section')], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Failed to add student', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Update an existing student.
+     */
+    public function update(Request $request, User $student)
+    {
+        $teacher = $request->user();
+        
+        // Ensure this user is actually a student
+        if (!$student->hasRole('student')) {
+            return response()->json(['message' => 'User is not a student'], 400);
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => ['required', 'email', Rule::unique('users')->ignore($student->id)],
+            'id_number' => ['nullable', 'string', Rule::unique('users')->ignore($student->id)],
+            'grade' => 'required|string',
+            'section_id' => 'required|exists:sections,id',
+            'parent_name' => 'nullable|string',
+            'parent_phone' => 'nullable|string',
+            'subjects' => 'nullable|array',
+            'subjects.*' => 'exists:subjects,id',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $student->update([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'id_number' => $validated['id_number'],
+            ]);
+
+            $student->studentProfile()->update([
+                'grade' => $validated['grade'],
+                'section_id' => $validated['section_id'],
+                'parent_name' => $validated['parent_name'],
+                'parent_phone' => $validated['parent_phone'],
+            ]);
+
+            // Sync subjects for this teacher ONLY
+            // First detach all subjects taught by this teacher for this student
+            $student->subjects()->wherePivot('teacher_id', $teacher->id)->detach();
+            
+            // Then attach the new ones
+            if (!empty($validated['subjects'])) {
+                foreach ($validated['subjects'] as $subjectId) {
+                    $student->subjects()->attach($subjectId, ['teacher_id' => $teacher->id]);
+                }
+            }
+
+            DB::commit();
+            return response()->json(['message' => 'Student updated successfully', 'student' => $student->fresh(['studentProfile.section', 'subjects'])]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Failed to update student', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Delete a student.
+     */
+    public function destroy(User $student)
+    {
+        if (!$student->hasRole('student')) {
+            return response()->json(['message' => 'User is not a student'], 400);
+        }
+
+        $student->delete();
+        return response()->json(['message' => 'Student deleted successfully']);
+    }
+
+    /**
+     * Get options for sections and subjects for the forms.
+     */
+    public function options()
+    {
+        $sections = Section::orderBy('name')->get();
+        $subjects = Subject::orderBy('name')->get();
+
+        return response()->json([
+            'sections' => $sections,
+            'subjects' => $subjects,
+        ]);
+    }
+}

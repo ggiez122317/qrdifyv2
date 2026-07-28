@@ -53,6 +53,8 @@ export default function HistoryPage() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
+  const isToday = selectedDate === new Date().toISOString().split('T')[0];
+
   const { data: records = [], isLoading } = useQuery<AttendanceRecord[]>({
     queryKey: ['attendanceToday', selectedDate, debouncedSearch, statusFilter],
     queryFn: async () => {
@@ -64,19 +66,9 @@ export default function HistoryPage() {
         } 
       });
       return Array.isArray(res.data) ? res.data : (res.data.data || []);
-    }
+    },
+    refetchInterval: isToday ? 15000 : false, // Poll every 15s for today's data
   });
-
-  // Reverb real-time listener to refresh table automatically
-  useEffect(() => {
-    // const echo = getEcho();
-    // if (echo) {
-    //   echo.channel('attendance')
-    //       .listen('.AttendanceLogged', () => {
-    //          queryClient.invalidateQueries({ queryKey: ['attendanceToday'] });
-    //       });
-    // }
-  }, [queryClient]);
 
   // Filter and Search logic
   const filteredRecords = useMemo(() => {
@@ -112,7 +104,7 @@ export default function HistoryPage() {
     if (!path) return null;
     if (path.startsWith('http')) return path;
     const cleanPath = path.replace(/^\/?storage\//, '');
-    return `http://${window.location.hostname}:8000/storage/${cleanPath}`;
+    return `/storage/${cleanPath}`;
   };
 
   return (

@@ -1,5 +1,7 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
 import { Bell, CheckCircle2, AlertTriangle, ArrowLeft } from 'lucide-react';
@@ -35,8 +37,17 @@ export default function NotificationsPage() {
   const unread = notifications.filter((n: { read_at: string | null }) => n.read_at === null);
   const read = notifications.filter((n: { read_at: string | null }) => n.read_at !== null);
 
+  const [now, setNow] = useState<number | null>(null);
+
+  useEffect(() => {
+    setNow(Date.now());
+    const interval = setInterval(() => setNow(Date.now()), 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   const getTimeAgo = (dateStr: string) => {
-    const diff = Date.now() - new Date(dateStr).getTime();
+    if (!now) return '';
+    const diff = now - new Date(dateStr).getTime();
     const mins = Math.floor(diff / 60000);
     if (mins < 1) return 'Just now';
     if (mins < 60) return `${mins}m ago`;
@@ -60,7 +71,7 @@ export default function NotificationsPage() {
         </div>
         {unread.length > 0 && (
           <button
-            onClick={() => markAsReadMutation.mutate()}
+            onClick={() => markAsReadMutation.mutate(undefined)}
             disabled={markAsReadMutation.isPending}
             className="ml-auto px-4 py-2 bg-[#7a1315] hover:bg-[#5a0e10] text-white text-xs font-bold rounded-xl transition-colors disabled:opacity-50"
           >

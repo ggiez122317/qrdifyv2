@@ -122,13 +122,21 @@ class DashboardService
                 ->groupBy('date')
                 ->pluck('value', 'date');
 
+            // Single query for new student sparkline data instead of 7 queries in a loop
+            $startDate7 = now()->subDays(6)->toDateString();
+            $newByDate = User::students()
+                ->where('created_at', '>=', $startDate7)
+                ->selectRaw('DATE(created_at) as date, COUNT(*) as count')
+                ->groupByRaw('DATE(created_at)')
+                ->pluck('count', 'date');
+
             $sparklines = ['total' => [], 'attendance' => [], 'new' => []];
             for ($i = 6; $i >= 0; $i--) {
                 $dateStr = now()->subDays($i)->toDateString();
                 $sparklines['total'][] = $totalStudents;
                 $attCount = (int) $trend->get($dateStr, 0);
                 $sparklines['attendance'][] = $totalStudents > 0 ? round(($attCount / $totalStudents) * 100, 1) : 0;
-                $sparklines['new'][] = User::students()->whereDate('created_at', $dateStr)->count();
+                $sparklines['new'][] = (int) ($newByDate->get($dateStr, 0));
             }
 
             return compact('totalStudents', 'attendanceRate', 'newThisMonth', 'sparklines');
@@ -162,13 +170,21 @@ class DashboardService
                 ->groupBy('date')
                 ->pluck('value', 'date');
 
+            // Single query for new teacher sparkline data instead of 7 queries in a loop
+            $startDate7 = now()->subDays(6)->toDateString();
+            $newByDate = User::teachers()
+                ->where('created_at', '>=', $startDate7)
+                ->selectRaw('DATE(created_at) as date, COUNT(*) as count')
+                ->groupByRaw('DATE(created_at)')
+                ->pluck('count', 'date');
+
             $sparklines = ['total' => [], 'attendance' => [], 'new' => []];
             for ($i = 6; $i >= 0; $i--) {
                 $dateStr = now()->subDays($i)->toDateString();
                 $sparklines['total'][] = $totalTeachers;
                 $attCount = (int) $trend->get($dateStr, 0);
                 $sparklines['attendance'][] = $totalTeachers > 0 ? round(($attCount / $totalTeachers) * 100, 1) : 0;
-                $sparklines['new'][] = User::teachers()->whereDate('created_at', $dateStr)->count();
+                $sparklines['new'][] = (int) ($newByDate->get($dateStr, 0));
             }
 
             return compact('totalTeachers', 'attendanceRate', 'newThisMonth', 'sparklines');
