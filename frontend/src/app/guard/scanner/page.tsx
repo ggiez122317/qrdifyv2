@@ -56,13 +56,45 @@ export default function GuardScanner() {
     return `/storage/${cleanPath}`;
   };
 
+  // Global wedge reader listener (robust, doesn't require focus)
   useEffect(() => {
-    const focusInterval = setInterval(() => {
-      if (document.activeElement !== inputRef.current) {
-        inputRef.current?.focus();
+    let buffer = '';
+    let timeoutId: NodeJS.Timeout;
+
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Ignore modifier keys and ignore if they are typing in a normal input (though scanner page only has one)
+      if (['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) return;
+      
+      // If Enter is pressed, process buffer
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const value = buffer.trim();
+        if (value) {
+          doScan(value);
+        }
+        buffer = '';
+        if (inputRef.current) inputRef.current.value = '';
+        return;
       }
-    }, 500);
-    return () => clearInterval(focusInterval);
+      
+      // Append printable characters
+      if (e.key.length === 1) {
+        buffer += e.key;
+      }
+      
+      // Clear buffer if typing is too slow (differentiates scanner from human typing)
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        buffer = '';
+      }, 150); // Scanners type very fast
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    
+    return () => {
+      window.removeEventListener('keydown', handleGlobalKeyDown);
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   const doScan = (idNumber: string) => {
@@ -115,15 +147,7 @@ export default function GuardScanner() {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (inputValue.trim()) {
-        doScan(inputValue.trim());
-        setInputValue('');
-      }
-    }
-  };
+  // Note: Local handleKeyDown is removed since global listener captures everything
 
   return (
     <>
@@ -136,7 +160,7 @@ export default function GuardScanner() {
           
           <div className="space-y-4">
             <h1 className="text-5xl font-extrabold text-slate-800 tracking-tight">Active Scanner</h1>
-            <p className="text-slate-500 text-xl font-medium">Please tap your RFID card or scan your QR code below.</p>
+            <p className="text-slate-500 text-xl font-medium">Please scan your QR code below.</p>
           </div>
             
           <div className="w-full flex flex-col items-center justify-center min-h-[400px]">
@@ -146,11 +170,10 @@ export default function GuardScanner() {
               ref={inputRef}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="opacity-0 fixed left-0 top-0 w-0 h-0 -z-50 pointer-events-none"
-            />
-
-            {recentScan ? (
+              className="absolute inset-0 w-full h-full opacity-0 cursor-default"
+              autoFocus
+              readOnly
+            />{recentScan ? (
               <div className="w-full max-w-5xl mx-auto bg-white rounded-[2rem] shadow-sm p-10 text-left relative z-10">
                 <div className="flex gap-12 items-center">
                   <div className="w-[340px] h-[400px] shrink-0 bg-slate-100 rounded-3xl overflow-hidden relative">

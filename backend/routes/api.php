@@ -107,6 +107,7 @@ $registerAuthenticatedRoutes = function () {
         // Attendance Overview
         Route::get('/attendance/today', [AttendanceController::class, 'today']);
         Route::get('/attendance/stats', [AttendanceController::class, 'stats']);
+        Route::delete('/attendance/{id}', [AttendanceController::class, 'destroy']);
 
         // Student & Teacher Management (Shared across Guard, Admin, Principal)
         Route::get('/students-stats', [StudentController::class, 'stats']);
@@ -124,6 +125,7 @@ $registerAuthenticatedRoutes = function () {
         Route::put('/visitors/{visitor}', [VisitorController::class, 'update']);
         Route::post('/visitors/{visitor}/mark-out', [VisitorController::class, 'markOut']);
         Route::delete('/visitors/{visitor}', [VisitorController::class, 'destroy']);
+        // RFID and NFC modules have been removed. See _deprecated/nfc-rfid-modules/ for backup.
     });
 
     // Feedback routes can be shared across all authenticated users but we'll place it here
@@ -151,6 +153,8 @@ $registerAuthenticatedRoutes = function () {
             Route::post('/users/{id}/block', [\App\Http\Controllers\Api\SystemController::class, 'blockUser']);
             Route::delete('/users/{id}', [\App\Http\Controllers\Api\SystemController::class, 'destroyUser']);
         });
+
+        // RFID and NFC modules have been removed. See _deprecated/nfc-rfid-modules/ for backup.
     });
 
     Route::middleware('role:principal')->group(function () {

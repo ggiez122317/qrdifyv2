@@ -22,7 +22,17 @@ class AttendanceController extends Controller
 
     public function lookup(ScanRequest $request): JsonResponse
     {
-        $cachedUser = $this->scanCache->find($request->id_number);
+        $idNumber = $request->id_number;
+        $cachedUser = $this->scanCache->find($idNumber);
+
+        // Fallback: Check if it's an NFC/RFID card and resolve the actual user ID
+        if (!$cachedUser) {
+            $user = \App\Models\User::where('id_number', $idNumber)->first();
+            if ($user && $user->id_number !== $idNumber) {
+                $idNumber = $user->id_number;
+                $cachedUser = $this->scanCache->find($idNumber);
+            }
+        }
 
         if (!$cachedUser) {
             return response()->json(['message' => 'User not found'], 404);
@@ -30,6 +40,7 @@ class AttendanceController extends Controller
 
         return response()->json([
             'message' => 'Scan registered',
+
             'type'    => 'Scan',
             'status'  => 'Processing...',
             'user'    => [
@@ -52,13 +63,23 @@ class AttendanceController extends Controller
 
     public function scan(ScanRequest $request): JsonResponse
     {
-        $cachedUser = $this->scanCache->find($request->id_number);
+        $idNumber = $request->id_number;
+        $cachedUser = $this->scanCache->find($idNumber);
+
+        // Fallback: Check if it's an NFC/RFID card and resolve the actual user ID
+        if (!$cachedUser) {
+            $user = \App\Models\User::where('id_number', $idNumber)->first();
+            if ($user && $user->id_number !== $idNumber) {
+                $idNumber = $user->id_number;
+                $cachedUser = $this->scanCache->find($idNumber);
+            }
+        }
 
         if (!$cachedUser) {
             return response()->json(['message' => 'User not found'], 404);
         }
 
-        $result = $this->attendanceService->processScan($request->id_number, $cachedUser);
+        $result = $this->attendanceService->processScan($idNumber, $cachedUser);
 
         if (isset($result['error'])) {
             return response()->json(['message' => $result['error']], $result['code']);
@@ -125,5 +146,16 @@ class AttendanceController extends Controller
         return response()->json(
             $this->attendanceService->getTodayStats($date)
         );
+    }
+
+    /**
+     * Delete an attendance record (for testing / admin override).
+     */
+    public function destroy($id): JsonResponse
+    {
+        $attendance = Attendance::findOrFail($id);
+        $attendance->delete();
+
+        return response()->json(['message' => 'Attendance record deleted successfully']);
     }
 }

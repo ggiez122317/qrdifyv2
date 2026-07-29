@@ -9,6 +9,7 @@ import { PhotoUploader } from '@/components/ui/PhotoUploader';
 import { ChevronLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { api } from '@/lib/api';
 
 export default function CreateStudentPage() {
   const router = useRouter();
@@ -52,26 +53,12 @@ export default function CreateStudentPage() {
     setIsSubmitting(true);
     
     try {
-      const response = await fetch('http://localhost:8000/api/students', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      });
-
-      if (response.ok) {
-        localStorage.setItem('toast_message', 'Student record created successfully');
-        router.push('/admin/students');
-      } else {
-        const errorData = await response.json();
-        localStorage.setItem('toast_message', 'Failed to save: ' + (errorData.message || 'Unknown error'));
-        setIsSubmitting(false);
-      }
-    } catch (error) {
-      console.error('API Error:', error);
-      localStorage.setItem('toast_message', 'Network error while saving');
+      const response = await api.students.create(formData as Record<string, unknown>);
+      localStorage.setItem('toast_message', 'Student record created successfully');
+      router.push('/admin/students');
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || error?.message || 'Unknown error';
+      localStorage.setItem('toast_message', 'Failed to save: ' + msg);
       setIsSubmitting(false);
     }
   };

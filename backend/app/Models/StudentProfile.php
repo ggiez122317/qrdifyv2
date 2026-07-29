@@ -13,6 +13,7 @@ class StudentProfile extends Model
     protected $fillable = [
         'user_id',
         'grade',
+        'section',
         'section_id',
         'parent_name',
         'parent_phone',

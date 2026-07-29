@@ -8,7 +8,7 @@ import { IosToast } from "@/components/ui/ios-toast";
 
 export const metadata: Metadata = {
   title: "Qridify - Smart, Secure, Seamless Attendance",
-  description: "QR & RFID Attendance System",
+  description: "QR Attendance System",
   icons: {
     icon: "/logo.png",
   }

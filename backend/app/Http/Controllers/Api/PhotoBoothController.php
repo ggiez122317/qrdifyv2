@@ -14,17 +14,17 @@ class PhotoBoothController extends Controller
             ->whereHas('roles', function ($q) {
                 $q->whereIn('name', ['student', 'teacher']);
             })
-            ->with(['roles', 'student_profile', 'teacher_profile'])
+            ->with(['roles', 'studentProfile', 'teacherProfile'])
             ->get();
 
         $formatted = $users->map(function ($user) {
             $roleName = $user->hasRole('teacher') ? 'Teacher' : 'Student';
             $details = '';
             
-            if ($roleName === 'Student' && $user->student_profile) {
-                $details = "Grade {$user->student_profile->grade} - {$user->student_profile->section}";
-            } elseif ($roleName === 'Teacher' && $user->teacher_profile) {
-                $details = $user->teacher_profile->position ?? 'Teacher';
+            if ($roleName === 'Student' && $user->studentProfile) {
+                $details = "Grade {$user->studentProfile->grade} - {$user->studentProfile->section}";
+            } elseif ($roleName === 'Teacher' && $user->teacherProfile) {
+                $details = $user->teacherProfile->position ?? 'Teacher';
             }
 
             return [
@@ -34,8 +34,8 @@ class PhotoBoothController extends Controller
                 'details' => $details,
                 'lrn' => $user->id_number,
                 'id_number' => $user->id_number,
-                'student_profile' => $user->student_profile,
-                'teacher_profile' => $user->teacher_profile,
+                'student_profile' => $user->studentProfile,
+                'teacher_profile' => $user->teacherProfile,
             ];
         });
 

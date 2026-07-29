@@ -42,6 +42,8 @@ export interface StudentRecord {
   student_profile?: {
     grade?: string;
     section?: string;
+    parent_name?: string;
+    parent_phone?: string;
   };
 }
 
@@ -333,8 +335,13 @@ export default function StudentsManagementPage() {
                       <TableCell className="text-right pr-8">
                         <div className="flex items-center justify-end gap-2">
                           <button 
-                            onClick={() => {
-                              setSelectedStudent(record);
+                            onClick={async () => {
+                              try {
+                                const res = await api.get(`/api/students/${record.id}`);
+                                setSelectedStudent(res.data);
+                              } catch {
+                                setSelectedStudent(record);
+                              }
                               setIsViewModalOpen(true);
                             }}
                             className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-600 border border-slate-200 hover:border-slate-300 rounded-lg bg-white transition-all shadow-sm"

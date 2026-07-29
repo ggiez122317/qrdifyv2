@@ -37,7 +37,7 @@ export function StudentViewModal({ isOpen, onClose, student }: StudentViewModalP
                   <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=800000&color=fff&size=128`} alt={student.name} className="w-full h-full object-cover" />
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white">{student.name}</h3>
-                <p className="text-sm text-maroon-600 dark:text-red-400 font-medium mb-4">{student.student_profile?.grade_level || 'Student'}</p>
+                <p className="text-sm text-maroon-600 dark:text-red-400 font-medium mb-4">Student</p>
                 
                 <div className="w-full pt-4 border-t border-slate-100 dark:border-white/5 flex flex-col gap-3 text-left">
                   <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
@@ -79,7 +79,7 @@ export function StudentViewModal({ isOpen, onClose, student }: StudentViewModalP
                       <div className="flex items-center gap-2 text-sm font-medium text-slate-500 dark:text-slate-400">
                         <BookOpen className="w-4 h-4" /> Grade Level
                       </div>
-                      <p className="font-semibold text-slate-900 dark:text-white">{student.student_profile?.grade_level || 'Unassigned'}</p>
+                      <p className="font-semibold text-slate-900 dark:text-white">{student.student_profile?.grade || 'Unassigned'}</p>
                     </div>
 
                     <div className="space-y-1">

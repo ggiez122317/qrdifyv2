@@ -30,7 +30,7 @@ class ScanCacheService
         if ($studentIds->isNotEmpty()) {
             $studentProfiles = DB::table('student_profiles')
                 ->whereIn('user_id', $studentIds)
-                ->get(['user_id', 'grade', 'section', 'teacher_id'])
+                ->get(['user_id', 'grade', 'section', 'teacher_id', 'parent_phone'])
                 ->keyBy('user_id');
         }
 
@@ -62,9 +62,10 @@ class ScanCacheService
 
             if ($user->role_name === 'student') {
                 $profile = $studentProfiles[$userId] ?? null;
-                $entry['grade']      = $profile?->grade;
-                $entry['section']    = $profile?->section;
-                $entry['teacher_id'] = $profile?->teacher_id;
+                $entry['grade']        = $profile?->grade;
+                $entry['section']      = $profile?->section;
+                $entry['teacher_id']   = $profile?->teacher_id;
+                $entry['parent_phone'] = $profile?->parent_phone;
             } else {
                 $profile = $teacherProfiles[$userId] ?? null;
                 $entry['subject']        = $profile?->subject;

@@ -48,4 +48,6 @@ export const api = {
       apiClient.get<PaginatedResponse<Attendance>>('/api/attendance/today', { params }),
     stats: () => apiClient.get<AttendanceStats>('/api/attendance/stats'),
   },
+
+  // RFID and NFC modules have been removed. See _deprecated/nfc-rfid-modules/ for backup.
 };

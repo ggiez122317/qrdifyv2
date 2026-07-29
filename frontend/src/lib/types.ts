@@ -84,7 +84,8 @@ export interface ApiError {
 export interface Student {
   id: number;
   name: string;
-  lrn: string;
+  lrn?: string;
+  id_number?: string;
   email: string;
   status: string;
   photo_url: string | null;
@@ -100,3 +101,5 @@ export interface Teacher {
   photo_url: string | null;
   teacher_profile: TeacherProfile | null;
 }
+
+// RFID and NFC module types have been removed. See _deprecated/nfc-rfid-modules/ for backup.

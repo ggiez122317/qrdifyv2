@@ -101,7 +101,7 @@ class TeacherController extends Controller
 
             return response()->json([
                 'message' => 'Teacher created successfully',
-                'teacher' => $user->load('teacher_profile'),
+                'teacher' => $user->load('teacherProfile'),
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -163,7 +163,7 @@ class TeacherController extends Controller
 
             return response()->json([
                 'message' => 'Teacher updated successfully',
-                'teacher' => $user->load('teacher_profile'),
+                'teacher' => $user->load('teacherProfile'),
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -556,7 +556,19 @@ class TeacherController extends Controller
             'status' => 'pending',
         ]);
         
-        // Removed missing NoticeSent event dispatch
+        // Send notification to the student
+        $student = \App\Models\User::find($request->student_id);
+        if ($student) {
+            try {
+                $student->notify(new \App\Notifications\SystemNotification(
+                    $request->title,
+                    $request->message,
+                    'warning'
+                ));
+            } catch (\Throwable $e) {
+                logger()->error('Failed to send notice notification', ['error' => $e->getMessage()]);
+            }
+        }
         
         return response()->json(['message' => 'Notice sent successfully']);
     }

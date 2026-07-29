@@ -208,7 +208,7 @@ export default function LandingPage() {
                   Smart Attendance, <br/><span className="text-[#7a1315]">Stronger Schools.</span>
                 </h1>
                 <p className="text-[17px] text-slate-500 mb-8 max-w-[480px] mx-auto lg:mx-0 font-medium leading-relaxed">
-                  Automate attendance tracking with RFID & QR technology, real-time monitoring, and insightful reports — all in one secure platform.
+                  Automate attendance tracking with QR & Smart ID technology, real-time monitoring, and insightful reports — all in one secure platform.
                 </p>
                 
                 {/* Trust indicator */}
@@ -335,7 +335,9 @@ export default function LandingPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
                 { 
-                  title: 'RFID Attendance', 
+                  title: 'QR Attendance', 
+
+
                   desc: 'Fast & accurate check-in',
                   image: '/rfid_card.png',
                   bg: 'bg-red-50/50'
@@ -422,7 +424,7 @@ export default function LandingPage() {
                
                {[
                  { step: '1', title: 'Set Up Your School', desc: 'Register your school, add classes, teachers, and students.' },
-                 { step: '2', title: 'Track Attendance', desc: 'Use RFID or QR code for fast and accurate attendance.' },
+                  { step: '2', title: 'Track Attendance', desc: 'Use QR code for fast and accurate attendance.' },
                  { step: '3', title: 'Generate Reports', desc: 'View real-time analytics and export detailed reports.' }
                ].map((item, i) => (
                  <div key={i} className="relative z-10 flex flex-col items-center flex-1 mb-10 md:mb-0">
@@ -471,7 +473,7 @@ export default function LandingPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
               {[
                 { icon: <MonitorSmartphone className="w-8 h-8 text-blue-500" strokeWidth={1.5}/>, title: 'Real-time Monitoring', desc: 'Track attendance as it happens with live updates.', bg: 'bg-blue-50' },
-                { icon: <ScanLine className="w-8 h-8 text-[#7a1315]" strokeWidth={1.5}/>, title: 'RFID & QR Technology', desc: 'Flexible attendance tracking that fits your school.', bg: 'bg-red-50' },
+                { icon: <ScanLine className="w-8 h-8 text-[#7a1315]" strokeWidth={1.5}/>, title: 'QR & Smart ID Technology', desc: 'Flexible attendance tracking that fits your school.', bg: 'bg-red-50' },
                 { icon: <ShieldCheck className="w-8 h-8 text-emerald-500" strokeWidth={1.5}/>, title: 'Secure & Reliable', desc: 'Enterprise-grade security to protect your data.', bg: 'bg-emerald-50' },
                 { icon: <FileText className="w-8 h-8 text-indigo-500" strokeWidth={1.5}/>, title: 'Automated Reports', desc: 'Generate accurate reports in seconds.', bg: 'bg-indigo-50' },
                 { icon: <Users className="w-8 h-8 text-amber-500" strokeWidth={1.5}/>, title: 'Role-based Access', desc: 'Secure access for admins, teachers, and staff.', bg: 'bg-amber-50' },

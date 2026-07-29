@@ -11,6 +11,13 @@ class StoreStudentRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'lrn' => $this->lrn ?: null,
+        ]);
+    }
+
     public function rules(): array
     {
         return [

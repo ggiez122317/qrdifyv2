@@ -105,7 +105,7 @@ export default function LoginPage() {
             <div className="space-y-4 mb-8">
               {[
                 { icon: ShieldCheck, title: 'Fast QR Scanning', desc: 'Quick and accurate verification' },
-                { icon: Wifi, title: 'RFID Support', desc: 'Seamless RFID card scanning' },
+                { icon: ShieldCheck, title: 'QR & Smart ID', desc: 'Flexible attendance verification' },
                 { icon: LineChart, title: 'Real-time Dashboard', desc: 'Live attendance monitoring' },
                 { icon: Bell, title: 'Instant Notifications', desc: 'Stay updated in real-time' },
                 { icon: Lock, title: 'Secure & Reliable', desc: 'Enterprise-grade security' }

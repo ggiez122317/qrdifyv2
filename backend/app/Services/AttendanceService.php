@@ -16,11 +16,12 @@ class AttendanceService
     public function processScan(string $idNumber, ?array $cachedUser = null): array
     {
         if ($cachedUser) {
-            $userId    = $cachedUser['id'];
-            $userName  = $cachedUser['name'];
-            $role      = $cachedUser['role'];
-            $teacherId = $cachedUser['teacher_id'] ?? null;
-            $photoUrl  = $cachedUser['photo_url'] ?? null;
+            $userId      = $cachedUser['id'];
+            $userName    = $cachedUser['name'];
+            $role        = $cachedUser['role'];
+            $teacherId   = $cachedUser['teacher_id'] ?? null;
+            $parentPhone = $cachedUser['parent_phone'] ?? null;
+            $photoUrl    = $cachedUser['photo_url'] ?? null;
         } else {
             $user = User::with(['roles', 'studentProfile'])->where('id_number', $idNumber)->first();
 
@@ -28,11 +29,12 @@ class AttendanceService
                 return ['error' => 'User not found', 'code' => 404];
             }
 
-            $userId    = $user->id;
-            $userName  = $user->name;
-            $role      = $user->getRoleNames()->first();
-            $teacherId = ($role === 'student' && $user->studentProfile) ? $user->studentProfile->teacher_id : null;
-            $photoUrl  = $user->photo_url;
+            $userId      = $user->id;
+            $userName    = $user->name;
+            $role        = $user->getRoleNames()->first();
+            $teacherId   = ($role === 'student' && $user->studentProfile) ? $user->studentProfile->teacher_id : null;
+            $parentPhone = ($role === 'student' && $user->studentProfile) ? $user->studentProfile->parent_phone : null;
+            $photoUrl    = $user->photo_url;
         }
 
         $date = now()->toDateString();
@@ -123,6 +125,20 @@ class AttendanceService
             'status' => $status,
             'time' => now()->format('h:i A'),
         ]));
+
+        if ($role === 'student' && !empty($parentPhone)) {
+            // TEMPORARY: Cooldown disabled for testing
+            // $cooldownKey = "sms_cooldown_{$userId}";
+            // if (\Illuminate\Support\Facades\Cache::add($cooldownKey, true, now()->addMinutes(15))) {
+                $timeStrFormatted = now()->format('h:i A');
+                
+                $message = str_starts_with($type, 'Time In')
+                    ? "Good day! Your child {$userName} has entered the school premises at {$timeStrFormatted}."
+                    : "Good day! Your child {$userName} has left the school premises at {$timeStrFormatted}.";
+                    
+                \App\Jobs\SendParentSmsNotification::dispatch($parentPhone, $message);
+            // }
+        }
 
         return [
             'success' => true,

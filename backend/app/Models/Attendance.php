@@ -14,6 +14,13 @@ class Attendance extends Model
      */
     protected $fillable = [
         'user_id',
+        'rfid_card_number',
+        'nfc_uid',
+        'nfc_reader_id',
+        'terminal_id',
+        'door_id',
+        'verification_method',
+        'attendance_method',
         'date',
         'time_in',
         'time_out',
@@ -38,6 +45,11 @@ class Attendance extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function terminal(): BelongsTo
+    {
+        return $this->belongsTo(DeviceTerminal::class, 'terminal_id', 'terminal_id');
     }
 
     // ─── Query Scopes ──────────────────────────────────────
