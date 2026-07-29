@@ -267,7 +267,7 @@ export function IdCardPreview({ user, type, printRef, activeSide = 'both', photo
             <thead>
               <tr>
                 <th style={{ borderBottom: '2px solid #000', borderRight: '1px solid #000', padding: '6px' }}>School Year</th>
-                <th style={{ borderBottom: '2px solid #000', borderRight: '1px solid #000', padding: '6px' }}>Grade & Section</th>
+                <th style={{ borderBottom: '2px solid #000', borderRight: '1px solid #000', padding: '6px' }}>Grade &amp; Section</th>
                 <th style={{ borderBottom: '2px solid #000', padding: '6px' }}>Signature</th>
               </tr>
             </thead>

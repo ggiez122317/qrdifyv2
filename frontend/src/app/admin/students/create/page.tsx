@@ -53,12 +53,25 @@ export default function CreateStudentPage() {
     setIsSubmitting(true);
     
     try {
-      const response = await api.students.create(formData as Record<string, unknown>);
+      await api.students.create(formData as Record<string, unknown>);
       localStorage.setItem('toast_message', 'Student record created successfully');
       router.push('/admin/students');
     } catch (error: any) {
-      const msg = error?.response?.data?.message || error?.message || 'Unknown error';
-      localStorage.setItem('toast_message', 'Failed to save: ' + msg);
+      // Extract specific validation errors from Laravel 422 response
+      const responseData = error?.response?.data;
+      let msg = 'Failed to save student.';
+      
+      if (responseData?.errors) {
+        // Flatten all validation field errors into a readable list
+        const fieldErrors = Object.values(responseData.errors).flat() as string[];
+        msg = fieldErrors.join(' ');
+      } else if (responseData?.message) {
+        msg = responseData.message;
+      } else if (error?.message) {
+        msg = error.message;
+      }
+      
+      alert('Error: ' + msg);
       setIsSubmitting(false);
     }
   };

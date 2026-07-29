@@ -107,7 +107,7 @@ class StudentController extends Controller
 
             return response()->json([
                 'message' => 'Student created successfully',
-                'student' => $user->load('student_profile'),
+                'student' => $user->load('studentProfile'),
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -178,7 +178,7 @@ class StudentController extends Controller
 
             return response()->json([
                 'message' => 'Student updated successfully',
-                'student' => $user->load('student_profile'),
+                'student' => $user->load('studentProfile'),
             ]);
         } catch (\Exception $e) {
             DB::rollBack();

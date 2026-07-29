@@ -66,8 +66,9 @@ export default function CategoryLevelPage() {
       const data = res.data.data || res.data;
       setRecords(Array.isArray(data) ? data : []);
       setTotalPages(res.data.last_page || Math.ceil((Array.isArray(data) ? data.length : 0) / itemsPerPage) || 1);
-    } catch (err) {
-      console.error('Error fetching data:', err);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      console.error('Error fetching data:', message);
     } finally {
       setIsLoading(false);
     }

@@ -1,16 +1,18 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
 import QueryProvider from "@/components/providers/query-provider";
-
 import { ThemeProvider } from "@/components/theme-provider";
 import { IosToast } from "@/components/ui/ios-toast";
 
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+
 export const metadata: Metadata = {
-  title: "Qridify - Smart, Secure, Seamless Attendance",
+  title: "Trento West Central Elementary SPED Center - Smart, Secure, Seamless Attendance",
   description: "QR Attendance System",
   icons: {
-    icon: "/logo.png",
+    icon: "/school-logo.jpg",
   }
 };
 
@@ -21,7 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="antialiased font-sans bg-background text-foreground overflow-x-hidden">
+      <body className={`${inter.variable} font-sans bg-background text-foreground overflow-x-hidden antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
