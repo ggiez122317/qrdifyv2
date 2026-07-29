@@ -146,7 +146,7 @@ export function PhotoUploader({ onCapture, currentPhoto }: PhotoUploaderProps) {
         />
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-6 items-start">
+      <div className="flex flex-col sm:flex-row gap-6 items-start max-w-3xl">
         {/* Left Side: Webcam Video */}
         <div className="flex-1 w-full">
           <label className="text-[13px] font-semibold text-slate-700 block mb-3">Webcam</label>

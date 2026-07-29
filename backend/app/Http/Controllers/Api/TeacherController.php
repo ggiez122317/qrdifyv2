@@ -40,7 +40,7 @@ class TeacherController extends Controller
         $perPage = min((int) $request->get('per_page', 50), 100);
 
         $query = User::teachers()
-            ->with('teacher_profile:id,user_id,position,contact_number')
+            ->with('teacherProfile:id,user_id,position,contact_number')
             ->select('id', 'name', 'email', 'id_number', 'photo_url');
 
         // Search filter
@@ -116,7 +116,7 @@ class TeacherController extends Controller
     public function show(string $id): JsonResponse
     {
         $teacher = User::teachers()
-            ->with('teacher_profile')
+            ->with('teacherProfile')
             ->findOrFail($id);
 
         return response()->json([

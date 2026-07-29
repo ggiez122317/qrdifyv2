@@ -35,7 +35,7 @@ export default function LoginPage() {
   };
 
   const loginMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async ({ email, password }: { email: string; password: string }) => {
       const response = await api.post('/api/login', { email, password });
       return response.data;
     },
@@ -62,7 +62,7 @@ export default function LoginPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    loginMutation.mutate();
+    loginMutation.mutate({ email, password });
   };
 
   return (

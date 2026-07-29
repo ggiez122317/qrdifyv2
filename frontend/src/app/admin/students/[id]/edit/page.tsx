@@ -50,8 +50,8 @@ export default function EditStudentPage() {
           });
           setPhotoUrl(data.photo_url || null);
         }
-      } catch (err) {
-        console.error('Failed to fetch student:', err);
+      } catch (err: any) {
+        console.error('Failed to fetch student:', err?.response?.data || err?.message || err);
       }
     };
     fetchStudent();

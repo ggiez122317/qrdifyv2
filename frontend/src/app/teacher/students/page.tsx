@@ -15,10 +15,17 @@ import {
   Hash,
   AlertCircle,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Filter,
+  Users
 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { getImageUrl } from '@/lib/utils';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { CustomSelect } from '@/components/ui/custom-select';
+import Link from 'next/link';
 
 interface Student {
   id: number;
@@ -54,24 +61,7 @@ export default function ManageStudentsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterGrade, setFilterGrade] = useState('');
   const [filterSubject, setFilterSubject] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
-  
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
 
-  // Form State
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    id_number: '',
-    grade: '',
-    section_id: '',
-    parent_name: '',
-    parent_phone: '',
-    subjects: [] as number[],
-  });
 
   const { data: students = [], isLoading: isLoadingStudents } = useQuery({
     queryKey: ['teacher-students'],
@@ -89,20 +79,6 @@ export default function ManageStudentsPage() {
     },
   });
 
-  const saveMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      if (editingStudent) {
-        return api.put(`/api/teacher/students/${editingStudent.id}`, data);
-      } else {
-        return api.post('/api/teacher/students', data);
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['teacher-students'] });
-      closeModal();
-    },
-  });
-
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
       return api.delete(`/api/teacher/students/${id}`);
@@ -112,61 +88,16 @@ export default function ManageStudentsPage() {
     },
   });
 
-  const handleOpenModal = (student?: Student) => {
-    if (student) {
-      setEditingStudent(student);
-      setFormData({
-        name: student.name,
-        email: student.email,
-        id_number: student.id_number || '',
-        grade: student.student_profile?.grade || '',
-        section_id: student.student_profile?.section?.id.toString() || '',
-        parent_name: student.student_profile?.parent_name || '',
-        parent_phone: student.student_profile?.parent_phone || '',
-        subjects: student.subjects ? student.subjects.map((s) => s.id) : [],
-      });
-    } else {
-      setEditingStudent(null);
-      setFormData({
-        name: '',
-        email: '',
-        id_number: '',
-        grade: '',
-        section_id: '',
-        parent_name: '',
-        parent_phone: '',
-        subjects: [],
-      });
-    }
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setEditingStudent(null);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    saveMutation.mutate(formData);
-  };
-
   const handleDelete = (id: number, name: string) => {
     if (window.confirm(`Are you sure you want to delete ${name}? This action cannot be undone.`)) {
       deleteMutation.mutate(id);
     }
   };
 
-  const toggleSubject = (subjectId: number) => {
-    setFormData((prev) => {
-      const isSelected = prev.subjects.includes(subjectId);
-      if (isSelected) {
-        return { ...prev, subjects: prev.subjects.filter((id) => id !== subjectId) };
-      } else {
-        return { ...prev, subjects: [...prev.subjects, subjectId] };
-      }
-    });
-  };
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
 
   // Filter students based on search term, grade, and subject
   const filteredStudents = students.filter((student) => {
@@ -200,171 +131,160 @@ export default function ManageStudentsPage() {
           <h1 className="text-2xl font-bold text-slate-900">Manage Students</h1>
           <p className="text-slate-500">Add, edit, and assign students to sections and subjects.</p>
         </div>
-        <button
-          onClick={() => handleOpenModal()}
+        <Link
+          href="/teacher/students/create"
           className="bg-red-700 hover:bg-red-800 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 font-semibold shadow-sm transition-colors"
         >
           <Plus className="w-5 h-5" />
           Add Student
-        </button>
+        </Link>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
-        <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-            <div className="relative w-full sm:w-64">
-              <Search className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
+      <Card className="border border-slate-200 shadow-sm rounded-2xl bg-white overflow-hidden">
+        <CardContent className="p-0">
+          <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="relative flex-1 max-w-[600px] w-full">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-slate-400" />
+              <Input
                 placeholder="Search students..."
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all text-sm"
+                className="pl-11 h-[46px] bg-white border-slate-200 rounded-xl text-[15px] focus:ring-1 focus:ring-slate-300 w-full"
               />
             </div>
-            <select
-              value={filterGrade}
-              onChange={(e) => {
-                setFilterGrade(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="px-3 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm min-w-[120px]"
-            >
-              <option value="">All Grades</option>
-              <option value="Grade 7">Grade 7</option>
-              <option value="Grade 8">Grade 8</option>
-              <option value="Grade 9">Grade 9</option>
-              <option value="Grade 10">Grade 10</option>
-              <option value="Grade 11">Grade 11</option>
-              <option value="Grade 12">Grade 12</option>
-            </select>
-            <select
-              value={filterSubject}
-              onChange={(e) => {
-                setFilterSubject(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="px-3 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm min-w-[140px]"
-            >
-              <option value="">All Subjects</option>
-              {options?.subjects?.map((sub) => (
-                <option key={sub.id} value={sub.id.toString()}>
-                  {sub.name}
-                </option>
-              ))}
-            </select>
+            <div className="flex flex-col sm:flex-row gap-3 items-center">
+              <CustomSelect
+                value={filterGrade}
+                onChange={(val) => {
+                  setFilterGrade(val === 'all' ? '' : val);
+                  setCurrentPage(1);
+                }}
+                icon={<Filter className="w-4 h-4 text-slate-400" />}
+                options={[
+                  { value: 'all', label: 'All Grades' },
+                  { value: 'Grade 7', label: 'Grade 7' },
+                  { value: 'Grade 8', label: 'Grade 8' },
+                  { value: 'Grade 9', label: 'Grade 9' },
+                  { value: 'Grade 10', label: 'Grade 10' },
+                  { value: 'Grade 11', label: 'Grade 11' },
+                  { value: 'Grade 12', label: 'Grade 12' },
+                ]}
+              />
+              <CustomSelect
+                value={filterSubject}
+                onChange={(val) => {
+                  setFilterSubject(val === 'all' ? '' : val);
+                  setCurrentPage(1);
+                }}
+                icon={<BookOpen className="w-4 h-4 text-slate-400" />}
+                options={[
+                  { value: 'all', label: 'All Subjects' },
+                  ...(options?.subjects?.map(sub => ({ value: sub.id.toString(), label: sub.name })) || [])
+                ]}
+              />
+            </div>
           </div>
-          <div className="text-sm text-slate-500 font-medium shrink-0">
-            Total: <span className="text-slate-900 font-bold">{filteredStudents.length}</span> students
-          </div>
-        </div>
 
-        <div className="overflow-x-auto min-h-[400px]">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-100 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                <th className="px-6 py-4">Student</th>
-                <th className="px-6 py-4">ID Number</th>
-                <th className="px-6 py-4">Grade & Section</th>
-                <th className="px-6 py-4">Subjects Assigned</th>
-                <th className="px-6 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+          <div className="overflow-x-auto min-h-[400px]">
+            <table className="w-full text-left">
+              <thead className="text-[11px] text-[#94a3b8] uppercase font-bold tracking-wider border-b border-slate-100 bg-slate-50/50">
+                <tr>
+                  <th className="px-8 py-5">STUDENT</th>
+                  <th className="px-8 py-5">ID NUMBER</th>
+                  <th className="px-8 py-5">GRADE & SECTION</th>
+                  <th className="px-8 py-5">SUBJECTS ASSIGNED</th>
+                  <th className="px-8 py-5 text-right">ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
               {isLoadingStudents ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
-                    <div className="flex flex-col items-center justify-center">
-                      <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin mb-2"></div>
-                      Loading students...
-                    </div>
-                  </td>
-                </tr>
-              ) : paginatedStudents.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
-                    <div className="flex flex-col items-center justify-center">
-                      <User className="w-12 h-12 text-slate-200 mb-3" />
-                      <p className="text-slate-600 font-medium">No students found.</p>
-                      <p className="text-sm">Try adjusting your search or add a new student.</p>
+                  <td colSpan={5} className="px-8 py-24 text-center">
+                    <div className="flex flex-col items-center justify-center text-slate-400">
+                      <Users className="w-12 h-12 mb-4 opacity-20" />
+                      <h3 className="text-lg font-bold text-slate-700">No students found</h3>
+                      <p className="text-sm mt-1">Try adjusting your search or add a new student.</p>
                     </div>
                   </td>
                 </tr>
               ) : (
                 paginatedStudents.map((student) => (
-                  <tr key={student.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        {student.photo_url ? (
-                          <img 
-                            src={getImageUrl(student.photo_url)} 
-                            alt={student.name} 
-                            className="w-10 h-10 rounded-full object-cover shrink-0 border border-slate-200" 
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-700 font-bold shrink-0">
-                            {student.name.charAt(0).toUpperCase()}
+                  <tr key={student.id} className="hover:bg-[#f8fafc] transition-colors">
+                    <td className="px-8 py-4">
+                      <div className="flex items-center gap-4">
+                        <div className="relative">
+                          <div className="w-11 h-11 rounded-full flex items-center justify-center font-bold text-[15px] bg-slate-100 text-slate-600">
+                            {student.photo_url ? (
+                              /* eslint-disable-next-line @next/next/no-img-element */
+                              <img 
+                                src={getImageUrl(student.photo_url)} 
+                                alt={student.name} 
+                                className="w-full h-full rounded-full object-cover border border-slate-200" 
+                              />
+                            ) : student.name.split(' ').map(n=>n[0]).join('').toUpperCase().substring(0,2)}
                           </div>
-                        )}
+                        </div>
                         <div>
-                          <div className="font-bold text-slate-900">{student.name}</div>
-                          <div className="text-sm text-slate-500">{student.email}</div>
+                          <div className="font-bold text-[#0f172a] text-[14.5px]">{student.name}</div>
+                          <div className="text-[13px] text-slate-500">{student.email}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-medium font-mono">
+                    <td className="px-8 py-4 text-slate-500">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-medium font-mono border border-slate-200">
                         <Hash className="w-3.5 h-3.5 text-slate-400" />
                         {student.id_number || 'N/A'}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-8 py-4">
                       {student.student_profile?.section ? (
                         <div className="flex flex-col">
-                          <span className="font-bold text-slate-700">
+                          <span className="font-bold text-[#0f172a] text-[14.5px]">
                             {student.student_profile.grade}
                           </span>
-                          <span className="text-sm text-slate-500 flex items-center gap-1">
+                          <span className="text-[13px] text-slate-500 flex items-center gap-1">
                             {student.student_profile.section.name}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-slate-400 italic text-sm">Not assigned</span>
+                        <span className="text-slate-400 italic text-[13px]">Not assigned</span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-wrap gap-1.5 max-w-[250px]">
-                        {student.subjects && student.subjects.length > 0 ? (
-                          student.subjects.map((sub) => (
-                            <span key={sub.id} className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 rounded text-[11px] font-semibold">
+                    <td className="px-8 py-4">
+                      {student.subjects && student.subjects.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {student.subjects.map((sub) => (
+                            <span key={sub.id} className="bg-red-50 text-red-700 px-2 py-0.5 rounded text-[12px] font-medium border border-red-100">
                               {sub.name}
                             </span>
-                          ))
-                        ) : (
-                          <span className="text-slate-400 text-xs">None</span>
-                        )}
-                      </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 italic text-[13px]">None</span>
+                      )}
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-8 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleOpenModal(student)}
-                          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Edit"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
+                        <Link href={`/teacher/students/${student.id}/edit`}>
+                          <Button
+                            variant="outline"
+                            className="w-9 h-9 p-0 rounded-lg border-slate-200 text-slate-500 hover:text-blue-600 hover:bg-blue-50"
+                            title="Edit Student"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                        </Link>
+                        <Button
+                          variant="outline"
+                          className="w-9 h-9 p-0 rounded-lg border-slate-200 text-slate-500 hover:text-red-600 hover:bg-red-50"
                           onClick={() => handleDelete(student.id, student.name)}
-                          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Delete"
-                          disabled={deleteMutation.isPending}
+                          title="Delete Student"
                         >
                           <Trash2 className="w-4 h-4" />
-                        </button>
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -373,239 +293,37 @@ export default function ManageStudentsPage() {
             </tbody>
           </table>
         </div>
-
-        {/* Pagination Controls */}
-        {totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
-            <div className="text-sm text-slate-500">
-              Showing <span className="font-medium text-slate-900">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
-              <span className="font-medium text-slate-900">{Math.min(currentPage * itemsPerPage, filteredStudents.length)}</span> of{' '}
-              <span className="font-medium text-slate-900">{filteredStudents.length}</span> results
-            </div>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="p-2 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              
-              {Array.from({ length: totalPages }).map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setCurrentPage(i + 1)}
-                  className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
-                    currentPage === i + 1 
-                      ? 'bg-red-700 text-white' 
-                      : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  {i + 1}
-                </button>
-              ))}
-
-              <button
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className="p-2 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Add/Edit Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={closeModal}></div>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl relative z-10 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-            <form onSubmit={handleSubmit} className="p-6">
-              <div className="mb-6">
-                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                  <GraduationCap className="w-5 h-5 text-red-600" />
-                  {editingStudent ? 'Edit Student Details' : 'Add New Student'}
-                </h2>
-                <p className="text-sm text-slate-500 mt-1">
-                  Fill in the student&apos;s information and assign them to a section or subjects.
-                </p>
-              </div>
-
-              {saveMutation.isError && (
-                <div className="mb-6 p-4 bg-red-50 text-red-700 text-sm font-medium rounded-lg flex items-start gap-2">
-                  <AlertCircle className="w-5 h-5 shrink-0" />
-                  <p>Failed to save student. Please check all fields and try again.</p>
-                </div>
-              )}
-
-              <div className="space-y-6">
-                {/* Basic Info */}
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 mb-3 border-b border-slate-100 pb-2">Basic Information</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Full Name *</label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-                        placeholder="Juan Dela Cruz"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Email Address *</label>
-                      <input
-                        type="email"
-                        required
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-                        placeholder="juan@student.com"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">ID Number (Optional)</label>
-                      <input
-                        type="text"
-                        value={formData.id_number}
-                        onChange={(e) => setFormData({ ...formData, id_number: e.target.value })}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 font-mono text-sm"
-                        placeholder="STU-2026-001"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Academic Assigments */}
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 mb-3 border-b border-slate-100 pb-2 flex items-center gap-1">
-                    <BookOpen className="w-4 h-4 text-blue-500" />
-                    Academic Assignment
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Grade Level *</label>
-                      <select
-                        required
-                        value={formData.grade}
-                        onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-                      >
-                        <option value="">Select Grade</option>
-                        <option value="Grade 7">Grade 7</option>
-                        <option value="Grade 8">Grade 8</option>
-                        <option value="Grade 9">Grade 9</option>
-                        <option value="Grade 10">Grade 10</option>
-                        <option value="Grade 11">Grade 11</option>
-                        <option value="Grade 12">Grade 12</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Section (Advisory) *</label>
-                      <select
-                        required
-                        value={formData.section_id}
-                        onChange={(e) => setFormData({ ...formData, section_id: e.target.value })}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-                      >
-                        <option value="">Select Section</option>
-                        {options?.sections?.map((section) => (
-                          <option key={section.id} value={section.id}>
-                            {section.name} {section.grade_level ? `(${section.grade_level})` : ''}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Assign Subjects (Optional)</label>
-                    <p className="text-xs text-slate-500 mb-3">Select the subjects you teach this student.</p>
-                    <div className="flex flex-wrap gap-2">
-                      {options?.subjects?.map((subject) => {
-                        const isSelected = formData.subjects.includes(subject.id);
-                        return (
-                          <button
-                            key={subject.id}
-                            type="button"
-                            onClick={() => toggleSubject(subject.id)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
-                              isSelected 
-                                ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm' 
-                                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
-                            }`}
-                          >
-                            {subject.name}
-                          </button>
-                        );
-                      })}
-                      {(!options?.subjects || options.subjects.length === 0) && (
-                        <p className="text-sm text-slate-400 italic">No subjects available in the system yet.</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Parent / Guardian */}
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 mb-3 border-b border-slate-100 pb-2 flex items-center gap-1">
-                    <Phone className="w-4 h-4 text-emerald-500" />
-                    Parent / Guardian Information
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Parent Name</label>
-                      <input
-                        type="text"
-                        value={formData.parent_name}
-                        onChange={(e) => setFormData({ ...formData, parent_name: e.target.value })}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-                        placeholder="Maria Dela Cruz"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Contact Number</label>
-                      <input
-                        type="text"
-                        value={formData.parent_phone}
-                        onChange={(e) => setFormData({ ...formData, parent_phone: e.target.value })}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-                        placeholder="09123456789"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-8 pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="px-5 py-2.5 rounded-xl font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
-                  disabled={saveMutation.isPending}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saveMutation.isPending}
-                  className="bg-red-700 hover:bg-red-800 text-white px-6 py-2.5 rounded-xl font-semibold shadow-sm transition-colors flex items-center gap-2 disabled:opacity-70"
-                >
-                  {saveMutation.isPending && (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  )}
-                  {editingStudent ? 'Save Changes' : 'Create Student'}
-                </button>
-              </div>
-            </form>
+        {/* Pagination */}
+        <div className="px-8 py-5 border-t border-slate-100 flex items-center justify-between bg-white">
+          <span className="text-[14px] text-slate-500 font-medium">
+            Showing {filteredStudents.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredStudents.length)} of {filteredStudents.length} results
+          </span>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              className="w-9 h-9 p-0 rounded-lg border-slate-200 text-slate-400 disabled:opacity-50"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <Button className="w-9 h-9 p-0 rounded-lg bg-slate-800 text-white font-bold hover:bg-slate-700">
+              {currentPage}
+            </Button>
+            <Button 
+              variant="outline" 
+              className="w-9 h-9 p-0 rounded-lg border-slate-200 text-slate-400 disabled:opacity-50"
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages || totalPages === 0}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
           </div>
         </div>
-      )}
-    </div>
+      </CardContent>
+    </Card>
+
+      </div>
     </DashboardLayout>
   );
 }

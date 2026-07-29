@@ -28,7 +28,6 @@ import {
   Moon,
   FileText,
   ChevronDown,
-  AlertTriangle,
   MapPinned,
   CalendarOff,
   UserMinus,
@@ -36,10 +35,12 @@ import {
   CalendarDays,
   ChevronLeft,
   CheckCircle2,
-  ArrowRight
+  ArrowRight,
+  LogIn,
+  Info
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import { PasswordAlert } from '@/components/ui/password-alert';
 import { useTheme } from 'next-themes';
 
@@ -53,6 +54,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [notifFilter, setNotifFilter] = useState<'all' | 'time_in' | 'time_out' | 'system'>('all');
+  const [selectedNotif, setSelectedNotif] = useState<any>(null);
   const { theme, setTheme } = useTheme();
   const queryClient = useQueryClient();
 
@@ -150,6 +153,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   });
 
   const unreadCount = notifications.filter((n: { read_at: string | null }) => n.read_at === null).length;
+  const filteredNotifications = notifFilter === 'all'
+    ? notifications
+    : notifications.filter((n: { data?: { type?: string } }) => n.data?.type === notifFilter);
 
   // Show toast for new unread notifications
   const prevUnreadRef = useRef(unreadCount);
@@ -204,6 +210,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const roleDisplay = user.roles[0]
     ? user.roles[0].split('-').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
     : 'User';
+  const notifBasePath = `/${user.roles[0] === 'super-admin' ? 'admin' : user.roles[0]}/notifications`;
 
   // Navigation structure based on image
   const mainNavigation = [
@@ -231,6 +238,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     ] : isAdmin ? [
       { name: 'Students', href: '/admin/students', icon: GraduationCap },
       { name: 'Teachers', href: '/admin/teachers', icon: Briefcase },
+      { name: 'Category Level', href: '/admin/category-level', icon: ClipboardList },
       { name: 'Photo Booth', href: '/admin/photobooth', icon: ScanFace }
     ] : isGuard ? [
       { name: 'Visitors', href: '/guard/visitors', icon: UserSquare }
@@ -321,7 +329,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
         
         {/* Navigation List */}
-        <nav className={`flex-1 py-4 space-y-8 ${sidebarCollapsed ? 'overflow-visible' : 'overflow-y-auto overflow-x-hidden'} [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]`}>
+        <nav className="flex-1 py-4 space-y-8 overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           
           <div className="space-y-1 mt-2">
             <p className={`px-8 text-[10px] font-bold tracking-widest text-white/40 mb-3 mt-4 uppercase ${sidebarCollapsed ? 'text-center px-0 text-[8px]' : ''}`}>
@@ -356,7 +364,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Bottom Support CTA & Profile */}
         <div className={`mt-auto flex flex-col p-4 ${sidebarCollapsed ? 'px-3' : ''}`}>
           
-          {user.roles[0] === 'admin' || user.roles[0] === 'super-admin' ? (
+          {(user.roles[0] === 'admin' || user.roles[0] === 'super-admin') && (
             <div 
               onClick={toggleMaintenance}
               className={`bg-[#510b10] rounded-xl p-3 flex items-center justify-between mb-4 shadow-sm cursor-pointer hover:bg-[#4a0a0e] transition-colors relative group overflow-visible ${sidebarCollapsed ? 'justify-center p-2' : ''}`}
@@ -383,32 +391,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               {sidebarCollapsed && (
                 <div className="absolute left-[calc(100%+16px)] top-1/2 -translate-y-1/2 px-3 py-2 bg-slate-800 text-white text-xs font-bold rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-[100]">
                   Maintenance: {isMaintenanceMode ? 'ON' : 'OFF'}
-                  <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className={`bg-[#510b10] rounded-xl p-3 flex items-center justify-between mb-4 shadow-sm cursor-pointer hover:bg-[#4a0a0e] transition-colors relative group overflow-visible ${sidebarCollapsed ? 'justify-center p-2' : ''}`}>
-              <div className="flex items-center gap-3">
-                 <div className="relative">
-                   <div className="w-10 h-10 rounded-full bg-[#3d080c] flex items-center justify-center text-white font-bold text-[13px] shrink-0">
-                     {initials}
-                   </div>
-                   <div className="absolute bottom-0 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-[#510b10] rounded-full"></div>
-                 </div>
-                 {!sidebarCollapsed && (
-                   <div className="flex flex-col text-left overflow-hidden whitespace-nowrap">
-                     <span className="text-[13px] font-bold text-white leading-tight truncate max-w-[120px]">{user.name}</span>
-                     <span className="text-[11px] text-white/60 font-medium capitalize mt-0.5">{roleDisplay}</span>
-                   </div>
-                 )}
-              </div>
-              {!sidebarCollapsed && <ChevronDown className="w-4 h-4 text-white/40 shrink-0" />}
-              
-              {/* Tooltip for collapsed state */}
-              {sidebarCollapsed && (
-                <div className="absolute left-[calc(100%+16px)] top-1/2 -translate-y-1/2 px-3 py-2 bg-slate-800 text-white text-xs font-bold rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-[100]">
-                  {user.name}
                   <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
                 </div>
               )}
@@ -460,82 +442,207 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
           <div className="flex items-center space-x-6">
             <div className="flex items-center space-x-3">
-               {/* Notification Modal */}
-               <Dialog>
-                 <DialogTrigger className="relative p-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all duration-300 cursor-pointer">
-                   <Bell className="w-7 h-7" />
-                   {unreadCount > 0 && (
-                     <span className="absolute top-1.5 right-1.5 flex items-center justify-center w-5 h-5 bg-red-500 border-2 border-white dark:border-slate-900 rounded-full text-[10px] font-bold text-white leading-none">
-                       {unreadCount}
-                     </span>
-                   )}
-                 </DialogTrigger>
-                 <DialogContent 
-                   closeClassName="top-6 right-6 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full"
-                   className="sm:max-w-[440px] gap-0 rounded-[28px] overflow-hidden p-0 border-none shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)] dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100"
-                 >
-                   <DialogHeader className="p-8 pb-6 border-b border-slate-100 m-0">
-                     <div className="flex items-start gap-4">
-                       <div className="w-[52px] h-[52px] rounded-full bg-red-50 flex items-center justify-center shrink-0">
-                         <Bell className="w-[24px] h-[24px] text-[#7a1315]" strokeWidth={2} />
-                       </div>
-                       <div className="flex flex-col items-start mt-1">
-                         <DialogTitle className="text-xl font-extrabold text-slate-900">Notifications</DialogTitle>
-                         <DialogDescription className="text-sm font-medium text-slate-500 mt-0.5">
-                           Stay updated with the latest alerts.
-                         </DialogDescription>
-                       </div>
-                     </div>
-                   </DialogHeader>
-                   <div className="flex flex-col px-8 py-2 max-h-[400px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                      {notifications.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-10 pb-12 text-slate-400">
-                          <div className="relative mb-6">
-                            <div className="w-[120px] h-[120px] rounded-full bg-[#fff5f5] flex items-center justify-center">
-                              <Bell className="w-[56px] h-[56px] text-[#7a1315]" strokeWidth={1.5} />
-                            </div>
-                            <div className="absolute bottom-2 right-2 w-[34px] h-[34px] bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100">
-                              <CheckCircle2 className="w-[22px] h-[22px] text-[#7a1315]" strokeWidth={2.5} />
-                            </div>
+                {/* Notification Modal */}
+                <Dialog>
+                  <DialogTrigger className="relative p-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all duration-300 cursor-pointer">
+                    <Bell className="w-7 h-7" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-1.5 right-1.5 flex items-center justify-center w-5 h-5 bg-red-500 border-2 border-white dark:border-slate-900 rounded-full text-[10px] font-bold text-white leading-none">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </DialogTrigger>
+                  <DialogContent 
+                    closeClassName="top-6 right-6 text-slate-400 hover:text-slate-600 hover:bg-slate-100 bg-slate-50 rounded-full w-8 h-8 flex items-center justify-center border-none transition-colors"
+                    className="sm:max-w-[720px] gap-0 rounded-[32px] overflow-hidden p-0 border-none shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)] dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100 bg-white"
+                  >
+                    <DialogHeader className="px-8 pt-8 pb-5 border-none m-0">
+                      <div className="flex items-center gap-4">
+                        <div className="w-[64px] h-[64px] rounded-full bg-[#fff5f5] flex items-center justify-center shrink-0">
+                          <div className="relative">
+                            <Bell className="w-[28px] h-[28px] text-[#7a1315]" strokeWidth={2.5} />
+                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-[#fff5f5]"></div>
                           </div>
-                          <p className="font-extrabold text-[22px] text-slate-900 mb-2">No new notifications</p>
-                          <p className="text-[15px] font-medium text-slate-500">You&apos;re all caught up!</p>
                         </div>
-                      ) : (
-                        <div className="flex flex-col gap-3 py-2">
-                          {notifications.map((notification: { id: string; read_at: string | null; type?: string; data?: { type?: string; title?: string; message?: string }; created_at: string }) => (
-                            <div 
-                              key={notification.id} 
-                              onClick={() => !notification.read_at && markAsReadMutation.mutate(notification.id)}
-                              className={`shrink-0 p-4 rounded-xl border flex gap-4 relative overflow-hidden group hover:shadow-md transition-shadow cursor-pointer ${notification.read_at ? 'bg-white hover:bg-slate-50 border-slate-200' : 'bg-red-50 border-red-100'}`}
-                            >
-                              {!notification.read_at && <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500 rounded-l-xl"></div>}
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${notification.data?.type === 'alert' || notification.type === 'alert' ? 'bg-red-100 text-red-600' : 'bg-blue-50 text-blue-600'}`}>
-                                {notification.data?.type === 'alert' ? <AlertTriangle className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
-                              </div>
-                              <div className="flex-1">
-                                <div className="flex justify-between items-start mb-1">
-                                  <p className={`font-bold text-sm ${notification.read_at ? 'text-slate-800' : 'text-red-800'}`}>{notification.data?.title || 'Notification'}</p>
-                                  <span className={`text-[10px] font-medium ${notification.read_at ? 'text-slate-400' : 'text-red-500 bg-red-100 px-2 py-0.5 rounded'}`}>
-                                    {new Date(notification.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                  </span>
-                                </div>
-                                <p className={`text-xs font-medium leading-relaxed ${notification.read_at ? 'text-slate-500' : 'text-red-600/90'}`}>{notification.data?.message || 'You have a new message.'}</p>
-                              </div>
-                            </div>
-                          ))}
+                        <div className="flex flex-col items-start mt-1">
+                          <DialogTitle className="text-[24px] font-black text-slate-900 tracking-tight">Notifications</DialogTitle>
+                          <DialogDescription className="text-[14px] font-medium text-slate-500 mt-0.5">
+                            Stay updated with the latest alerts.
+                          </DialogDescription>
                         </div>
-                      )}
-                   </div>
-                    <DialogFooter className="m-0 rounded-none sm:justify-center border-t border-slate-100 p-6 bg-[#f8fafc]/80">
-                      <Link href="/admin/notifications" className="flex items-center justify-center gap-2 text-[15px] font-extrabold text-[#7a1315] hover:text-[#5a0d0f] transition-colors w-full">
-                        <Bell className="w-4 h-4" strokeWidth={2.5} />
-                        View all notifications
-                        <ArrowRight className="w-4 h-4 ml-0.5" strokeWidth={2.5} />
+                      </div>
+                    </DialogHeader>
+
+                    {/* Filters Row */}
+                    <div className="px-8 py-4 flex items-center justify-between border-y border-slate-100 bg-white">
+                      <div className="flex items-center gap-2">
+                        {[
+                          { key: 'all', label: 'All', count: notifications.length },
+                          { key: 'time_in', label: 'Time In', count: notifications.filter((n: { data?: { type?: string } }) => n.data?.type === 'time_in').length },
+                          { key: 'time_out', label: 'Time Out', count: notifications.filter((n: { data?: { type?: string } }) => n.data?.type === 'time_out').length },
+                          { key: 'system', label: 'System', count: notifications.filter((n: { data?: { type?: string } }) => n.data?.type === 'system').length },
+                        ].map((f) => (
+                          <button
+                            key={f.key}
+                            onClick={() => setNotifFilter(f.key as typeof notifFilter)}
+                            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-[10px] transition-all ${
+                              notifFilter === f.key
+                                ? 'bg-[#7a1315] text-white'
+                                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                            }`}
+                          >
+                            <span className="text-[12px] font-bold">{f.label}</span>
+                            <span className={`flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold ${
+                              notifFilter === f.key ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                            }`}>{f.count}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <button onClick={() => markAsReadMutation.mutate(undefined)} className="flex items-center gap-1.5 text-[12.5px] font-bold text-[#7a1315] hover:text-[#5a0d0f] transition-colors">
+                        <CheckCircle2 className="w-4 h-4" strokeWidth={2.5} />
+                        Mark all as read
+                      </button>
+                    </div>
+
+                    <div className="flex flex-col px-8 py-6 max-h-[440px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] space-y-7 bg-white">
+                       {filteredNotifications.length === 0 ? (
+                         <div className="flex flex-col items-center justify-center py-10 pb-12 text-slate-400">
+                           <div className="relative mb-6">
+                             <div className="w-[120px] h-[120px] rounded-full bg-[#fff5f5] flex items-center justify-center">
+                               <Bell className="w-[56px] h-[56px] text-[#7a1315]" strokeWidth={1.5} />
+                             </div>
+                             <div className="absolute bottom-2 right-2 w-[34px] h-[34px] bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100">
+                               <CheckCircle2 className="w-[22px] h-[22px] text-[#7a1315]" strokeWidth={2.5} />
+                             </div>
+                           </div>
+                           <p className="font-extrabold text-[22px] text-slate-900 mb-2">No new notifications</p>
+                           <p className="text-[15px] font-medium text-slate-500">You&apos;re all caught up!</p>
+                         </div>
+                       ) : (
+                         <>
+{[
+                              { 
+                                title: 'TODAY', 
+                                items: filteredNotifications.filter((n: { created_at: string }) => new Date(n.created_at).toDateString() === new Date().toDateString()) 
+                              },
+                              { 
+                                title: 'YESTERDAY', 
+                                items: filteredNotifications.filter((n: { created_at: string }) => {
+                                 const d = new Date(n.created_at);
+                                 const y = new Date(); y.setDate(y.getDate() - 1);
+                                 return d.toDateString() === y.toDateString();
+                               })
+                             },
+{ 
+                                title: 'EARLIER', 
+                                items: filteredNotifications.filter((n: { created_at: string }) => {
+                                 const d = new Date(n.created_at);
+                                 const y = new Date(); y.setDate(y.getDate() - 1);
+                                 return d < y && d.toDateString() !== new Date().toDateString() && d.toDateString() !== y.toDateString();
+                               })
+                             }
+                           ].map((group) => group.items.length > 0 && (
+                             <div key={group.title} className="space-y-3">
+                               <p className="text-[11px] font-bold text-slate-500 tracking-widest">{group.title}</p>
+                               <div className="space-y-3">
+                                 {group.items.map((notification: { id: string, read_at: string | null, created_at: string, data?: { title?: string, message?: string } }) => {
+                                   const isTimeIn = notification.data?.title?.includes('Time In');
+                                   const isTimeOut = notification.data?.title?.includes('Time Out');
+                                   const isSystem = notification.data?.title?.includes('System');
+                                   const isExcuse = notification.data?.title?.includes('Excuse');
+                                   
+                                   let IconToUse = Bell;
+                                   let iconClass = 'bg-blue-50 text-blue-600';
+                                   
+                                   if (isTimeIn) { IconToUse = LogIn; iconClass = 'bg-emerald-50 text-emerald-600'; }
+                                   else if (isTimeOut) { IconToUse = LogOut; iconClass = 'bg-amber-50 text-amber-600'; }
+                                   else if (isSystem) { IconToUse = ShieldCheck; iconClass = 'bg-purple-50 text-purple-600'; }
+                                   else if (isExcuse) { IconToUse = Info; iconClass = 'bg-blue-50 text-blue-600'; }
+
+                                   return (
+                                     <div 
+                                       key={notification.id} 
+                                       onClick={() => { setSelectedNotif(notification); if (!notification.read_at) markAsReadMutation.mutate(notification.id); }}
+                                       className="p-4 rounded-[1.25rem] border border-slate-100 bg-white flex items-center justify-between gap-4 shadow-[0_2px_15px_rgba(0,0,0,0.03)] cursor-pointer hover:border-slate-200 hover:shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all"
+                                     >
+                                       <div className="flex items-center gap-4">
+                                         <div className={`w-12 h-12 rounded-[14px] flex items-center justify-center shrink-0 ${iconClass}`}>
+                                           <IconToUse className="w-5 h-5" strokeWidth={2.5} />
+                                         </div>
+                                         <div className="flex flex-col">
+                                           <p className="text-[14px] font-bold text-slate-900 mb-0.5">{notification.data?.title || 'Notification'}</p>
+                                           <p className="text-[12px] font-medium text-slate-500">{notification.data?.message || 'You have a new message.'}</p>
+                                         </div>
+                                       </div>
+                                       <div className="flex items-center gap-2.5 shrink-0">
+                                         <span className="text-[11px] font-bold text-slate-500">
+                                           {group.title === 'YESTERDAY' ? `Yesterday, ` : group.title === 'EARLIER' ? `${new Date(notification.created_at).toLocaleDateString()} - ` : ''}
+                                           {new Date(notification.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                         </span>
+                                         <div className={`w-2 h-2 rounded-full ${notification.read_at ? 'bg-slate-300' : 'bg-red-500'}`} />
+                                       </div>
+                                     </div>
+                                   );
+                                 })}
+                               </div>
+                             </div>
+                           ))}
+                         </>
+                       )}
+                    </div>
+                    
+<div className="px-6 pb-6 bg-white">
+                      <Link href={notifBasePath} className="p-4 rounded-[20px] bg-red-50 hover:bg-red-100 border border-red-100 flex items-center justify-between transition-colors group">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-full bg-red-100 group-hover:bg-red-200 flex items-center justify-center shrink-0 transition-colors">
+                            <Bell className="w-5 h-5 text-[#7a1315]" />
+                          </div>
+                          <div className="flex flex-col">
+                            <p className="text-[14px] font-bold text-[#7a1315]">View all notifications</p>
+                            <p className="text-[12px] font-medium text-[#7a1315]/80">See full history and manage notifications</p>
+                          </div>
+                        </div>
+                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm shrink-0 group-hover:shadow transition-all">
+                          <ArrowRight className="w-5 h-5 text-[#7a1315]" />
+                        </div>
                       </Link>
-                    </DialogFooter>
-                 </DialogContent>
-               </Dialog>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                {/* Notification Detail Modal */}
+                <Dialog open={!!selectedNotif} onOpenChange={(open) => { if (!open) setSelectedNotif(null); }}>
+                  <DialogContent 
+                    closeClassName="top-5 right-5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full w-8 h-8 flex items-center justify-center border-none transition-colors"
+                    className="sm:max-w-[480px] rounded-[28px] overflow-hidden p-0 border-none shadow-[0_20px_60px_-15px_rgba(0,0,0,0.2)]"
+                  >
+                    {selectedNotif && (
+                      <div className="p-7">
+                        <div className="flex items-center gap-4 mb-6">
+                          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${
+                            selectedNotif.data?.type === 'time_in' ? 'bg-emerald-50 text-emerald-600' :
+                            selectedNotif.data?.type === 'time_out' ? 'bg-amber-50 text-amber-600' :
+                            selectedNotif.data?.type === 'system' ? 'bg-purple-50 text-purple-600' :
+                            'bg-blue-50 text-blue-600'
+                          }`}>
+                            {selectedNotif.data?.type === 'time_in' ? <LogIn className="w-6 h-6" /> :
+                             selectedNotif.data?.type === 'time_out' ? <LogOut className="w-6 h-6" /> :
+                             selectedNotif.data?.type === 'system' ? <ShieldCheck className="w-6 h-6" /> :
+                             <Bell className="w-6 h-6" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-[18px] font-bold text-slate-900 tracking-tight truncate">{selectedNotif.data?.title || 'Notification'}</h3>
+                            <p className="text-[13px] font-medium text-slate-400 mt-0.5">{new Date(selectedNotif.created_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                          </div>
+                          <div className={`w-3 h-3 rounded-full shrink-0 ${selectedNotif.read_at ? 'bg-slate-300' : 'bg-red-500'}`} />
+                        </div>
+                        <div className="bg-slate-50 rounded-2xl p-5">
+                          <p className="text-[14px] text-slate-700 leading-relaxed whitespace-pre-wrap">{selectedNotif.data?.message || 'No additional details.'}</p>
+                        </div>
+                      </div>
+                    )}
+                  </DialogContent>
+                </Dialog>
 
                {/* Theme Toggle */}
                <button 

@@ -10,8 +10,14 @@ class NotificationController extends Controller
     {
         $perPage = min((int) $request->get('per_page', 50), 100);
 
+        $query = $request->user()->notifications();
+
+        if ($type = $request->get('type')) {
+            $query->where('data->type', $type);
+        }
+
         return response()->json(
-            $request->user()->notifications()->paginate($perPage)
+            $query->paginate($perPage)
         );
     }
 
@@ -28,5 +34,21 @@ class NotificationController extends Controller
             $notification->markAsRead();
         }
         return response()->json(['message' => 'Notification marked as read.']);
+    }
+
+    public function destroy(Request $request, $id)
+    {
+        $notification = $request->user()->notifications()->where('id', $id)->first();
+        if ($notification) {
+            $notification->delete();
+        }
+        return response()->json(['message' => 'Notification deleted.']);
+    }
+
+    public function destroySelected(Request $request)
+    {
+        $request->validate(['ids' => 'required|array', 'ids.*' => 'string']);
+        $request->user()->notifications()->whereIn('id', $request->ids)->delete();
+        return response()->json(['message' => 'Selected notifications deleted.']);
     }
 }

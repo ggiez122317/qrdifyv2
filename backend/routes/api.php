@@ -43,6 +43,8 @@ $registerAuthenticatedRoutes = function () {
         Route::get('/', [NotificationController::class, 'index']);
         Route::post('/mark-as-read', [NotificationController::class, 'markAsRead']);
         Route::post('/{id}/mark-as-read', [NotificationController::class, 'markOneAsRead']);
+        Route::delete('/{id}', [NotificationController::class, 'destroy']);
+        Route::post('/delete-selected', [NotificationController::class, 'destroySelected']);
     });
 
     // Web Push Subscriptions
@@ -95,7 +97,7 @@ $registerAuthenticatedRoutes = function () {
 
         // Teacher Student Management
         Route::get('/teacher/students/options', [TeacherStudentController::class, 'options']);
-        Route::apiResource('teacher/students', TeacherStudentController::class)->except(['create', 'edit', 'show']);
+        Route::apiResource('teacher/students', TeacherStudentController::class)->except(['create', 'edit']);
     });
 
     /**
@@ -131,6 +133,9 @@ $registerAuthenticatedRoutes = function () {
      * Principal / Admin Endpoints
      */
     Route::middleware('role:super-admin|admin')->group(function () {
+        Route::apiResource('admin/grade-levels', \App\Http\Controllers\Admin\GradeLevelController::class);
+        Route::apiResource('admin/subjects', \App\Http\Controllers\Admin\SubjectController::class);
+
         Route::prefix('system')->group(function () {
             // Maintenance Mode
             Route::post('/maintenance', [\App\Http\Controllers\Api\SystemController::class, 'toggleMaintenance']);

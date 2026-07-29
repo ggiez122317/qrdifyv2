@@ -12,6 +12,7 @@ use App\Models\Subject;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage;
 
 class TeacherStudentController extends Controller
 {
@@ -54,36 +55,48 @@ class TeacherStudentController extends Controller
         $teacher = $request->user();
         
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'first_name' => 'nullable|string|max:255',
+            'last_name' => 'nullable|string|max:255',
+            'name' => 'nullable|string|max:255', // Legacy
             'email' => 'required|email|unique:users,email',
-            'id_number' => 'nullable|string|unique:users,id_number',
-            'grade' => 'required|string',
+            'lrn' => 'nullable|string|unique:users,id_number',
+            'id_number' => 'nullable|string|unique:users,id_number', // Legacy
+            'grade_level' => 'nullable|string',
+            'grade' => 'nullable|string', // Legacy
             'section_id' => 'required|exists:sections,id',
             'parent_name' => 'nullable|string',
             'parent_phone' => 'nullable|string',
             'subjects' => 'nullable|array',
             'subjects.*' => 'exists:subjects,id',
+            'photo_base64' => 'nullable|string'
         ]);
 
         DB::beginTransaction();
         try {
+            $photoUrl = $this->handlePhotoUpload($request, 'student');
+            
+            $name = $validated['name'] ?? trim(($validated['first_name'] ?? '') . ' ' . ($validated['last_name'] ?? ''));
+            $lrn = $validated['lrn'] ?? $validated['id_number'] ?? null;
+            $grade = $validated['grade_level'] ?? $validated['grade'] ?? null;
+
             // Create user
             $user = User::create([
-                'name' => $validated['name'],
+                'name' => $name,
                 'email' => $validated['email'],
-                'id_number' => $validated['id_number'],
+                'id_number' => $lrn,
                 'password' => Hash::make('password123'),
                 'needs_password_change' => true,
+                'photo_url' => $photoUrl,
             ]);
             $user->assignRole('student');
 
             // Create profile
             StudentProfile::create([
                 'user_id' => $user->id,
-                'grade' => $validated['grade'],
+                'grade' => $grade,
                 'section_id' => $validated['section_id'],
-                'parent_name' => $validated['parent_name'],
-                'parent_phone' => $validated['parent_phone'],
+                'parent_name' => $validated['parent_name'] ?? null,
+                'parent_phone' => $validated['parent_phone'] ?? null,
                 'teacher_id' => $teacher->id, // legacy field
             ]);
 
@@ -103,6 +116,22 @@ class TeacherStudentController extends Controller
     }
 
     /**
+     * Show a single student.
+     */
+    public function show(User $student)
+    {
+        if (!$student->hasRole('student')) {
+            return response()->json(['message' => 'User is not a student'], 400);
+        }
+
+        $student->load(['studentProfile.section', 'subjects' => function($q) {
+            $q->where('student_subject.teacher_id', request()->user()->id);
+        }]);
+
+        return response()->json($student);
+    }
+
+    /**
      * Update an existing student.
      */
     public function update(Request $request, User $student)
@@ -115,30 +144,46 @@ class TeacherStudentController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'first_name' => 'nullable|string|max:255',
+            'last_name' => 'nullable|string|max:255',
+            'name' => 'nullable|string|max:255',
             'email' => ['required', 'email', Rule::unique('users')->ignore($student->id)],
+            'lrn' => ['nullable', 'string', Rule::unique('users')->ignore($student->id)],
             'id_number' => ['nullable', 'string', Rule::unique('users')->ignore($student->id)],
-            'grade' => 'required|string',
+            'grade_level' => 'nullable|string',
+            'grade' => 'nullable|string',
             'section_id' => 'required|exists:sections,id',
             'parent_name' => 'nullable|string',
             'parent_phone' => 'nullable|string',
             'subjects' => 'nullable|array',
             'subjects.*' => 'exists:subjects,id',
+            'photo_base64' => 'nullable|string'
         ]);
 
         DB::beginTransaction();
         try {
-            $student->update([
-                'name' => $validated['name'],
+            $photoUrl = $this->handlePhotoUpload($request, 'student');
+            
+            $name = $validated['name'] ?? trim(($validated['first_name'] ?? '') . ' ' . ($validated['last_name'] ?? '')) ?: $student->name;
+            $lrn = $validated['lrn'] ?? $validated['id_number'] ?? $student->id_number;
+            $grade = $validated['grade_level'] ?? $validated['grade'] ?? ($student->studentProfile->grade ?? null);
+
+            $updateData = [
+                'name' => $name,
                 'email' => $validated['email'],
-                'id_number' => $validated['id_number'],
-            ]);
+                'id_number' => $lrn,
+            ];
+            if ($photoUrl) {
+                $updateData['photo_url'] = $photoUrl;
+            }
+
+            $student->update($updateData);
 
             $student->studentProfile()->update([
-                'grade' => $validated['grade'],
+                'grade' => $grade,
                 'section_id' => $validated['section_id'],
-                'parent_name' => $validated['parent_name'],
-                'parent_phone' => $validated['parent_phone'],
+                'parent_name' => $validated['parent_name'] ?? null,
+                'parent_phone' => $validated['parent_phone'] ?? null,
             ]);
 
             // Sync subjects for this teacher ONLY
@@ -173,17 +218,35 @@ class TeacherStudentController extends Controller
         return response()->json(['message' => 'Student deleted successfully']);
     }
 
-    /**
-     * Get options for sections and subjects for the forms.
-     */
     public function options()
     {
-        $sections = Section::orderBy('name')->get();
-        $subjects = Subject::orderBy('name')->get();
-
+        $teacher = request()->user();
+        
+        $sections = Section::where('adviser_id', $teacher->id)
+            ->select('id', 'name', 'grade_level')
+            ->get();
+            
+        $subjects = Subject::select('id', 'name')->get();
+        
         return response()->json([
             'sections' => $sections,
-            'subjects' => $subjects,
+            'subjects' => $subjects
         ]);
+    }
+
+    /**
+     * Handle base64 photo upload.
+     */
+    private function handlePhotoUpload(Request $request, string $prefix): ?string
+    {
+        if (!$request->filled('photo_base64')) {
+            return null;
+        }
+
+        $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $request->photo_base64));
+        $filename = "{$prefix}_" . time() . '_' . uniqid() . '.jpg';
+        Storage::disk('public')->put('photos/' . $filename, $imageData);
+
+        return '/storage/photos/' . $filename;
     }
 }

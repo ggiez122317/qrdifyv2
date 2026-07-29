@@ -6,18 +6,15 @@ use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\StudentProfile;
 use App\Models\TeacherProfile;
-use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        $password = Hash::make('password');
-
         // 1. Super Admin
         $superAdmin = User::firstOrCreate(
             ['email' => 'admin@school.com'],
-            ['name' => 'Super Admin', 'password' => $password]
+            ['name' => 'Super Admin', 'password' => 'password']
         );
         if (!$superAdmin->hasRole('super-admin')) {
             $superAdmin->assignRole('super-admin');
@@ -26,7 +23,7 @@ class UserSeeder extends Seeder
         // 2. Principal
         $principal = User::firstOrCreate(
             ['email' => 'principal@school.com'],
-            ['name' => 'Principal John', 'password' => $password]
+            ['name' => 'Principal John', 'password' => 'password']
         );
         if (!$principal->hasRole('principal')) {
             $principal->assignRole('principal');
@@ -38,7 +35,7 @@ class UserSeeder extends Seeder
             [
                 'name' => 'Teacher Mary',
                 'id_number' => '200001',
-                'password' => $password,
+                'password' => 'password',
             ]
         );
         if (!$teacher->hasRole('teacher')) {
@@ -52,7 +49,7 @@ class UserSeeder extends Seeder
         // 4. Guard
         $guard = User::firstOrCreate(
             ['email' => 'guard@school.com'],
-            ['name' => 'Guard Bob', 'password' => $password]
+            ['name' => 'Guard Bob', 'password' => 'password']
         );
         if (!$guard->hasRole('guard')) {
             $guard->assignRole('guard');
@@ -64,7 +61,7 @@ class UserSeeder extends Seeder
             [
                 'name' => 'Student Alex',
                 'id_number' => '100001',
-                'password' => $password,
+                'password' => 'password',
             ]
         );
         if (!$student->hasRole('student')) {

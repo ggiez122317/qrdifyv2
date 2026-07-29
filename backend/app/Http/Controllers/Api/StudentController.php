@@ -44,7 +44,7 @@ class StudentController extends Controller
         $perPage = min((int) $request->get('per_page', 50), 100);
 
         $query = User::students()
-            ->with('student_profile:id,user_id,grade,section,parent_name,parent_phone,teacher_id')
+            ->with('studentProfile:id,user_id,grade,section,parent_name,parent_phone,teacher_id')
             ->select('id', 'name', 'email', 'id_number', 'photo_url');
 
         // Search filter
@@ -121,19 +121,26 @@ class StudentController extends Controller
      */
     public function show($id): JsonResponse
     {
-        $student = User::students()
-            ->with('student_profile')
-            ->findOrFail($id);
+        try {
+            $student = User::students()
+                ->with('studentProfile')
+                ->findOrFail($id);
 
-        return response()->json([
-            'id'              => $student->id,
-            'name'            => $student->name,
-            'lrn'             => $student->id_number,
-            'email'           => $student->email,
-            'status'          => 'enrolled',
-            'photo_url'       => $student->photo_url,
-            'student_profile' => $student->student_profile,
-        ]);
+            return response()->json([
+                'id'              => $student->id,
+                'name'            => $student->name,
+                'lrn'             => $student->id_number,
+                'email'           => $student->email,
+                'status'          => 'enrolled',
+                'photo_url'       => $student->photo_url,
+                'student_profile' => $student->studentProfile,
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['message' => 'Student not found.'], 404);
+        } catch (\Throwable $e) {
+            logger()->error('Error fetching student', ['id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error fetching student.'], 500);
+        }
     }
 
     /**
