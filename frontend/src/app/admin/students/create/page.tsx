@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,6 +10,17 @@ import { ChevronLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { getImageUrl } from '@/lib/utils';
+
+interface Teacher {
+  id: number;
+  name: string;
+  photo_url?: string;
+  teacher_profile?: {
+    position?: string;
+    subject?: string;
+  };
+}
 
 export default function CreateStudentPage() {
   const router = useRouter();
@@ -17,29 +28,43 @@ export default function CreateStudentPage() {
     first_name: '',
     last_name: '',
     email: '',
-    lrn: '',
+    lrn: '132019240057',
     grade_level: '',
     section: '',
     parent_name: '',
     parent_phone: '',
-    photo_base64: ''
+    photo_base64: '',
+    subjects: [] as number[],
+    teacher_id: null as number | null
   });
   
+  const [gradeLevels, setGradeLevels] = useState<{ id: number; name: string }[]>([]);
+  const [sections, setSections] = useState<{ id: number; name: string }[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [teacherSearch, setTeacherSearch] = useState('');
+  const [isTeacherDropdownOpen, setIsTeacherDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    api.get('/api/grade-levels').then(r => setGradeLevels(r.data));
+    api.get('/api/admin/sections/list-all').then(r => setSections(r.data));
+    api.get('/api/teachers').then(r => setTeachers(r.data.data || r.data));
+  }, []);
+
   const [activeSide, setActiveSide] = useState<'front' | 'back'>('front');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value
     }));
   };
 
-  // Compute a structured user object for the ID Preview
   const previewUser = {
     name: `${formData.first_name} ${formData.last_name}`.trim() || 'Juan Dela Cruz',
     email: formData.email,
     lrn: formData.lrn,
+    photo_url: null as string | null,
     student_profile: {
       grade_level: formData.grade_level,
       section: formData.section,
@@ -122,17 +147,97 @@ export default function CreateStudentPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-3">
                     <Label htmlFor="lrn" className="text-sm font-semibold dark:text-slate-300">Learner Reference Number (LRN) <span className="text-red-500">*</span></Label>
-                    <Input id="lrn" name="lrn" value={formData.lrn} onChange={handleChange} onFocus={() => setActiveSide('front')} required placeholder="12-digit LRN" className="bg-slate-50 dark:bg-[#0f1115] dark:border-white/10 dark:text-white h-12 text-base" />
+                    <Input id="lrn" name="lrn" value={formData.lrn} readOnly className="bg-slate-100 text-slate-500 cursor-not-allowed dark:bg-[#0f1115] dark:border-white/10 dark:text-white h-12 text-base font-medium" />
                   </div>
                   
                   <div className="space-y-3">
                     <Label htmlFor="grade_level" className="text-sm font-semibold dark:text-slate-300">Grade Level <span className="text-red-500">*</span></Label>
-                    <Input id="grade_level" name="grade_level" value={formData.grade_level} onChange={handleChange} onFocus={() => setActiveSide('front')} required placeholder="e.g. Grade 12" className="bg-slate-50 dark:bg-[#0f1115] dark:border-white/10 dark:text-white h-12 text-base" />
+                    <select
+                      id="grade_level"
+                      name="grade_level"
+                      value={formData.grade_level}
+                      onChange={handleChange}
+                      onFocus={() => setActiveSide('front')}
+                      required
+                      className="flex h-12 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-[#7a1315]/20 focus:border-[#7a1315]/30 dark:border-white/10 dark:bg-[#0f1115] dark:text-white"
+                    >
+                      <option value="">Select Grade Level</option>
+                      {gradeLevels.map(gl => (
+                        <option key={gl.id} value={gl.name}>{gl.name}</option>
+                      ))}
+                    </select>
                   </div>
                   
                   <div className="space-y-3">
                     <Label htmlFor="section" className="text-sm font-semibold dark:text-slate-300">Section <span className="text-red-500">*</span></Label>
-                    <Input id="section" name="section" value={formData.section} onChange={handleChange} onFocus={() => setActiveSide('front')} required placeholder="e.g. STEM A" className="bg-slate-50 dark:bg-[#0f1115] dark:border-white/10 dark:text-white h-12 text-base" />
+                    <select
+                      id="section"
+                      name="section"
+                      value={formData.section}
+                      onChange={handleChange}
+                      onFocus={() => setActiveSide('front')}
+                      required
+                      className="flex h-12 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-[#7a1315]/20 focus:border-[#7a1315]/30 dark:border-white/10 dark:bg-[#0f1115] dark:text-white"
+                    >
+                      <option value="">Select Section</option>
+                      {sections.map(sec => (
+                        <option key={sec.id} value={sec.name}>{sec.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-3 md:col-span-2 mt-2 relative">
+                    <Label className="text-sm font-semibold dark:text-slate-300">Assign Subject Teacher (Optional)</Label>
+                    <p className="text-xs text-slate-500 mb-2">Search and select a teacher for this student.</p>
+                    <div className="relative">
+                      <Input 
+                        placeholder="Type teacher name..." 
+                        value={teacherSearch}
+                        onChange={(e) => {
+                          setTeacherSearch(e.target.value);
+                          setIsTeacherDropdownOpen(true);
+                        }}
+                        onFocus={() => {
+                          setIsTeacherDropdownOpen(true);
+                          setActiveSide('front');
+                        }}
+                        className="bg-slate-50 dark:bg-[#0f1115] dark:border-white/10 dark:text-white h-12 text-base w-full"
+                      />
+                      {isTeacherDropdownOpen && (
+                        <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-[#161920] border border-slate-200 dark:border-white/10 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                          {teachers
+                            .filter(t => t.name.toLowerCase().includes(teacherSearch.toLowerCase()))
+                            .map(teacher => (
+                              <div 
+                                key={teacher.id}
+                                className="px-4 py-3 hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer flex items-center gap-3 border-b border-slate-100 dark:border-white/5 last:border-0"
+                                onClick={() => {
+                                  setFormData(prev => ({ ...prev, teacher_id: teacher.id }));
+                                  setTeacherSearch(teacher.name);
+                                  setIsTeacherDropdownOpen(false);
+                                }}
+                              >
+                                <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0 border border-slate-200 dark:border-white/10">
+                                  {teacher.photo_url ? (
+                                    <img src={getImageUrl(teacher.photo_url)} alt={teacher.name} className="w-full h-full object-cover" onError={(e) => e.currentTarget.style.display = 'none'} />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-xs font-bold text-slate-400">
+                                      {teacher.name.substring(0, 2).toUpperCase()}
+                                    </div>
+                                  )}
+                                </div>
+                                <div>
+                                  <div className="text-sm font-bold text-slate-800 dark:text-white">{teacher.name}</div>
+                                  <div className="text-xs text-slate-500 mt-0.5">{teacher.teacher_profile?.subject || teacher.teacher_profile?.position || 'Subject Teacher'}</div>
+                                </div>
+                              </div>
+                          ))}
+                          {teachers.filter(t => t.name.toLowerCase().includes(teacherSearch.toLowerCase())).length === 0 && (
+                            <div className="px-4 py-3 text-sm text-slate-500 text-center">No teachers found</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
-import { Bell, CheckCircle2, ArrowLeft, Inbox, LogIn, LogOut, ShieldCheck, Trash2 } from 'lucide-react';
+import { Bell, CheckCircle2, Inbox, LogIn, LogOut, Settings, ChevronRight, Layers, ShieldCheck, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -106,12 +106,12 @@ export default function NotificationsPage() {
     return `${days}d`;
   };
 
-  const getTypeIcon = (type?: string) => {
+  const getTypeIcon = (type?: string, isActive?: boolean) => {
     switch (type) {
-      case 'time_in': return <LogIn className="w-[18px] h-[18px] text-emerald-600" />;
-      case 'time_out': return <LogOut className="w-[18px] h-[18px] text-amber-600" />;
-      case 'system': return <ShieldCheck className="w-[18px] h-[18px] text-purple-600" />;
-      default: return <Bell className="w-[18px] h-[18px] text-blue-600" />;
+      case 'time_in': return <LogIn className={`w-[18px] h-[18px] ${isActive ? 'text-white' : 'text-emerald-600'}`} />;
+      case 'time_out': return <LogOut className={`w-[18px] h-[18px] ${isActive ? 'text-white' : 'text-amber-500'}`} />;
+      case 'system': return <Settings className={`w-[18px] h-[18px] ${isActive ? 'text-white' : 'text-purple-600'}`} />;
+      default: return <Layers className={`w-[18px] h-[18px] ${isActive ? 'text-white' : 'text-slate-500'}`} />;
     }
   };
 
@@ -136,63 +136,46 @@ export default function NotificationsPage() {
       <div className="max-w-3xl mx-auto px-4 py-8 md:py-12">
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.back()}
-              className="w-9 h-9 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-100 flex items-center justify-center transition-colors"
-            >
-              <ArrowLeft className="w-[18px] h-[18px] text-slate-500" />
-            </button>
-            <div>
-              <h1 className="text-lg font-bold text-slate-900 tracking-tight">Notifications</h1>
-              <p className="text-[13px] text-slate-400 font-medium">
-                {unread.length > 0 ? `${unread.length} unread` : 'All read'}
-              </p>
-            </div>
+        <div className="flex items-center gap-4 mb-8">
+          <div className="w-14 h-14 rounded-2xl bg-white border border-slate-100 shadow-sm flex items-center justify-center shrink-0">
+            <Bell className="w-6 h-6 text-slate-700" />
           </div>
-          <div className="flex items-center gap-2">
-            {someSelected && (
-              <button
-                onClick={() => deleteMutation.mutate(Array.from(selectedIds))}
-                disabled={deleteMutation.isPending}
-                className="flex items-center gap-1.5 px-3.5 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl text-rose-600 text-[12px] font-bold transition-colors disabled:opacity-40"
-              >
-                <Trash2 className="w-4 h-4" />
-                Delete ({selectedIds.size})
-              </button>
-            )}
-            {unread.length > 0 && (
-              <button
-                onClick={() => markAsReadMutation.mutate(undefined)}
-                disabled={markAsReadMutation.isPending}
-                className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-100 rounded-xl text-blue-600 text-[12px] font-bold transition-colors disabled:opacity-40"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                Mark all read
-              </button>
-            )}
+          <div>
+            <h1 className="text-[22px] font-bold text-slate-900 tracking-tight mb-0.5">Notifications</h1>
+            <p className="text-[14px] text-slate-500">
+              {unread.length > 0 ? `${unread.length} unread` : 'All read'}
+            </p>
           </div>
         </div>
 
-        {/* Filter Tabs */}
-        <div className="flex items-center gap-2 mb-6">
-          {filterTabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => { setFilterType(tab.key); setSelectedIds(new Set()); }}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-[10px] transition-all text-[12px] font-bold ${
-                filterType === tab.key
-                  ? 'bg-[#7a1315] text-white'
-                  : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              {tab.label}
-              <span className={`flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold ${
-                filterType === tab.key ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
-              }`}>{tab.count}</span>
-            </button>
-          ))}
+        {/* Filter Tabs & Actions */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 hide-scrollbar">
+            {filterTabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => { setFilterType(tab.key); setSelectedIds(new Set()); }}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all text-[13px] font-bold whitespace-nowrap border ${
+                  filterType === tab.key
+                    ? 'bg-[#7f1d1d] border-[#7f1d1d] text-white'
+                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                {getTypeIcon(tab.key, filterType === tab.key)}
+                <span>{tab.label}</span>
+                <span className="text-[12px] opacity-70">({tab.count})</span>
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => markAsReadMutation.mutate(undefined)}
+            disabled={markAsReadMutation.isPending || unread.length === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 text-[13px] font-bold transition-colors hover:bg-slate-50 disabled:opacity-50 shrink-0"
+          >
+            <CheckCircle2 className="w-[18px] h-[18px] text-slate-400" />
+            Mark all as read
+          </button>
         </div>
 
         {/* Content */}
@@ -210,89 +193,45 @@ export default function NotificationsPage() {
             <p className="text-[13px] text-slate-400">No notifications to show right now.</p>
           </div>
         ) : (
-          <div className="space-y-8">
-            {/* Unread */}
-            {unread.length > 0 && (
-              <section>
-                {/* Select All Bar */}
-                <div className="flex items-center gap-3 mb-3 px-1">
+            <section>
+              <h2 className="text-[12px] font-bold uppercase tracking-wider text-slate-400 mb-4 ml-2">Earlier</h2>
+              <div className="space-y-3">
+                {filtered.map((n: NotificationItem) => (
                   <button
-                    onClick={toggleSelectAll}
-                    className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
-                      allSelected ? 'bg-[#7a1315] border-[#7a1315]' : 'border-slate-300 hover:border-slate-400'
-                    }`}
+                    key={n.id}
+                    onClick={() => setDetailNotif(n)}
+                    className="w-full bg-white border border-slate-100 shadow-sm p-4 rounded-2xl flex items-center gap-4 hover:shadow-md hover:border-slate-200 transition-all text-left"
                   >
-                    {allSelected && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
-                  </button>
-                  <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
-                    {allSelected ? `${unread.length} selected` : 'New'}
-                  </span>
-                </div>
-                <div className="space-y-1.5">
-                  {unread.map((n: NotificationItem) => (
-                    <div
-                      key={n.id}
-                      className={`flex items-start gap-3 p-4 rounded-2xl border transition-all duration-200 ${
-                        selectedIds.has(n.id) ? 'bg-blue-50/50 border-blue-200' : 'bg-white border-slate-100 hover:border-slate-200'
-                      }`}
-                    >
-                      <button
-                        onClick={() => toggleSelect(n.id)}
-                        className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 mt-1 transition-all ${
-                          selectedIds.has(n.id) ? 'bg-[#7a1315] border-[#7a1315]' : 'border-slate-300 hover:border-slate-400'
-                        }`}
-                      >
-                        {selectedIds.has(n.id) && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
-                      </button>
-                      <button
-                        onClick={() => setDetailNotif(n)}
-                        className="flex-1 flex items-start gap-3.5 text-left min-w-0"
-                      >
-                        <div className={`w-10 h-10 rounded-xl ${getTypeBg(n.data?.type)} flex items-center justify-center shrink-0 mt-0.5`}>
-                          {getTypeIcon(n.data?.type)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-3 mb-1">
-                            <p className="text-[14px] font-semibold text-slate-800 truncate">{n.data?.title || 'Notification'}</p>
-                            <span className="text-[11px] font-medium text-slate-400 shrink-0 tabular-nums">{getTimeAgo(n.created_at)}</span>
-                          </div>
-                          <p className="text-[13px] text-slate-500 leading-relaxed line-clamp-2">{n.data?.message || 'You have a new message.'}</p>
-                        </div>
-                        <div className="w-2 h-2 rounded-full bg-blue-500 shrink-0 mt-2" />
-                      </button>
+                    {/* Unread Dot indicator */}
+                    <div className="w-3 shrink-0 flex justify-center">
+                      {n.read_at === null && (
+                        <div className="w-2 h-2 rounded-full bg-[#7f1d1d]" />
+                      )}
                     </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* Read */}
-            {read.length > 0 && (
-              <section>
-                <h2 className="text-[11px] font-bold uppercase tracking-widest text-slate-300 mb-3 px-1">Earlier</h2>
-                <div className="space-y-1">
-                  {read.map((n: NotificationItem) => (
-                    <button
-                      key={n.id}
-                      onClick={() => setDetailNotif(n)}
-                      className="w-full text-left px-4 py-3.5 flex items-start gap-3.5 hover:bg-slate-50 rounded-2xl transition-colors"
-                    >
-                      <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center shrink-0 mt-0.5">
-                        <CheckCircle2 className="w-[16px] h-[16px] text-slate-300" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-3 mb-0.5">
-                          <p className="text-[13px] font-medium text-slate-500 truncate">{n.data?.title || 'Notification'}</p>
-                          <span className="text-[11px] font-medium text-slate-300 shrink-0 tabular-nums">{getTimeAgo(n.created_at)}</span>
-                        </div>
-                        <p className="text-[12px] text-slate-400 leading-relaxed line-clamp-1">{n.data?.message || 'You have a new message.'}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </section>
-            )}
-          </div>
+                    
+                    <div className={`w-12 h-12 rounded-full ${getTypeBg(n.data?.type)} flex items-center justify-center shrink-0`}>
+                      {getTypeIcon(n.data?.type)}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0 flex flex-col justify-center">
+                      <p className="text-[15px] font-bold text-slate-900 truncate mb-1">
+                        {n.data?.title || 'Notification'}
+                      </p>
+                      <p className="text-[13px] text-slate-500 truncate">
+                        {n.data?.message || 'You have a new message.'}
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-center gap-4 shrink-0 pl-2">
+                      <span className="text-[12px] font-medium text-slate-400">
+                        {getTimeAgo(n.created_at)}
+                      </span>
+                      <ChevronRight className="w-5 h-5 text-slate-400" />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </section>
         )}
 
         {/* Detail Modal */}

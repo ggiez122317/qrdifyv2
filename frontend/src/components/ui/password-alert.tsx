@@ -20,6 +20,17 @@ export function PasswordAlert() {
     setTimeout(() => {
       if (token && needsPasswordChange === 'true' && userRole) {
         setRole(userRole);
+        
+        // Check if dismissed within the last 5 minutes (300,000 ms)
+        const dismissedAt = localStorage.getItem('password_alert_dismissed_at');
+        if (dismissedAt) {
+          const dismissTime = parseInt(dismissedAt, 10);
+          if (Date.now() - dismissTime < 300000) {
+            setIsVisible(false);
+            return;
+          }
+        }
+
         // Don't show the alert on settings tab, landing page, or login page
         if (!pathname.includes('/settings') && pathname !== '/' && pathname !== '/login') {
           setIsVisible(true);
@@ -75,7 +86,10 @@ export function PasswordAlert() {
               Update Now <ChevronRight className="w-4 h-4" />
             </button>
             <button 
-              onClick={() => setIsVisible(false)}
+              onClick={() => {
+                localStorage.setItem('password_alert_dismissed_at', Date.now().toString());
+                setIsVisible(false);
+              }}
               className="p-2 text-red-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors shrink-0"
               aria-label="Dismiss"
             >

@@ -5,8 +5,23 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
 import { useState, useMemo } from 'react';
 import { Plus, CheckCircle2, XCircle, Clock, CloudUpload, Paperclip, Send, Search, Filter, Eye, Trash2, AlertTriangle, CalendarOff, Calendar, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
+import { CustomSelect } from '@/components/ui/custom-select';
+
+interface LeaveRequest {
+  id: number;
+  title: string;
+  reason: string;
+  status: string;
+  start_date: string;
+  end_date?: string;
+  created_at?: string;
+  attachment_path?: string;
+}
 
 export default function TeacherLeaves() {
   const { user } = useAuth();
@@ -22,8 +37,8 @@ export default function TeacherLeaves() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  const [leaveToDelete, setLeaveToDelete] = useState<any>(null);
-  const [viewLeave, setViewLeave] = useState<any>(null);
+  const [leaveToDelete, setLeaveToDelete] = useState<LeaveRequest | null>(null);
+  const [viewLeave, setViewLeave] = useState<LeaveRequest | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -45,7 +60,7 @@ export default function TeacherLeaves() {
     queryKey: ['teacher-leaves'],
     queryFn: async () => {
       const res = await api.get('/api/teacher/leaves');
-      return res.data;
+      return res.data.data ?? res.data ?? [];
     }
   });
 
@@ -66,8 +81,9 @@ export default function TeacherLeaves() {
       setPreviewUrl(null);
       localStorage.setItem('toast_message', 'Your leave request has been submitted for review. Please wait for the principal to respond.');
     },
-    onError: (err: any) => {
-      localStorage.setItem('toast_message', err.response?.data?.message || 'Failed to submit leave request');
+    onError: (err: unknown) => {
+      const error = err as { response?: { data?: { message?: string } } };
+      localStorage.setItem('toast_message', error.response?.data?.message || 'Failed to submit leave request');
     }
   });
 
@@ -103,7 +119,7 @@ export default function TeacherLeaves() {
   };
 
   const filteredLeaves = useMemo(() => {
-    return leaves.filter((leave: any) => {
+    return leaves.filter((leave: LeaveRequest) => {
       const matchesSearch = 
         (leave.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (leave.reason || '').toLowerCase().includes(searchTerm.toLowerCase());
@@ -199,7 +215,7 @@ export default function TeacherLeaves() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50 dark:divide-white/5">
-                    {filteredLeaves.map((leave: any) => (
+                    {filteredLeaves.map((leave: LeaveRequest) => (
                       <tr key={leave.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors group">
                         <td className="px-8 py-5 whitespace-nowrap">
                           <span className="inline-flex items-center gap-1.5 text-[13px] font-bold text-slate-600 dark:text-slate-300 bg-slate-100/80 dark:bg-white/5 px-3 py-1.5 rounded-lg border border-slate-200/50 dark:border-white/10">
@@ -463,19 +479,11 @@ export default function TeacherLeaves() {
                     {/* Header */}
                     <div className="flex justify-between items-start border-b border-[#7a1315]/20 pb-6 mb-6">
                       <div className="flex gap-4 items-center">
-                        <div className="w-[60px] h-[60px] rounded-full bg-[#7a1315] flex items-center justify-center shrink-0">
-                          <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                        <div className="w-[85px] h-[85px] shrink-0">
+                          <img src="/id-assets/school-logo.png" className="w-full h-full object-contain" alt="School Logo" />
                         </div>
                         <div>
-                          <h1 className="text-[#7a1315] font-black text-xl tracking-wide uppercase">Sunrise Academy</h1>
-                          <p className="text-[#7a1315] font-bold text-[10px] tracking-widest uppercase mb-1">Integrity • Excellence • Service</p>
-                          <div className="text-[10px] text-slate-500 font-medium">
-                            <p>123 Education Lane, Greenfield City, 1000</p>
-                            <p className="flex items-center gap-2 mt-0.5">
-                              <span>📞 (02) 8123-4567</span>
-                              <span>✉️ info@sunriseacademy.edu.ph</span>
-                            </p>
-                          </div>
+                          <h1 className="text-[#7a1315] font-black text-xl tracking-wide uppercase leading-tight mt-2">TRENTO WEST CENTRAL<br/>ELEMENTARY SPED CENTER</h1>
                         </div>
                       </div>
                       <div className="text-right">
@@ -492,7 +500,7 @@ export default function TeacherLeaves() {
                       <p className="mb-6">
                         To:<br/>
                         <span className="font-bold text-slate-900 dark:text-white">The School Principal</span><br/>
-                        Sunrise Academy
+                        TRENTO WEST CENTRAL ELEMENTARY SPED CENTER
                       </p>
 
                       <p className="mb-4">Dear Sir/Madam,</p>
@@ -522,14 +530,13 @@ export default function TeacherLeaves() {
                       <p className="mb-6">Respectfully yours,</p>
 
                       <div className="w-48">
-                        {/* Fake signature line */}
-                        <div className="h-10 relative">
-                          <div className="absolute bottom-1 left-4 font-[cursive] text-2xl text-slate-800 opacity-60 transform -rotate-2">
-                            {user?.name?.split(' ')[0] || 'Teacher'}
+                        <div className="h-10 relative flex items-end justify-center pb-1">
+                          <div className="font-bold text-[15px] text-slate-800">
+                            {user?.name || 'Teacher'}
                           </div>
                           <div className="border-b border-slate-400 absolute bottom-0 w-full"></div>
                         </div>
-                        <p className="text-center mt-1 text-[11px] text-slate-500 font-medium">Signature of Employee</p>
+                        <p className="text-center mt-1 text-[10px] text-slate-500 font-medium">Teacher Signature</p>
                       </div>
                     </div>
                   </div>

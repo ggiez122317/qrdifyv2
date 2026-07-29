@@ -51,12 +51,18 @@ $registerAuthenticatedRoutes = function () {
     Route::post('/push-subscriptions', [PushSubscriptionController::class, 'subscribe']);
     Route::delete('/push-subscriptions', [PushSubscriptionController::class, 'unsubscribe']);
 
+    // Lookup endpoints (shared across roles)
+    Route::get('/grade-levels', [\App\Http\Controllers\Admin\GradeLevelController::class, 'listAll']);
+    Route::get('/sections/list-all', [\App\Http\Controllers\Admin\SectionController::class, 'listAll']);
+    Route::get('/subjects', [\App\Http\Controllers\Admin\SubjectController::class, 'listAll']);
+
     /**
      * Student Dashboard Access
      */
     Route::middleware('role:student')->group(function () {
         Route::get('/student/dashboard', [StudentController::class, 'dashboard']);
         Route::get('/student/attendance-record', [StudentController::class, 'attendanceRecord']);
+        Route::post('/student/location', [\App\Http\Controllers\Api\MapController::class, 'reportLocation']);
         Route::get('/student/schedules', [StudentController::class, 'getSchedules']);
         Route::post('/student/schedules', [StudentController::class, 'addSchedule']);
         Route::put('/student/schedules/{id}', [StudentController::class, 'updateSchedule']);
@@ -103,7 +109,7 @@ $registerAuthenticatedRoutes = function () {
     /**
      * Shared Analytics & Monitoring
      */
-    Route::middleware('role:principal|super-admin|admin|guard')->group(function () {
+    Route::middleware('role:principal,super-admin,admin,guard')->group(function () {
         // Attendance Overview
         Route::get('/attendance/today', [AttendanceController::class, 'today']);
         Route::get('/attendance/stats', [AttendanceController::class, 'stats']);
@@ -114,6 +120,15 @@ $registerAuthenticatedRoutes = function () {
         Route::get('/teachers-stats', [TeacherController::class, 'stats']);
         Route::apiResource('students', StudentController::class)->only(['index', 'store', 'show', 'update']);
         Route::apiResource('teachers', TeacherController::class)->only(['index', 'store', 'show', 'update']);
+
+        // Map Data (Shared for Admin & Principal)
+        Route::prefix('admin/map')->group(function () {
+            Route::get('/geofence', [\App\Http\Controllers\Api\MapController::class, 'getGeofence']);
+            Route::get('/student-locations', [\App\Http\Controllers\Api\MapController::class, 'getStudentLocations']);
+            Route::get('/stats', [\App\Http\Controllers\Api\SchoolController::class, 'stats']);
+            Route::get('/schools', [\App\Http\Controllers\Api\SchoolController::class, 'index']);
+            Route::get('/schools/{school}', [\App\Http\Controllers\Api\SchoolController::class, 'show']);
+        });
     });
 
     /**
@@ -134,9 +149,16 @@ $registerAuthenticatedRoutes = function () {
     /**
      * Principal / Admin Endpoints
      */
-    Route::middleware('role:super-admin|admin')->group(function () {
+    Route::middleware('role:super-admin,admin')->group(function () {
         Route::apiResource('admin/grade-levels', \App\Http\Controllers\Admin\GradeLevelController::class);
+        Route::apiResource('admin/sections', \App\Http\Controllers\Admin\SectionController::class);
         Route::apiResource('admin/subjects', \App\Http\Controllers\Admin\SubjectController::class);
+
+        Route::prefix('admin/map')->group(function () {
+            Route::post('/geofence', [\App\Http\Controllers\Api\MapController::class, 'saveGeofence']);
+            Route::delete('/geofence', [\App\Http\Controllers\Api\MapController::class, 'deleteGeofence']);
+            Route::apiResource('schools', \App\Http\Controllers\Api\SchoolController::class)->except(['index', 'show']);
+        });
 
         Route::prefix('system')->group(function () {
             // Maintenance Mode

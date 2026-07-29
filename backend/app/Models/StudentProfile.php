@@ -18,6 +18,9 @@ class StudentProfile extends Model
         'parent_name',
         'parent_phone',
         'teacher_id',
+        'last_latitude',
+        'last_longitude',
+        'last_location_update',
     ];
 
     /**

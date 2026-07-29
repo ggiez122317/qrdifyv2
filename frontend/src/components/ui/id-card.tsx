@@ -33,7 +33,7 @@ export function IdCardPreview({ user, type, printRef, activeSide = 'both', photo
   const roleLabel = type === 'teacher' ? (user?.teacher_profile?.position || 'TEACHER') : 'STUDENT';
   const idNumber = type === 'teacher'
     ? (user?.employee_id || 'TID-2026-0000')
-    : (user?.lrn || 'LRN-2026-0000');
+    : (user?.lrn || '132019240057');
 
   const renderCardFront = () => {
     if (type === 'teacher') {
@@ -41,10 +41,10 @@ export function IdCardPreview({ user, type, printRef, activeSide = 'both', photo
         <div style={{ width: '260px', height: '414px', borderRadius: '0', overflow: 'hidden', background: '#fff', position: 'relative', outline: '1px solid #e2e8f0', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', flexShrink: 0, display: (activeSide === 'both' || activeSide === 'front') ? 'block' : 'none' }}>
           <div style={{ position: 'absolute', inset: 0, background: '#fff', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: '137px', overflow: 'hidden', backgroundColor: '#e84742' }}>
-              <img src="/id-assets/bg.png" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+              <img src="/id-assets/bg.png" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} alt="" onError={(e) => { e.currentTarget.style.display = 'none' }} />
 
               <div style={{ position: 'absolute', left: '31px', top: '38px', width: '92px', height: '92px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
-                <img src="/id-assets/kagawaran.png" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))' }} alt="Kagawaran ng Edukasyon" />
+                <img src="/id-assets/kagawaran.png" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))' }} alt="Kagawaran ng Edukasyon" onError={(e) => { e.currentTarget.style.display = 'none' }} />
               </div>
 
               <div style={{ position: 'absolute', right: '14px', top: '36px', height: '195px', color: '#fff', font: '900 25px/1 Arial,sans-serif', writingMode: 'vertical-rl', transform: 'rotate(180deg)', letterSpacing: 0, whiteSpace: 'nowrap', zIndex: 10 }}>
@@ -75,12 +75,12 @@ export function IdCardPreview({ user, type, printRef, activeSide = 'both', photo
                 </div>
               </div>
               <div style={{ position: 'absolute', left: '14px', bottom: '13px', width: '112px' }}>
-                <img src="/id-assets/deped.png" style={{ width: '100%', height: 'auto', objectFit: 'contain' }} alt="DepEd" />
+                <img src="/id-assets/deped.png" style={{ width: '100%', height: 'auto', objectFit: 'contain' }} alt="DepEd" onError={(e) => { e.currentTarget.style.display = 'none' }} />
               </div>
 
               <div style={{ position: 'absolute', right: '0', bottom: '0', width: '138px', height: '165px', zIndex: 20, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: (photoPreview || user?.photo_url) ? 'transparent' : '#f1f5f9' }}>
                 {(photoPreview || user?.photo_url) ? (
-                  <img src={getImageUrl(photoPreview || user?.photo_url)} alt={user?.name || 'User'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={getImageUrl(photoPreview || user?.photo_url)} alt={user?.name || 'User'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                 ) : (
                   <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
                 )}
@@ -115,7 +115,7 @@ export function IdCardPreview({ user, type, printRef, activeSide = 'both', photo
         {/* Waves SVG */}
         {/* Waves Image */}
         <div style={{ position: 'absolute', top: '30px', left: '-5%', width: '115%', height: '90px', zIndex: 5 }}>
-          <img src="/id-assets/wave.png" style={{ width: '100%', height: '100%', objectFit: 'fill' }} alt="Waves" />
+          <img src="/id-assets/wave.png" style={{ width: '100%', height: '100%', objectFit: 'fill' }} alt="Waves" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
         </div>
 
         {/* Middle Section (Text) */}
@@ -132,16 +132,16 @@ export function IdCardPreview({ user, type, printRef, activeSide = 'both', photo
         </div>
 
         {/* LRN */}
-        <div style={{ position: 'absolute', left: '-9px', top: '270px', width: '145px', textAlign: 'center', zIndex: 10 }}>
-          <div style={{ fontSize: '13.5px', fontWeight: 900, color: '#facc15', WebkitTextStroke: '0.5px #000', textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 2px 2px 2px rgba(0,0,0,0.5)', whiteSpace: 'nowrap' }}>
-            LRN #: {user?.lrn || '100001'}
+        <div style={{ position: 'absolute', left: '-2px', top: '265px', width: '150px', textAlign: 'center', zIndex: 10 }}>
+          <div style={{ fontSize: idNumber.length > 8 ? '10.5px' : '13px', fontWeight: 900, color: '#facc15', WebkitTextStroke: '0.5px #000', textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 2px 2px 2px rgba(0,0,0,0.5)', whiteSpace: 'nowrap' }}>
+            LRN: {idNumber}
           </div>
         </div>
 
         {/* Name Bar */}
         <div style={{ position: 'absolute', bottom: '84px', left: 0, width: '100%', height: '38px', background: '#d9f906', zIndex: 15, display: 'flex', alignItems: 'center' }}>
-          <div style={{ position: 'absolute', left: '8px', right: '0px', top: '3px', bottom: '8px', background: '#fff', clipPath: 'polygon(22px 0, 100% 0, 100% 100%, 8px 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', paddingLeft: '20px' }}>
-            <span style={{ display: 'inline-block', fontSize: '18px', fontWeight: 900, color: '#000', fontFamily: '"Arial Narrow", Impact, Arial, sans-serif', textTransform: 'uppercase', letterSpacing: '-0.5px', transform: 'scaleY(1.3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div style={{ position: 'absolute', left: '8px', right: '0px', top: '3px', bottom: '3px', background: '#fff', clipPath: 'polygon(12px 0, 100% 0, 100% 100%, 0 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', paddingLeft: '15px', paddingRight: '8px' }}>
+            <span style={{ display: 'inline-block', fontSize: name.length > 25 ? '16px' : name.length > 20 ? '18px' : name.length > 15 ? '20px' : '24px', fontWeight: 700, color: '#000', fontFamily: '"Arial Narrow", Arial, sans-serif', textTransform: 'uppercase', letterSpacing: '-0.5px', transform: 'scaleY(1.6) scaleX(0.95)', transformOrigin: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'clip', marginTop: '-2px' }}>
               {name}
             </span>
           </div>
@@ -150,7 +150,7 @@ export function IdCardPreview({ user, type, printRef, activeSide = 'both', photo
         {/* Student Photo */}
         <div style={{ position: 'absolute', right: '0px', bottom: '122px', width: '120px', height: '150px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 10 }}>
           {(photoPreview || user?.photo_url) ? (
-            <img src={getImageUrl(photoPreview || user?.photo_url)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'bottom center', borderRadius: '8px 8px 0 0' }} />
+            <img src={getImageUrl(photoPreview || user?.photo_url)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'bottom center', borderRadius: '8px 8px 0 0' }} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
           ) : (
             <div style={{ width: '110px', height: '110px', borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '15px', border: '2px solid #e2e8f0' }}>
               <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
@@ -168,16 +168,18 @@ export function IdCardPreview({ user, type, printRef, activeSide = 'both', photo
           </div>
 
           <div style={{ position: 'absolute', bottom: '15px', width: '100%', textAlign: 'center', zIndex: 20 }}>
-            {/* Signature image */}
+            {/* Signature image removed temporarily as requested */}
+            {/* 
             <div style={{ position: 'absolute', top: '-18px', left: '50%', transform: 'translateX(-65%)', width: '90px', height: '45px', zIndex: 25 }}>
               <img src="/id-assets/signature.png" style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
             </div>
+            */}
             <div style={{ position: 'relative', zIndex: 20 }}>
               <div style={{ fontSize: '13px', fontWeight: 500, color: '#fff', letterSpacing: '0.5px' }}>
-                LEMUEL S. DELA VEGA
+                MERLE B. ALSONADO
               </div>
               <div style={{ fontSize: '10px', fontWeight: 800, color: '#fff', marginTop: '2px' }}>
-                PRINCIPAL II
+                PRINCIPAL I
               </div>
             </div>
           </div>
@@ -193,10 +195,10 @@ export function IdCardPreview({ user, type, printRef, activeSide = 'both', photo
         <div style={{ width: '260px', height: '414px', borderRadius: '0', overflow: 'hidden', background: '#fff', position: 'relative', outline: '1px solid #e2e8f0', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', flexShrink: 0, display: (activeSide === 'both' || activeSide === 'back') ? 'block' : 'none' }}>
           <div style={{ position: 'absolute', inset: 0, background: '#fff', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: '137px', overflow: 'hidden', backgroundColor: '#e84742' }}>
-              <img src="/id-assets/bg.png" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+              <img src="/id-assets/bg.png" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} alt="" onError={(e) => { e.currentTarget.style.display = 'none' }} />
 
               <div style={{ position: 'absolute', left: '31px', top: '38px', width: '92px', height: '92px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
-                <img src="/id-assets/kagawaran.png" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))' }} alt="Kagawaran ng Edukasyon" />
+                <img src="/id-assets/kagawaran.png" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))' }} alt="Kagawaran ng Edukasyon" onError={(e) => { e.currentTarget.style.display = 'none' }} />
               </div>
 
               <div style={{ position: 'absolute', right: '14px', top: '36px', height: '195px', color: '#fff', font: '900 25px/1 Arial,sans-serif', writingMode: 'vertical-rl', transform: 'rotate(180deg)', letterSpacing: 0, whiteSpace: 'nowrap', zIndex: 10 }}>
@@ -227,7 +229,7 @@ export function IdCardPreview({ user, type, printRef, activeSide = 'both', photo
                 </div>
               </div>
               <div style={{ position: 'absolute', left: '14px', bottom: '13px', width: '112px' }}>
-                <img src="/id-assets/deped.png" style={{ width: '100%', height: 'auto', objectFit: 'contain' }} alt="DepEd" />
+                <img src="/id-assets/deped.png" style={{ width: '100%', height: 'auto', objectFit: 'contain' }} alt="DepEd" onError={(e) => { e.currentTarget.style.display = 'none' }} />
               </div>
             </div>
 
@@ -235,7 +237,9 @@ export function IdCardPreview({ user, type, printRef, activeSide = 'both', photo
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${idNumber}`}
                 alt={`${type} QR code`}
+                crossOrigin="anonymous"
                 style={{ width: '100%', height: '100%', display: 'block' }}
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
               />
             </div>
           </div>
@@ -250,7 +254,7 @@ export function IdCardPreview({ user, type, printRef, activeSide = 'both', photo
     const currentYear = new Date().getFullYear();
     const schoolYearStr = `${currentYear}-${currentYear + 1}`;
     const gradeLevel = user?.student_profile?.grade || 'KINDERGARTEN';
-    const sectionName = user?.student_profile?.section || '';
+    const sectionName = user?.student_profile?.section?.trim() || '';
     const gradeAndSection = sectionName ? `${gradeLevel} - ${sectionName}` : gradeLevel;
 
     return (
@@ -263,20 +267,21 @@ export function IdCardPreview({ user, type, printRef, activeSide = 'both', photo
 
         {/* Table - Only Current Grade */}
         <div style={{ position: 'relative', zIndex: 10, width: '100%', border: '2px solid #000', borderRadius: '4px', overflow: 'hidden', marginBottom: '5px' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center', fontSize: '10px', fontWeight: 'bold', color: '#000' }}>
+          <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', textAlign: 'center', fontSize: '9px', fontWeight: 'bold', color: '#000' }}>
             <thead>
               <tr>
-                <th style={{ borderBottom: '2px solid #000', borderRight: '1px solid #000', padding: '6px' }}>School Year</th>
-                <th style={{ borderBottom: '2px solid #000', borderRight: '1px solid #000', padding: '6px' }}>Grade &amp; Section</th>
-                <th style={{ borderBottom: '2px solid #000', padding: '6px' }}>Signature</th>
+                <th style={{ width: '30%', borderBottom: '2px solid #000', borderRight: '1px solid #000', padding: '6px 2px' }}>School Year</th>
+                <th style={{ width: '45%', borderBottom: '2px solid #000', borderRight: '1px solid #000', padding: '6px 2px' }}>Grade & Section</th>
+                <th style={{ width: '25%', borderBottom: '2px solid #000', padding: '6px 2px' }}>Signature</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td style={{ borderRight: '1px solid #000', padding: '8px 4px' }}>{schoolYearStr}</td>
-                <td style={{ borderRight: '1px solid #000', padding: '8px 4px' }}>{gradeAndSection}</td>
-                <td style={{ padding: '4px' }}>
-                  <img src="/id-assets/signature.png" style={{ height: '14px', margin: '0 auto' }} alt="" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                <td style={{ borderRight: '1px solid #000', padding: '8px 2px', whiteSpace: 'nowrap', overflow: 'hidden' }}>{schoolYearStr}</td>
+                <td style={{ borderRight: '1px solid #000', padding: '8px 2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{gradeAndSection}</td>
+                <td style={{ padding: '8px 2px' }}>
+                  {/* Signature image removed temporarily as requested */}
+                  {/* <img src="/id-assets/signature.png" style={{ height: '14px', margin: '0 auto' }} alt="" onError={(e) => { e.currentTarget.style.display = 'none'; }} /> */}
                 </td>
               </tr>
             </tbody>
@@ -304,7 +309,9 @@ export function IdCardPreview({ user, type, printRef, activeSide = 'both', photo
           <img
             src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${idNumber}`}
             alt="QR Code"
+            crossOrigin="anonymous"
             style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain' }}
+            onError={(e) => { e.currentTarget.style.display = 'none'; }}
           />
         </div>
 
@@ -326,14 +333,14 @@ export function IdCardPreview({ user, type, printRef, activeSide = 'both', photo
 
         {/* Bottom Wave Image */}
         <div style={{ position: 'absolute', bottom: '-18px', left: '-15%', width: '115%', height: '55px', zIndex: 5, pointerEvents: 'none' }}>
-          <img src="/id-assets/wave.png" style={{ width: '100%', height: '100%', objectFit: 'fill', transform: 'rotate(180deg)' }} alt="Waves" />
+          <img src="/id-assets/wave.png" style={{ width: '100%', height: '100%', objectFit: 'fill', transform: 'rotate(180deg)' }} alt="Waves" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
         </div>
       </div>
     );
   };
 
   return (
-    <div ref={printRef} className="flex gap-8 md:gap-12 shrink-0 justify-center">
+    <div ref={printRef} className="flex gap-8 md:gap-12 shrink-0 justify-center print:mt-16">
       {renderCardFront()}
       {renderCardBack()}
     </div>

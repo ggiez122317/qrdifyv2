@@ -4,15 +4,33 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
 import { useState } from 'react';
-import { ClipboardList, CheckCircle2, XCircle, Clock, Eye, Download, FileText, Calendar, Paperclip, Search, Filter } from 'lucide-react';
+import { CheckCircle2, XCircle, Clock, Eye, FileText, Calendar, Paperclip, Search, Filter } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { CustomSelect } from '@/components/ui/custom-select';
 import { getImageUrl } from '@/lib/utils';
 
+interface ExcuseLetter {
+  id: number;
+  title: string;
+  reason: string;
+  status: string;
+  absent_date: string;
+  created_at: string;
+  attachment_path?: string;
+  student?: {
+    name: string;
+    photo_url?: string;
+    studentProfile?: {
+      grade?: string;
+      section?: string;
+    };
+  };
+}
+
 export default function TeacherExcuseStudents() {
   const queryClient = useQueryClient();
-  const [selectedLetter, setSelectedLetter] = useState<any>(null);
+  const [selectedLetter, setSelectedLetter] = useState<ExcuseLetter | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -20,7 +38,7 @@ export default function TeacherExcuseStudents() {
     queryKey: ['teacher-excuse-letters'],
     queryFn: async () => {
       const res = await api.get('/api/teacher/excuse-letters');
-      return res.data;
+      return res.data.data ?? res.data ?? [];
     }
   });
 
@@ -30,7 +48,7 @@ export default function TeacherExcuseStudents() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teacher-excuse-letters'] });
-      setSelectedLetter((prev: any) => ({ ...prev, status: 'approved' }));
+      setSelectedLetter((prev: ExcuseLetter | null) => prev ? ({ ...prev, status: 'approved' }) : null);
       localStorage.setItem('toast_message', 'Excuse letter has been approved. The student is now marked as excused for that date.');
     }
   });
@@ -41,7 +59,7 @@ export default function TeacherExcuseStudents() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teacher-excuse-letters'] });
-      setSelectedLetter((prev: any) => ({ ...prev, status: 'rejected' }));
+      setSelectedLetter((prev: ExcuseLetter | null) => prev ? ({ ...prev, status: 'rejected' }) : null);
       localStorage.setItem('toast_message', 'Excuse letter has been reviewed and marked as rejected.');
     }
   });
@@ -57,7 +75,7 @@ export default function TeacherExcuseStudents() {
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   };
 
-  const filteredLetters = letters.filter((letter: any) => {
+  const filteredLetters = letters.filter((letter: ExcuseLetter) => {
     const matchesSearch = letter.student?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           letter.title?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || letter.status === statusFilter;
@@ -133,7 +151,7 @@ export default function TeacherExcuseStudents() {
                       </td>
                     </tr>
                   ) : (
-                    filteredLetters.map((letter: any) => (
+                    filteredLetters.map((letter: ExcuseLetter) => (
                       <tr key={letter.id} className="hover:bg-red-50/50 transition-colors">
                         <td className="px-8 py-4">
                           <div className="flex items-center gap-4">
@@ -236,19 +254,11 @@ export default function TeacherExcuseStudents() {
                     {/* Header */}
                     <div className="flex justify-between items-start border-b border-[#7a1315]/20 pb-6 mb-6">
                       <div className="flex gap-4 items-center">
-                        <div className="w-[60px] h-[60px] rounded-full bg-[#7a1315] flex items-center justify-center shrink-0">
-                          <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                        <div className="w-[85px] h-[85px] shrink-0">
+                          <img src="/id-assets/school-logo.png" className="w-full h-full object-contain" alt="School Logo" />
                         </div>
                         <div>
-                          <h1 className="text-[#7a1315] font-black text-xl tracking-wide uppercase">Sunrise Academy</h1>
-                          <p className="text-[#7a1315] font-bold text-[10px] tracking-widest uppercase mb-1">Integrity • Excellence • Service</p>
-                          <div className="text-[10px] text-slate-500 font-medium">
-                            <p>123 Education Lane, Greenfield City, 1000</p>
-                            <p className="flex items-center gap-2 mt-0.5">
-                              <span>📞 (02) 8123-4567</span>
-                              <span>✉️ info@sunriseacademy.edu.ph</span>
-                            </p>
-                          </div>
+                          <h1 className="text-[#7a1315] font-black text-xl tracking-wide uppercase leading-tight mt-2">TRENTO WEST CENTRAL<br/>ELEMENTARY SPED CENTER</h1>
                         </div>
                       </div>
                       <div className="text-right">
@@ -266,7 +276,7 @@ export default function TeacherExcuseStudents() {
                         To:<br/>
                         <span className="font-bold text-slate-900 dark:text-white">The Class Adviser</span><br/>
                         Grade {selectedLetter.student?.studentProfile?.grade || 'N/A'} - Section {selectedLetter.student?.studentProfile?.section || 'N/A'}<br/>
-                        Sunrise Academy
+                        TRENTO WEST CENTRAL ELEMENTARY SPED CENTER
                       </p>
 
                       <p className="mb-4">Dear Sir/Madam,</p>
@@ -296,14 +306,13 @@ export default function TeacherExcuseStudents() {
                       <p className="mb-6">Respectfully yours,</p>
 
                       <div className="w-48">
-                        {/* Fake signature line */}
-                        <div className="h-10 relative">
-                          <div className="absolute bottom-1 left-4 font-[cursive] text-2xl text-slate-800 opacity-60 transform -rotate-2">
-                            {selectedLetter.student?.name?.split(' ')[0]}
+                        <div className="h-10 relative flex items-end justify-center pb-1">
+                          <div className="font-bold text-[15px] text-slate-800">
+                            {selectedLetter.student?.name}
                           </div>
                           <div className="border-b border-slate-400 absolute bottom-0 w-full"></div>
                         </div>
-                        <p className="text-center mt-1 text-[11px] text-slate-500 font-medium">Signature of Parent / Guardian</p>
+                        <p className="text-center mt-1 text-[10px] text-slate-500 font-medium">Student Signature</p>
                       </div>
                     </div>
                   </div>

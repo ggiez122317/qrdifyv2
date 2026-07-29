@@ -21,19 +21,8 @@ const MapComponent = dynamic(
 
 export default function SchoolMapPage() {
   return (
-    <div className="max-w-[1600px] mx-auto w-full animate-in fade-in zoom-in-95 duration-500">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 mt-2">
-        <div>
-          <h2 className="text-[26px] font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
-            School Map
-          </h2>
-          <p className="text-slate-500 dark:text-slate-400 text-[15px] mt-1 font-medium">Monitor real-time locations of online students around the campus.</p>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative z-0">
-        <MapComponent />
-      </div>
+    <div className="w-full animate-in fade-in zoom-in-95 duration-500 h-full relative z-0">
+      <MapComponent mode="principal" />
     </div>
   );
 }

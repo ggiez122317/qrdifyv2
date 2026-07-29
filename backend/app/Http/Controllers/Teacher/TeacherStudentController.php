@@ -227,10 +227,13 @@ class TeacherStudentController extends Controller
             ->get();
             
         $subjects = Subject::select('id', 'name')->get();
+
+        $gradeLevels = \App\Models\GradeLevel::select('id', 'name')->orderBy('name')->get();
         
         return response()->json([
             'sections' => $sections,
-            'subjects' => $subjects
+            'subjects' => $subjects,
+            'grade_levels' => $gradeLevels,
         ]);
     }
 

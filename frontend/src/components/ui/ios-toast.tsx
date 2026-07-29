@@ -45,10 +45,14 @@ export function IosToast() {
     };
 
     const checkToast = () => {
-      const storedMessage = localStorage.getItem('toast_message');
-      if (storedMessage) {
-        localStorage.removeItem('toast_message');
-        triggerNotification(storedMessage);
+      try {
+        const storedMessage = localStorage.getItem('toast_message');
+        if (storedMessage) {
+          localStorage.removeItem('toast_message');
+          triggerNotification(storedMessage);
+        }
+      } catch {
+        // localStorage may be unavailable (private browsing, sandboxed iframe)
       }
     };
 

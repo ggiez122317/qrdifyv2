@@ -36,12 +36,22 @@ class SubjectController extends Controller
         return response()->json($query->paginate($perPage));
     }
 
+    public function listAll()
+    {
+        return response()->json(Subject::select('id', 'name')->orderBy('name')->get());
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'code' => 'required|string|max:255|unique:subjects'
+            'code' => 'required|string|max:255|unique:subjects',
+            'status' => 'nullable|string|in:active,inactive'
         ]);
+
+        if (!isset($validated['status'])) {
+            $validated['status'] = 'active';
+        }
 
         $subject = Subject::create($validated);
 
@@ -57,7 +67,8 @@ class SubjectController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'code' => 'required|string|max:255|unique:subjects,code,' . $subject->id
+            'code' => 'required|string|max:255|unique:subjects,code,' . $subject->id,
+            'status' => 'nullable|string|in:active,inactive'
         ]);
 
         $subject->update($validated);

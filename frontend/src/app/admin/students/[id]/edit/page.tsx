@@ -25,9 +25,19 @@ export default function EditStudentPage() {
     section: '',
     parent_name: '',
     parent_phone: '',
-    photo_base64: ''
+    photo_base64: '',
+    subjects: [] as number[]
   });
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [gradeLevels, setGradeLevels] = useState<{ id: number; name: string }[]>([]);
+  const [sections, setSections] = useState<{ id: number; name: string }[]>([]);
+  const [subjects, setSubjects] = useState<{ id: number; name: string }[]>([]);
+
+  useEffect(() => {
+    api.get('/api/grade-levels').then(r => setGradeLevels(r.data));
+    api.get('/api/admin/sections/list-all').then(r => setSections(r.data));
+    api.get('/api/subjects').then(r => setSubjects(r.data));
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -43,10 +53,13 @@ export default function EditStudentPage() {
             email: data.email || '',
             lrn: data.lrn || '',
             grade_level: data.student_profile?.grade || '',
-            section: data.student_profile?.section || '',
+            section: (typeof data.student_profile?.section === 'object' && data.student_profile?.section !== null) 
+              ? data.student_profile?.section?.name 
+              : (data.student_profile?.section || ''),
             parent_name: data.student_profile?.parent_name || '',
             parent_phone: data.student_profile?.parent_phone || '',
-            photo_base64: ''
+            photo_base64: '',
+            subjects: data.subjects?.map((s: any) => s.id ?? s) || []
           });
           setPhotoUrl(data.photo_url || null);
         }
@@ -60,14 +73,13 @@ export default function EditStudentPage() {
   const [activeSide, setActiveSide] = useState<'front' | 'back'>('front');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value
     }));
   };
 
-  // Compute a structured user object for the ID Preview
   const previewUser = {
     name: `${formData.first_name} ${formData.last_name}`.trim() || 'Juan Dela Cruz',
     email: formData.email,
@@ -101,89 +113,143 @@ export default function EditStudentPage() {
     <>
       <div className="max-w-[1400px] mx-auto w-full flex flex-col lg:flex-row gap-8 h-[calc(100vh-6rem)]">
         
-        {/* Left Side: Header and Form */}
         <div className="flex flex-col flex-1 min-w-0 h-full">
-          {/* Header */}
           <div className="flex items-center gap-4 mb-6 shrink-0">
-            <Link href="/admin/students" className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm text-slate-500">
+            <Link href="/admin/students" className="p-2 bg-white dark:bg-[#161920] border border-slate-200 dark:border-white/5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors shadow-sm text-slate-500 dark:text-slate-400">
               <ChevronLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Edit Student Record</h2>
-              <p className="text-slate-500 text-sm mt-1 font-medium">Update the student&apos;s record and preview changes in real-time.</p>
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Edit Student Record</h2>
+              <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 font-medium">Update the student&apos;s record and preview changes in real-time.</p>
             </div>
           </div>
   
-          {/* Left Column: Scrollable Form */}
-          <div className="flex-1 overflow-y-auto bg-white rounded-2xl shadow-sm border border-slate-200 p-8 h-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="flex-1 overflow-y-auto bg-white dark:bg-[#161920] rounded-2xl shadow-sm border border-slate-200 dark:border-white/5 p-8 h-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <form onSubmit={handleSubmit} className="space-y-8 max-w-2xl">
               
               <div className="space-y-6">
-                <h3 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">Account Information</h3>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-white/5 pb-3">Account Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-3">
-                    <Label htmlFor="first_name" className="text-sm font-semibold">First Name <span className="text-red-500">*</span></Label>
-                    <Input id="first_name" name="first_name" value={formData.first_name} onChange={handleChange} onFocus={() => setActiveSide('front')} required placeholder="e.g. Juan" className="bg-slate-50 h-12 text-base" />
+                    <Label htmlFor="first_name" className="text-sm font-semibold dark:text-slate-300">First Name <span className="text-red-500">*</span></Label>
+                    <Input id="first_name" name="first_name" value={formData.first_name} onChange={handleChange} onFocus={() => setActiveSide('front')} required placeholder="e.g. Juan" className="bg-slate-50 dark:bg-[#0f1115] dark:border-white/10 dark:text-white h-12 text-base" />
                   </div>
                   
                   <div className="space-y-3">
-                    <Label htmlFor="last_name" className="text-sm font-semibold">Last Name <span className="text-red-500">*</span></Label>
-                    <Input id="last_name" name="last_name" value={formData.last_name} onChange={handleChange} onFocus={() => setActiveSide('front')} required placeholder="e.g. Dela Cruz" className="bg-slate-50 h-12 text-base" />
+                    <Label htmlFor="last_name" className="text-sm font-semibold dark:text-slate-300">Last Name <span className="text-red-500">*</span></Label>
+                    <Input id="last_name" name="last_name" value={formData.last_name} onChange={handleChange} onFocus={() => setActiveSide('front')} required placeholder="e.g. Dela Cruz" className="bg-slate-50 dark:bg-[#0f1115] dark:border-white/10 dark:text-white h-12 text-base" />
                   </div>
 
                   <div className="space-y-3 md:col-span-2">
-                    <Label htmlFor="email" className="text-sm font-semibold">Email Address <span className="text-red-500">*</span></Label>
-                    <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} onFocus={() => setActiveSide('front')} required placeholder="student@school.edu" className="bg-slate-50 h-12 text-base" />
+                    <Label htmlFor="email" className="text-sm font-semibold dark:text-slate-300">Email Address <span className="text-red-500">*</span></Label>
+                    <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} onFocus={() => setActiveSide('front')} required placeholder="student@school.edu" className="bg-slate-50 dark:bg-[#0f1115] dark:border-white/10 dark:text-white h-12 text-base" />
                   </div>
                 </div>
               </div>
 
               <div className="space-y-6">
-                <h3 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">Academic Identity</h3>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-white/5 pb-3">Academic Identity</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-3">
-                    <Label htmlFor="lrn" className="text-sm font-semibold">Learner Reference Number (LRN) <span className="text-red-500">*</span></Label>
-                    <Input id="lrn" name="lrn" value={formData.lrn} onChange={handleChange} onFocus={() => setActiveSide('front')} required placeholder="12-digit LRN" className="bg-slate-50 h-12 text-base" />
+                    <Label htmlFor="lrn" className="text-sm font-semibold dark:text-slate-300">Learner Reference Number (LRN) <span className="text-red-500">*</span></Label>
+                    <Input id="lrn" name="lrn" value={formData.lrn} onChange={handleChange} onFocus={() => setActiveSide('front')} required placeholder="12-digit LRN" className="bg-slate-50 dark:bg-[#0f1115] dark:border-white/10 dark:text-white h-12 text-base" />
                   </div>
                   
                   <div className="space-y-3">
-                    <Label htmlFor="grade_level" className="text-sm font-semibold">Grade Level <span className="text-red-500">*</span></Label>
-                    <Input id="grade_level" name="grade_level" value={formData.grade_level} onChange={handleChange} onFocus={() => setActiveSide('front')} required placeholder="e.g. Grade 12" className="bg-slate-50 h-12 text-base" />
+                    <Label htmlFor="grade_level" className="text-sm font-semibold dark:text-slate-300">Grade Level <span className="text-red-500">*</span></Label>
+                    <select
+                      id="grade_level"
+                      name="grade_level"
+                      value={formData.grade_level}
+                      onChange={handleChange}
+                      onFocus={() => setActiveSide('front')}
+                      required
+                      className="flex h-12 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-[#7a1315]/20 focus:border-[#7a1315]/30 dark:border-white/10 dark:bg-[#0f1115] dark:text-white"
+                    >
+                      <option value="">Select Grade Level</option>
+                      {gradeLevels.map(gl => (
+                        <option key={gl.id} value={gl.name}>{gl.name}</option>
+                      ))}
+                    </select>
                   </div>
                   
                   <div className="space-y-3">
-                    <Label htmlFor="section" className="text-sm font-semibold">Section <span className="text-red-500">*</span></Label>
-                    <Input id="section" name="section" value={formData.section} onChange={handleChange} onFocus={() => setActiveSide('front')} required placeholder="e.g. STEM A" className="bg-slate-50 h-12 text-base" />
+                    <Label htmlFor="section" className="text-sm font-semibold dark:text-slate-300">Section <span className="text-red-500">*</span></Label>
+                    <select
+                      id="section"
+                      name="section"
+                      value={formData.section}
+                      onChange={handleChange}
+                      onFocus={() => setActiveSide('front')}
+                      required
+                      className="flex h-12 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-[#7a1315]/20 focus:border-[#7a1315]/30 dark:border-white/10 dark:bg-[#0f1115] dark:text-white"
+                    >
+                      <option value="">Select Section</option>
+                      {sections.map(sec => (
+                        <option key={sec.id} value={sec.name}>{sec.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-3 md:col-span-2 mt-2">
+                    <Label className="text-sm font-semibold dark:text-slate-300">Assign Subjects</Label>
+                    <p className="text-xs text-slate-500 mb-2">Select the subjects for this student.</p>
+                    <div className="flex flex-wrap gap-2">
+                      {subjects.map((subject) => {
+                        const isSelected = formData.subjects.includes(subject.id);
+                        return (
+                          <button
+                            key={subject.id}
+                            type="button"
+                            onClick={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                subjects: isSelected 
+                                  ? prev.subjects.filter(id => id !== subject.id)
+                                  : [...prev.subjects, subject.id]
+                              }));
+                            }}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                              isSelected 
+                                ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm' 
+                                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 dark:bg-[#161920] dark:border-white/10 dark:text-slate-300'
+                            }`}
+                          >
+                            {subject.name}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
               
               <div className="space-y-6">
-                <h3 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">Emergency Contact (Parent/Guardian)</h3>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-white/5 pb-3">Emergency Contact (Parent/Guardian)</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-3">
-                    <Label htmlFor="parent_name" className="text-sm font-semibold">Guardian Name</Label>
-                    <Input id="parent_name" name="parent_name" value={formData.parent_name} onChange={handleChange} onFocus={() => setActiveSide('back')} placeholder="Full Name" className="bg-slate-50 h-12 text-base" />
+                    <Label htmlFor="parent_name" className="text-sm font-semibold dark:text-slate-300">Guardian Name</Label>
+                    <Input id="parent_name" name="parent_name" value={formData.parent_name} onChange={handleChange} onFocus={() => setActiveSide('back')} placeholder="Full Name" className="bg-slate-50 dark:bg-[#0f1115] dark:border-white/10 dark:text-white h-12 text-base" />
                   </div>
                   
                   <div className="space-y-3">
-                    <Label htmlFor="parent_phone" className="text-sm font-semibold">Guardian Phone</Label>
-                    <Input id="parent_phone" name="parent_phone" value={formData.parent_phone} onChange={handleChange} onFocus={() => setActiveSide('back')} placeholder="09XXXXXXXXX" className="bg-slate-50 h-12 text-base" />
+                    <Label htmlFor="parent_phone" className="text-sm font-semibold dark:text-slate-300">Guardian Phone</Label>
+                    <Input id="parent_phone" name="parent_phone" value={formData.parent_phone} onChange={handleChange} onFocus={() => setActiveSide('back')} placeholder="09XXXXXXXXX" className="bg-slate-50 dark:bg-[#0f1115] dark:border-white/10 dark:text-white h-12 text-base" />
                   </div>
                 </div>
               </div>
               
               <div className="space-y-6">
-                <h3 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">Profile Photo</h3>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-white/5 pb-3">Profile Photo</h3>
                 <PhotoUploader 
                   onCapture={(base64) => setFormData(prev => ({ ...prev, photo_base64: base64 }))} 
                   currentPhoto={formData.photo_base64 || photoUrl} 
                 />
               </div>
               
-              <div className="pt-6 flex items-center justify-end gap-3 border-t border-slate-100 mt-8">
+              <div className="pt-6 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-white/5 mt-8">
                 <Link href="/admin/students">
-                  <Button type="button" variant="outline" className="text-slate-600 h-12 px-6">
+                  <Button type="button" variant="outline" className="text-slate-600 dark:text-slate-300 dark:border-white/10 dark:hover:bg-white/5 h-12 px-6">
                     Cancel
                   </Button>
                 </Link>
@@ -202,30 +268,29 @@ export default function EditStudentPage() {
           </div>
         </div>
 
-        {/* Right Column: Fixed Preview */}
         <div className="w-[320px] xl:w-[400px] shrink-0 sticky top-0 hidden lg:flex flex-col h-full bg-transparent relative group overflow-visible">
              <div className="p-5 shrink-0 relative z-10 flex flex-col gap-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-slate-800 tracking-wide uppercase text-sm">Real-time ID Preview</h3>
+                  <h3 className="font-bold text-slate-800 dark:text-slate-200 tracking-wide uppercase text-sm">Real-time ID Preview</h3>
                   <div className="flex gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-full bg-slate-200"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-slate-200"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-slate-200"></div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-slate-200 dark:bg-white/10"></div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-slate-200 dark:bg-white/10"></div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-slate-200 dark:bg-white/10"></div>
                   </div>
                 </div>
                 
-                <div className="flex bg-slate-100 p-1 rounded-lg">
+                <div className="flex bg-slate-100 dark:bg-[#161920] p-1 rounded-lg">
                   <button 
                     type="button"
                     onClick={() => setActiveSide('front')}
-                    className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${activeSide === 'front' ? 'bg-white text-maroon-600 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${activeSide === 'front' ? 'bg-white dark:bg-white/10 text-maroon-600 dark:text-white shadow-sm border border-slate-200/50 dark:border-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
                   >
                     Front View
                   </button>
                   <button 
                     type="button"
                     onClick={() => setActiveSide('back')}
-                    className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${activeSide === 'back' ? 'bg-white text-maroon-600 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${activeSide === 'back' ? 'bg-white dark:bg-white/10 text-maroon-600 dark:text-white shadow-sm border border-slate-200/50 dark:border-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
                   >
                     Back View
                   </button>

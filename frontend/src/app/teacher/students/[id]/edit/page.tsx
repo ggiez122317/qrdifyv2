@@ -155,12 +155,9 @@ export default function EditStudentPage() {
                       className="flex h-12 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-[#7a1315]/20 focus:border-[#7a1315]/30 dark:border-white/10 dark:bg-[#0f1115] dark:text-white"
                     >
                       <option value="">Select Grade</option>
-                      <option value="Grade 7">Grade 7</option>
-                      <option value="Grade 8">Grade 8</option>
-                      <option value="Grade 9">Grade 9</option>
-                      <option value="Grade 10">Grade 10</option>
-                      <option value="Grade 11">Grade 11</option>
-                      <option value="Grade 12">Grade 12</option>
+                      {options?.grade_levels?.map((gl: { id: number; name: string }) => (
+                        <option key={gl.id} value={gl.name}>{gl.name}</option>
+                      ))}
                     </select>
                   </div>
                   

@@ -9,7 +9,12 @@ if (typeof window !== 'undefined') {
     if (typeof args[0] === 'string' && args[0].includes('Encountered a script tag while rendering React component')) {
       return;
     }
-    originalError.apply(console, args);
+    try {
+      originalError.apply(console, args);
+    } catch {
+      // Safety net - some environments (Turbopack overlay) can't handle
+      // non-Error objects passed to console.error
+    }
   };
 }
 

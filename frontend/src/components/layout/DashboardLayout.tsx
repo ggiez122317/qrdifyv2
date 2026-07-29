@@ -37,7 +37,10 @@ import {
   CheckCircle2,
   ArrowRight,
   LogIn,
-  Info
+  Info,
+  MapPin,
+  Presentation,
+  Camera
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
@@ -184,6 +187,47 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
   });
 
+  // Student Geolocation Tracking (placed before early returns to keep hook order consistent)
+  useEffect(() => {
+    const isStudentRole = user?.roles?.[0] === 'student';
+    if (!isStudentRole || typeof navigator === 'undefined' || !navigator.geolocation) return;
+
+    let watchId: number;
+    let lastSent = 0;
+
+    const startTracking = () => {
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          const now = Date.now();
+          if (now - lastSent > 15000) {
+            lastSent = now;
+            api.post('/v1/student/location', {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude
+            }).then(res => {
+              if (res.data.out_of_bounds) {
+                if (navigator.vibrate) {
+                  navigator.vibrate([200, 100, 200, 100, 500]);
+                }
+                localStorage.setItem('toast_message', 'WARNING: You are outside the school campus!');
+                window.dispatchEvent(new Event('toast-trigger'));
+              }
+            }).catch(err => console.error('Location report error', err));
+          }
+        },
+        (error) => {
+          console.warn('Geolocation error:', error);
+        },
+        { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+      );
+    };
+
+    startTracking();
+
+    return () => {
+      if (watchId) navigator.geolocation.clearWatch(watchId);
+    };
+  }, [user]);
 
   if (isLoading) {
     return (
@@ -250,9 +294,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       { name: 'Report & Analytics', href: '/teacher/reports', icon: BarChart3 }
     ] : isAdmin ? [
       { name: 'Students', href: '/admin/students', icon: GraduationCap },
-      { name: 'Teachers', href: '/admin/teachers', icon: Briefcase },
+      { name: 'Teachers', href: '/admin/teachers', icon: Presentation },
       { name: 'Category Level', href: '/admin/category-level', icon: ClipboardList },
-      { name: 'Photo Booth', href: '/admin/photobooth', icon: ScanFace }
+      { name: 'School Map', href: '/admin/school-map', icon: MapPin },
+      { name: 'Photo Booth', href: '/admin/photobooth', icon: Camera }
     ] : isGuard ? [
       { name: 'Visitors', href: '/guard/visitors', icon: UserSquare }
     ] : isStudent ? [

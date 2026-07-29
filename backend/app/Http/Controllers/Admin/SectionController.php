@@ -4,27 +4,25 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\GradeLevel;
+use App\Models\Section;
 
-class GradeLevelController extends Controller
+class SectionController extends Controller
 {
     public function index(Request $request)
     {
-        $query = GradeLevel::query();
+        $query = Section::query();
         
         if ($request->has('search') && $request->search != '') {
             $query->where('name', 'like', '%' . $request->search . '%')
-                  ->orWhere('description', 'like', '%' . $request->search . '%');
+                  ->orWhere('code', 'like', '%' . $request->search . '%');
         }
 
         $sortField = $request->input('sort', 'created_at');
         $sortDirection = $request->input('direction', 'desc');
         
-        // Ensure valid sort direction
         $sortDirection = strtolower($sortDirection) === 'asc' ? 'asc' : 'desc';
         
-        // Allowed sort fields
-        $allowedSorts = ['id', 'name', 'description', 'created_at'];
+        $allowedSorts = ['id', 'name', 'code', 'created_at'];
         if (in_array($sortField, $allowedSorts)) {
             $query->orderBy($sortField, $sortDirection);
         } else {
@@ -38,15 +36,16 @@ class GradeLevelController extends Controller
 
     public function listAll()
     {
-        return response()->json(GradeLevel::select('id', 'name')->orderBy('name')->get());
+        return response()->json(Section::select('id', 'name')->orderBy('name')->get());
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:grade_levels',
-            'code' => 'nullable|string|max:50|unique:grade_levels',
+            'name' => 'required|string|max:255',
+            'code' => 'nullable|string|max:255|unique:sections',
             'description' => 'nullable|string',
+            'grade_level' => 'nullable|string',
             'status' => 'nullable|string|in:active,inactive'
         ]);
 
@@ -54,40 +53,41 @@ class GradeLevelController extends Controller
             $validated['status'] = 'active';
         }
 
-        $gradeLevel = GradeLevel::create($validated);
+        $section = Section::create($validated);
 
         return response()->json([
-            'message' => 'Grade level created successfully',
-            'data' => $gradeLevel
+            'message' => 'Section created successfully',
+            'data' => $section
         ], 201);
     }
 
     public function update(Request $request, $id)
     {
-        $gradeLevel = GradeLevel::findOrFail($id);
+        $section = Section::findOrFail($id);
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:grade_levels,name,' . $gradeLevel->id,
-            'code' => 'nullable|string|max:50|unique:grade_levels,code,' . $gradeLevel->id,
+            'name' => 'required|string|max:255',
+            'code' => 'nullable|string|max:255|unique:sections,code,' . $section->id,
             'description' => 'nullable|string',
+            'grade_level' => 'nullable|string',
             'status' => 'nullable|string|in:active,inactive'
         ]);
 
-        $gradeLevel->update($validated);
+        $section->update($validated);
 
         return response()->json([
-            'message' => 'Grade level updated successfully',
-            'data' => $gradeLevel
+            'message' => 'Section updated successfully',
+            'data' => $section
         ]);
     }
 
     public function destroy($id)
     {
-        $gradeLevel = GradeLevel::findOrFail($id);
-        $gradeLevel->delete();
+        $section = Section::findOrFail($id);
+        $section->delete();
 
         return response()->json([
-            'message' => 'Grade level deleted successfully'
+            'message' => 'Section deleted successfully'
         ]);
     }
 }

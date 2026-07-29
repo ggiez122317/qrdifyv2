@@ -17,7 +17,6 @@ use App\Services\DashboardService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
 class StudentController extends Controller
@@ -89,7 +88,7 @@ class StudentController extends Controller
                 'name'      => trim($request->first_name . ' ' . $request->last_name),
                 'email'     => $request->email,
                 'id_number' => $lrn,
-                'password'  => Hash::make('password123'),
+                'password'  => 'password123',
                 'photo_url' => $photoUrl,
             ]);
 
@@ -111,7 +110,10 @@ class StudentController extends Controller
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            logger()->error('Error creating student', ['error' => $e->getMessage()]);
+            logger()->error('Error creating student', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             return response()->json(['message' => 'Error creating student. Please try again.'], 500);
         }
     }

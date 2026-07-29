@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingAnimation } from '@/components/ui/TableLoadingState';
 import { CalendarCheck, CalendarX, Clock, CalendarDays, ArrowRight } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { useEffect } from 'react';
 
 export default function StudentDashboard() {
   const { data: user, isLoading: userLoading } = useQuery({
@@ -15,6 +16,49 @@ export default function StudentDashboard() {
       return res.data.user;
     }
   });
+
+  useEffect(() => {
+    if (!user) return;
+    
+    // Check geolocation support
+    if (!('geolocation' in navigator)) {
+      console.warn('Geolocation is not supported by your browser');
+      return;
+    }
+
+    const watchId = navigator.geolocation.watchPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const res = await api.post('/api/student/location', { latitude, longitude });
+          
+          if (res.data?.out_of_bounds) {
+            // Trigger vibration if supported
+            if (navigator.vibrate) {
+              navigator.vibrate([500, 250, 500, 250, 500]);
+            }
+            // Dispatch custom event for a warning toast (assumes a global toast listener is present)
+            localStorage.setItem('toast_message', 'WARNING: You are outside the school boundary!');
+            window.dispatchEvent(new Event('toast-trigger'));
+          }
+        } catch (error) {
+          console.error('Failed to report location:', error);
+        }
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 10000,
+        timeout: 10000
+      }
+    );
+
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
+    };
+  }, [user]);
 
   const { data: dashboard, isLoading: dashboardLoading } = useQuery({
     queryKey: ['studentDashboard'],

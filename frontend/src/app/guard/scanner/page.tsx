@@ -3,8 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
-import { Card, CardContent } from '@/components/ui/card';
-import { ScanFace, CheckCircle2, XCircle, GraduationCap, Users, Clock, User } from 'lucide-react';
+import { ScanFace, XCircle, GraduationCap, Users, Maximize2, Minimize2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
 interface ScanResponse {
@@ -15,7 +14,13 @@ interface ScanResponse {
     name: string;
     role: string;
     photo_url?: string;
-    profile: any;
+    profile?: {
+      grade?: string;
+      section?: string;
+      subject?: string;
+      contact_number?: string;
+      department?: string;
+    };
   };
 }
 
@@ -34,10 +39,28 @@ export default function GuardScanner() {
   const [inputValue, setInputValue] = useState('');
   const [recentScan, setRecentScan] = useState<ScanResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const userCacheRef = useRef<Map<string, CachedUser>>(new Map());
+  const scannerRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      scannerRef.current?.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen();
+    }
+  };
 
   useEffect(() => {
     api.get<Record<string, CachedUser>>('/api/scan/cache-all').then((res) => {
@@ -151,8 +174,20 @@ export default function GuardScanner() {
 
   return (
     <>
-      <div className="flex flex-col items-center justify-center h-full min-h-[80vh] relative">
+      <div ref={scannerRef} className={`flex flex-col items-center justify-center relative ${isFullscreen ? 'bg-white w-full h-full' : 'h-full min-h-[80vh]'}`}>
         
+        {/* Fullscreen Toggle Button */}
+        <button 
+          onClick={toggleFullscreen}
+          className="absolute top-6 right-6 p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors z-50 text-slate-500 hover:text-slate-700 shadow-sm flex items-center gap-2"
+        >
+          {isFullscreen ? (
+            <><Minimize2 className="w-5 h-5" /><span className="font-semibold text-sm">Exit Fullscreen</span></>
+          ) : (
+            <><Maximize2 className="w-5 h-5" /><span className="font-semibold text-sm">Fullscreen Mode</span></>
+          )}
+        </button>
+
         {/* Decorative background elements */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-maroon-50/50 rounded-full blur-3xl -z-10 pointer-events-none"></div>
 

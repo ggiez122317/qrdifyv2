@@ -7,6 +7,7 @@ const api = axios.create({
   headers: {
     'X-Requested-With': 'XMLHttpRequest',
     'Accept': 'application/json',
+    'Content-Type': 'application/json',
   },
   withCredentials: true,
 });
@@ -25,7 +26,9 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (!error.response) {
-      return Promise.reject({ message: 'Network error. Please check your connection.', errors: undefined } as ApiError);
+      const e = new Error('Network error. Please check your connection.');
+      (e as any).errors = undefined;
+      return Promise.reject(e);
     }
 
     const data = error.response.data as ApiError | undefined;
@@ -58,7 +61,11 @@ api.interceptors.response.use(
       }
     }
 
-    return Promise.reject(data || { message: 'An unexpected error occurred', errors: undefined });
+    const apiErr = data || { message: 'An unexpected error occurred', errors: undefined } as ApiError;
+    const e = new Error(apiErr.message || 'An unexpected error occurred');
+    (e as any).errors = apiErr.errors;
+    (e as any).status = error.response?.status;
+    return Promise.reject(e);
   }
 );
 
