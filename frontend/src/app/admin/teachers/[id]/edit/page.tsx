@@ -98,7 +98,7 @@ export default function EditTeacherPage() {
         <div className="flex flex-col flex-1 min-w-0 h-full">
           {/* Header */}
           <div className="flex items-center gap-4 mb-6 shrink-0">
-            <Link href="/admin/teachers" className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm text-slate-500">
+            <Link href="/admin/teachers" className="p-2 bg-white border border-slate-200 rounded-none hover:bg-slate-50 transition-colors shadow-sm text-slate-500">
               <ChevronLeft className="w-5 h-5" />
             </Link>
             <div>
@@ -108,7 +108,7 @@ export default function EditTeacherPage() {
           </div>
   
           {/* Left Column: Scrollable Form */}
-          <div className="flex-1 overflow-y-auto bg-white rounded-2xl shadow-sm border border-slate-200 p-8 h-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="flex-1 overflow-y-auto bg-white rounded-none shadow-sm border border-slate-200 p-8 h-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <form onSubmit={handleSubmit} className="space-y-8 max-w-2xl">
               
               <div className="space-y-6">
@@ -191,18 +191,18 @@ export default function EditTeacherPage() {
                     <div className="w-2.5 h-2.5 rounded-full bg-slate-200"></div>
                   </div>
                 </div>
-                <div className="flex bg-slate-100 p-1 rounded-lg">
+                <div className="flex bg-slate-100 p-1 rounded-none">
                   <button 
                     type="button"
                     onClick={() => setActiveSide('front')}
-                    className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${activeSide === 'front' ? 'bg-white text-maroon-600 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-none transition-all ${activeSide === 'front' ? 'bg-white text-maroon-600 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}
                   >
                     Front View
                   </button>
                   <button 
                     type="button"
                     onClick={() => setActiveSide('back')}
-                    className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${activeSide === 'back' ? 'bg-white text-maroon-600 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-none transition-all ${activeSide === 'back' ? 'bg-white text-maroon-600 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}
                   >
                     Back View
                   </button>

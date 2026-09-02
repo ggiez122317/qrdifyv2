@@ -61,6 +61,12 @@ class SectionController extends Controller
         ], 201);
     }
 
+    public function show($id)
+    {
+        $section = Section::findOrFail($id);
+        return response()->json($section);
+    }
+
     public function update(Request $request, $id)
     {
         $section = Section::findOrFail($id);

@@ -179,7 +179,7 @@ export default function GuardScanner() {
         {/* Fullscreen Toggle Button */}
         <button 
           onClick={toggleFullscreen}
-          className="absolute top-6 right-6 p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors z-50 text-slate-500 hover:text-slate-700 shadow-sm flex items-center gap-2"
+          className="absolute top-6 right-6 p-3 bg-white border border-slate-200 rounded-none hover:bg-slate-50 transition-colors z-50 text-slate-500 hover:text-slate-700 shadow-sm flex items-center gap-2"
         >
           {isFullscreen ? (
             <><Minimize2 className="w-5 h-5" /><span className="font-semibold text-sm">Exit Fullscreen</span></>
@@ -191,14 +191,14 @@ export default function GuardScanner() {
         {/* Decorative background elements */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-maroon-50/50 rounded-full blur-3xl -z-10 pointer-events-none"></div>
 
-        <div className="w-full max-w-5xl text-center flex flex-col items-center justify-center space-y-12">
+        <div className="w-full px-8 text-center flex flex-col items-center justify-center space-y-12">
           
           <div className="space-y-4">
             <h1 className="text-5xl font-extrabold text-slate-800 tracking-tight">Active Scanner</h1>
             <p className="text-slate-500 text-xl font-medium">Please scan your QR code below.</p>
           </div>
             
-          <div className="w-full flex flex-col items-center justify-center min-h-[400px]">
+          <div className="w-full flex flex-col items-center justify-center min-h-[500px]">
             
             {/* Hidden input to capture scanner strokes */}
             <Input 
@@ -209,9 +209,9 @@ export default function GuardScanner() {
               autoFocus
               readOnly
             />{recentScan ? (
-              <div className="w-full max-w-5xl mx-auto bg-white rounded-[2rem] shadow-sm p-10 text-left relative z-10">
-                <div className="flex gap-12 items-center">
-                  <div className="w-[340px] h-[400px] shrink-0 bg-slate-100 rounded-3xl overflow-hidden relative">
+              <div className="w-full mx-auto bg-white shadow-sm p-12 text-left relative z-10">
+                <div className="flex gap-16 items-center">
+                  <div className="w-[420px] h-[480px] shrink-0 bg-slate-100 overflow-hidden relative">
                     {recentScan.user.photo_url ? (
                       <img 
                         src={getImageUrl(recentScan.user.photo_url)} 
@@ -223,49 +223,49 @@ export default function GuardScanner() {
                         }}
                       />
                     ) : null}
-                    <div className={`w-full h-full flex items-center justify-center text-7xl font-bold text-slate-400 ${recentScan.user.photo_url ? 'hidden' : ''}`}>
+                    <div className={`w-full h-full flex items-center justify-center text-8xl font-bold text-slate-400 ${recentScan.user.photo_url ? 'hidden' : ''}`}>
                       {recentScan.user.name.substring(0, 2).toUpperCase()}
                     </div>
                   </div>
                   <div className="flex-1">
-                    <h2 className="text-[#0f172a] text-6xl font-bold leading-[1.1] tracking-tight mb-8">
+                    <h2 className="text-[#0f172a] text-7xl font-bold leading-[1.1] tracking-tight mb-10">
                       {recentScan.user.name.split(' ').slice(0, 2).join(' ')}<br />
                       {recentScan.user.name.split(' ').slice(2).join(' ')}
                     </h2>
-                    <div className="h-px w-full bg-gray-100 mb-8"></div>
+                    <div className="h-px w-full bg-gray-100 mb-10"></div>
                     
-                    <div className="space-y-8">
+                    <div className="space-y-10">
                       {recentScan.user.profile?.grade ? (
                         <>
-                          <div className="flex items-center gap-6">
-                            <div className="w-[72px] h-[72px] bg-[#fdf4f4] rounded-2xl flex items-center justify-center shrink-0">
-                               <GraduationCap className="text-[#7a1315] w-9 h-9" />
+                          <div className="flex items-center gap-8">
+                            <div className="w-[88px] h-[88px] bg-[#fdf4f4] rounded-none flex items-center justify-center shrink-0">
+                               <GraduationCap className="text-[#0B3A82] w-11 h-11" />
                             </div>
                             <div>
-                              <p className="text-slate-500 font-medium text-xl mb-1">Grade</p>
-                              <p className="text-[#7a1315] font-bold text-3xl">{recentScan.user.profile.grade}</p>
+                              <p className="text-slate-500 font-medium text-2xl mb-1">Grade</p>
+                              <p className="text-[#0B3A82] font-bold text-4xl">{recentScan.user.profile.grade}</p>
                             </div>
                           </div>
                           {recentScan.user.profile?.section && (
-                            <div className="flex items-center gap-6">
-                              <div className="w-[72px] h-[72px] bg-[#fdf4f4] rounded-2xl flex items-center justify-center shrink-0">
-                                 <Users className="text-[#7a1315] w-9 h-9" />
+                            <div className="flex items-center gap-8">
+                              <div className="w-[88px] h-[88px] bg-[#fdf4f4] rounded-none flex items-center justify-center shrink-0">
+                                 <Users className="text-[#0B3A82] w-11 h-11" />
                               </div>
                               <div>
-                                <p className="text-slate-500 font-medium text-xl mb-1">Section</p>
-                                <p className="text-[#7a1315] font-bold text-3xl">{recentScan.user.profile.section}</p>
+                                <p className="text-slate-500 font-medium text-2xl mb-1">Section</p>
+                                <p className="text-[#0B3A82] font-bold text-4xl">{recentScan.user.profile.section}</p>
                               </div>
                             </div>
                           )}
                         </>
                       ) : recentScan.user.profile?.department ? (
-                        <div className="flex items-center gap-6">
-                          <div className="w-[72px] h-[72px] bg-[#fdf4f4] rounded-2xl flex items-center justify-center shrink-0">
-                             <Users className="text-[#7a1315] w-9 h-9" />
+                        <div className="flex items-center gap-8">
+                          <div className="w-[88px] h-[88px] bg-[#fdf4f4] rounded-none flex items-center justify-center shrink-0">
+                             <Users className="text-[#0B3A82] w-11 h-11" />
                           </div>
                           <div>
-                            <p className="text-slate-500 font-medium text-xl mb-1">Department</p>
-                            <p className="text-[#7a1315] font-bold text-3xl">{recentScan.user.profile.department}</p>
+                            <p className="text-slate-500 font-medium text-2xl mb-1">Department</p>
+                            <p className="text-[#0B3A82] font-bold text-4xl">{recentScan.user.profile.department}</p>
                           </div>
                         </div>
                       ) : null}
@@ -275,17 +275,17 @@ export default function GuardScanner() {
               </div>
             ) : error ? (
               <div className="w-full text-center">
-                <XCircle size={140} className="mx-auto mb-6 text-red-500 drop-shadow-sm" />
-                <h3 className="text-4xl font-extrabold text-slate-800">Scan Failed</h3>
-                <p className="text-red-600 font-bold text-xl mt-6 bg-red-100/50 border border-red-200 py-4 px-8 rounded-2xl inline-block shadow-sm">{error}</p>
+                <XCircle size={160} className="mx-auto mb-8 text-red-500 drop-shadow-sm" />
+                <h3 className="text-5xl font-extrabold text-slate-800">Scan Failed</h3>
+                <p className="text-red-600 font-bold text-xl mt-8 bg-red-100/50 border border-red-200 py-4 px-8 rounded-none inline-block shadow-sm">{error}</p>
               </div>
             ) : (
               <div className="flex flex-col items-center text-slate-300 transition-all">
                 <div className="relative group">
-                  <div className="absolute -inset-8 bg-maroon-100 rounded-full animate-pulse opacity-60"></div>
-                  <ScanFace size={160} className="relative z-10 text-slate-300 group-hover:text-maroon-400 transition-colors duration-500" />
+                  <div className="absolute -inset-12 bg-maroon-100 rounded-full animate-pulse opacity-60"></div>
+                  <ScanFace size={200} className="relative z-10 text-slate-300 group-hover:text-maroon-400 transition-colors duration-500" />
                 </div>
-                <p className="mt-12 text-2xl font-semibold text-slate-400">Waiting for next scan...</p>
+                <p className="mt-16 text-3xl font-semibold text-slate-400">Waiting for next scan...</p>
               </div>
             )}
           </div>

@@ -49,6 +49,7 @@ export default function CategoryLevelPage() {
 
   // Stats state
   const [stats, setStats] = useState({ gradeLevels: 0, subjects: 0, active: 0, inactive: 0 });
+  const [gradeLevelsList, setGradeLevelsList] = useState<{id: number, name: string}[]>([]);
 
   // Modals state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -117,6 +118,9 @@ export default function CategoryLevelPage() {
   useEffect(() => {
     // eslint-disable-next-line
     fetchData();
+    api.get('/api/grade-levels')
+      .then(res => setGradeLevelsList(res.data))
+      .catch(err => console.error('Failed to fetch grade levels list', err));
   }, [fetchData]);
 
   // Debounced search
@@ -214,10 +218,10 @@ export default function CategoryLevelPage() {
       <div className="max-w-[1400px] mx-auto w-full flex flex-col gap-6">
         
         {/* Header section */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-[#161920] p-6 rounded-[1rem] border border-slate-200 dark:border-white/5 shadow-sm">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-[#161920] p-6 rounded-none border border-slate-200 dark:border-white/5 shadow-sm">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-500/10 flex items-center justify-center border border-red-100 dark:border-red-500/20">
-              <GraduationCap className="w-6 h-6 text-[#7a1315] dark:text-red-400" />
+            <div className="w-12 h-12 rounded-none bg-red-50 dark:bg-red-500/10 flex items-center justify-center border border-red-100 dark:border-red-500/20">
+              <GraduationCap className="w-6 h-6 text-[#0B3A82] dark:text-red-400" />
             </div>
             <div>
               <h1 className="text-[22px] font-bold text-slate-900 dark:text-white tracking-tight">
@@ -230,7 +234,7 @@ export default function CategoryLevelPage() {
           </div>
           <Button 
             onClick={() => openModal()}
-            className="bg-[#7a1315] hover:bg-[#5a0d0f] text-white shadow-sm font-semibold h-[42px] px-6 rounded-xl transition-all"
+            className="bg-[#0B3A82] hover:bg-[#092558] text-white shadow-sm font-semibold h-[42px] px-6 rounded-none transition-all"
           >
             <Plus className="w-4 h-4 mr-2" />
             Add {activeTab === 'grade_levels' ? 'Grade Level' : (activeTab === 'sections' ? 'Section' : 'Subject')}
@@ -239,8 +243,8 @@ export default function CategoryLevelPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white dark:bg-[#161920] p-5 rounded-[1rem] border border-slate-200 dark:border-white/5 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-500/10 flex items-center justify-center">
+          <div className="bg-white dark:bg-[#161920] p-5 rounded-none border border-slate-200 dark:border-white/5 shadow-sm flex items-center gap-4">
+            <div className="w-12 h-12 rounded-none bg-red-50 dark:bg-red-500/10 flex items-center justify-center">
               <Layers className="w-6 h-6 text-red-500" />
             </div>
             <div>
@@ -249,8 +253,8 @@ export default function CategoryLevelPage() {
               <div className="text-[11px] text-slate-400 font-medium">Total grade levels</div>
             </div>
           </div>
-          <div className="bg-white dark:bg-[#161920] p-5 rounded-[1rem] border border-slate-200 dark:border-white/5 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center">
+          <div className="bg-white dark:bg-[#161920] p-5 rounded-none border border-slate-200 dark:border-white/5 shadow-sm flex items-center gap-4">
+            <div className="w-12 h-12 rounded-none bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center">
               <BookOpen className="w-6 h-6 text-blue-500" />
             </div>
             <div>
@@ -259,8 +263,8 @@ export default function CategoryLevelPage() {
               <div className="text-[11px] text-slate-400 font-medium">Total subjects</div>
             </div>
           </div>
-          <div className="bg-white dark:bg-[#161920] p-5 rounded-[1rem] border border-slate-200 dark:border-white/5 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-green-50 dark:bg-green-500/10 flex items-center justify-center">
+          <div className="bg-white dark:bg-[#161920] p-5 rounded-none border border-slate-200 dark:border-white/5 shadow-sm flex items-center gap-4">
+            <div className="w-12 h-12 rounded-none bg-green-50 dark:bg-green-500/10 flex items-center justify-center">
               <CheckCircle className="w-6 h-6 text-green-500" />
             </div>
             <div>
@@ -269,8 +273,8 @@ export default function CategoryLevelPage() {
               <div className="text-[11px] text-slate-400 font-medium">Currently active</div>
             </div>
           </div>
-          <div className="bg-white dark:bg-[#161920] p-5 rounded-[1rem] border border-slate-200 dark:border-white/5 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-orange-50 dark:bg-orange-500/10 flex items-center justify-center">
+          <div className="bg-white dark:bg-[#161920] p-5 rounded-none border border-slate-200 dark:border-white/5 shadow-sm flex items-center gap-4">
+            <div className="w-12 h-12 rounded-none bg-orange-50 dark:bg-orange-500/10 flex items-center justify-center">
               <Archive className="w-6 h-6 text-orange-500" />
             </div>
             <div>
@@ -282,7 +286,7 @@ export default function CategoryLevelPage() {
         </div>
 
         {/* Data Container */}
-        <div className="bg-white dark:bg-[#161920] rounded-[1rem] shadow-sm border border-slate-200 dark:border-white/5 overflow-hidden flex flex-col flex-1">
+        <div className="bg-white dark:bg-[#161920] rounded-none shadow-sm border border-slate-200 dark:border-white/5 overflow-hidden flex flex-col flex-1">
           
           {/* Tabs & Controls */}
           <div className="flex flex-col md:flex-row justify-between items-center px-6 py-4 border-b border-slate-200 dark:border-white/5 gap-4">
@@ -293,42 +297,42 @@ export default function CategoryLevelPage() {
                 onClick={() => { setActiveTab('grade_levels'); setCurrentPage(1); setSearchTerm(''); }}
                 className={`flex items-center gap-2 pb-4 pt-1 text-[14.5px] font-bold transition-all relative ${
                   activeTab === 'grade_levels' 
-                    ? 'text-[#7a1315] dark:text-red-400' 
+                    ? 'text-[#0B3A82] dark:text-red-400' 
                     : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                 }`}
               >
                 <Layers className="w-4 h-4" />
                 Grade Levels
                 {activeTab === 'grade_levels' && (
-                  <div className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-[#7a1315] dark:bg-red-400"></div>
+                  <div className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-[#0B3A82] dark:bg-red-400"></div>
                 )}
               </button>
               <button
                 onClick={() => { setActiveTab('subjects'); setCurrentPage(1); setSearchTerm(''); }}
                 className={`flex items-center gap-2 pb-4 pt-1 text-[14.5px] font-bold transition-all relative ${
                   activeTab === 'subjects' 
-                    ? 'text-[#7a1315] dark:text-red-400' 
+                    ? 'text-[#0B3A82] dark:text-red-400' 
                     : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                 }`}
               >
                 <BookOpen className="w-4 h-4" />
                 Subjects
                 {activeTab === 'subjects' && (
-                  <div className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-[#7a1315] dark:bg-red-400"></div>
+                  <div className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-[#0B3A82] dark:bg-red-400"></div>
                 )}
               </button>
               <button
                 onClick={() => { setActiveTab('sections'); setCurrentPage(1); setSearchTerm(''); }}
                 className={`flex items-center gap-2 pb-4 pt-1 text-[14.5px] font-bold transition-all relative ${
                   activeTab === 'sections' 
-                    ? 'text-[#7a1315] dark:text-red-400' 
+                    ? 'text-[#0B3A82] dark:text-red-400' 
                     : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                 }`}
               >
                 <SlidersHorizontal className="w-4 h-4" />
                 Sections
                 {activeTab === 'sections' && (
-                  <div className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-[#7a1315] dark:bg-red-400"></div>
+                  <div className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-[#0B3A82] dark:bg-red-400"></div>
                 )}
               </button>
             </div>
@@ -336,18 +340,18 @@ export default function CategoryLevelPage() {
             {/* Search and Filters */}
             <div className="flex items-center gap-3 w-full md:w-auto">
               <div className="relative w-full md:w-[320px] group">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#7a1315] transition-colors" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#0B3A82] transition-colors" />
                 <Input 
                   placeholder="Search records by name or code..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 h-10 bg-white dark:bg-[#0f1115] border-slate-200 dark:border-white/10 rounded-lg text-sm focus-visible:ring-1 focus-visible:ring-[#7a1315] focus-visible:border-[#7a1315] transition-all"
+                  className="pl-10 h-10 bg-white dark:bg-[#0f1115] border-slate-200 dark:border-white/10 rounded-none text-sm focus-visible:ring-1 focus-visible:ring-[#0B3A82] focus-visible:border-[#0B3A82] transition-all"
                 />
               </div>
-              <Button variant="outline" className="h-10 px-4 gap-2 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 font-semibold rounded-lg shrink-0">
+              <Button variant="outline" className="h-10 px-4 gap-2 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 font-semibold rounded-none shrink-0">
                 <Filter className="w-4 h-4" /> Filters
               </Button>
-              <Button variant="outline" size="icon" className="h-10 w-10 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 shrink-0 rounded-lg">
+              <Button variant="outline" size="icon" className="h-10 w-10 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 shrink-0 rounded-none">
                 <SlidersHorizontal className="w-4 h-4" />
               </Button>
             </div>
@@ -413,8 +417,8 @@ export default function CategoryLevelPage() {
                               <svg width="100" height="100" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M20 90 Q 25 80 40 85 T 60 90" stroke="#f1f5f9" strokeWidth="10" strokeLinecap="round" />
                                 <rect x="40" y="20" width="46" height="60" rx="4" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="2.5"/>
-                                <circle cx="75" cy="75" r="14" fill="white" stroke="#7a1315" strokeWidth="3.5"/>
-                                <path d="M85 85L98 98" stroke="#7a1315" strokeWidth="4.5" strokeLinecap="round"/>
+                                <circle cx="75" cy="75" r="14" fill="white" stroke="#0B3A82" strokeWidth="3.5"/>
+                                <path d="M85 85L98 98" stroke="#0B3A82" strokeWidth="4.5" strokeLinecap="round"/>
                               </svg>
                            </div>
                         </div>
@@ -451,7 +455,7 @@ export default function CategoryLevelPage() {
                         )}
 
                         <TableCell className="py-3">
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11.5px] font-bold ${
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-none text-[11.5px] font-bold ${
                             record.status === 'inactive' 
                               ? 'bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-300' 
                               : 'bg-[#ecfccb] text-[#4d7c0f] dark:bg-green-500/10 dark:text-green-500'
@@ -465,7 +469,7 @@ export default function CategoryLevelPage() {
                               variant="ghost" 
                               size="icon"
                               onClick={() => openModal(record)}
-                              className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg border border-transparent hover:border-blue-100 transition-all"
+                              className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-none border border-transparent hover:border-blue-100 transition-all"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
                             </Button>
@@ -473,14 +477,14 @@ export default function CategoryLevelPage() {
                               variant="ghost" 
                               size="icon"
                               onClick={() => { setSelectedRecord(record); setIsDeleteModalOpen(true); }}
-                              className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg border border-transparent hover:border-red-100 transition-all"
+                              className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-none border border-transparent hover:border-red-100 transition-all"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </Button>
                             <Button 
                               variant="ghost" 
                               size="icon"
-                              className="h-8 w-8 text-slate-400 hover:text-slate-600 hover:bg-slate-50 dark:hover:bg-white/5 rounded-lg transition-all"
+                              className="h-8 w-8 text-slate-400 hover:text-slate-600 hover:bg-slate-50 dark:hover:bg-white/5 rounded-none transition-all"
                             >
                               <MoreVertical className="w-4 h-4" />
                             </Button>
@@ -502,7 +506,7 @@ export default function CategoryLevelPage() {
               </div>
               <div className="flex items-center gap-4 mt-4 sm:mt-0">
                 <div className="flex items-center gap-2">
-                  <select className="bg-white dark:bg-[#0f1115] border border-slate-200 dark:border-white/10 rounded-md text-[13px] font-medium text-slate-600 h-8 px-2 focus:outline-none">
+                  <select className="bg-white dark:bg-[#0f1115] border border-slate-200 dark:border-white/10 rounded-none text-[13px] font-medium text-slate-600 h-8 px-2 focus:outline-none">
                     <option>10 per page</option>
                     <option>20 per page</option>
                     <option>50 per page</option>
@@ -514,15 +518,15 @@ export default function CategoryLevelPage() {
                     size="icon"
                     disabled={currentPage === 1}
                     onClick={() => setCurrentPage(p => p - 1)}
-                    className="h-8 w-8 rounded-md border-slate-200 dark:border-white/10"
+                    className="h-8 w-8 rounded-none border-slate-200 dark:border-white/10"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
-                  <Button variant="default" className="h-8 w-8 rounded-md bg-[#7a1315] hover:bg-[#5a0d0f] text-white p-0 text-[13px] font-bold">
+                  <Button variant="default" className="h-8 w-8 rounded-none bg-[#0B3A82] hover:bg-[#092558] text-white p-0 text-[13px] font-bold">
                     {currentPage}
                   </Button>
                   {currentPage < totalPages && (
-                    <Button variant="outline" onClick={() => setCurrentPage(currentPage + 1)} className="h-8 w-8 rounded-md border-slate-200 dark:border-white/10 p-0 text-[13px] font-bold text-slate-600">
+                    <Button variant="outline" onClick={() => setCurrentPage(currentPage + 1)} className="h-8 w-8 rounded-none border-slate-200 dark:border-white/10 p-0 text-[13px] font-bold text-slate-600">
                       {currentPage + 1}
                     </Button>
                   )}
@@ -531,7 +535,7 @@ export default function CategoryLevelPage() {
                     size="icon"
                     disabled={currentPage === totalPages}
                     onClick={() => setCurrentPage(p => p + 1)}
-                    className="h-8 w-8 rounded-md border-slate-200 dark:border-white/10"
+                    className="h-8 w-8 rounded-none border-slate-200 dark:border-white/10"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </Button>
@@ -544,7 +548,7 @@ export default function CategoryLevelPage() {
 
       {/* Add/Edit Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[425px] p-6 rounded-2xl bg-white dark:bg-[#161920] border-slate-200 dark:border-white/10 shadow-xl overflow-hidden">
+        <DialogContent className="sm:max-w-[425px] p-6 rounded-none bg-white dark:bg-[#161920] border-slate-200 dark:border-white/10 shadow-xl overflow-hidden">
           <DialogHeader className="mb-2">
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">
               {selectedRecord ? 'Edit' : 'Add'} {activeTab === 'grade_levels' ? 'Grade Level' : (activeTab === 'sections' ? 'Section' : 'Subject')}
@@ -578,6 +582,22 @@ export default function CategoryLevelPage() {
               </div>
             )}
             
+            {activeTab === 'sections' && (
+              <div className="space-y-2">
+                <label className="text-[13px] font-semibold text-slate-700 dark:text-slate-300">Grade Level</label>
+                <select
+                  value={formData.grade_level}
+                  onChange={(e) => setFormData({ ...formData, grade_level: e.target.value })}
+                  className="flex h-11 w-full rounded-none border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950 dark:border-slate-800 dark:bg-slate-950 dark:ring-offset-slate-950 dark:focus-visible:ring-slate-300"
+                >
+                  <option value="">Select Grade Level</option>
+                  {gradeLevelsList.map(gl => (
+                    <option key={gl.id} value={gl.name}>{gl.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            
             {activeTab === 'grade_levels' && (
               <div className="space-y-2">
                 <label className="text-[13px] font-semibold text-slate-700 dark:text-slate-300">Description</label>
@@ -595,7 +615,7 @@ export default function CategoryLevelPage() {
               <select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                className="flex h-11 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950 dark:border-slate-800 dark:bg-slate-950 dark:ring-offset-slate-950 dark:focus-visible:ring-slate-300"
+                className="flex h-11 w-full rounded-none border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950 dark:border-slate-800 dark:bg-slate-950 dark:ring-offset-slate-950 dark:focus-visible:ring-slate-300"
               >
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
@@ -606,14 +626,14 @@ export default function CategoryLevelPage() {
             <Button 
               variant="outline" 
               onClick={() => setIsModalOpen(false)}
-              className="h-11 px-6 rounded-xl font-semibold border-slate-200 hover:bg-slate-50 dark:border-white/10 dark:hover:bg-white/5"
+              className="h-11 px-6 rounded-none font-semibold border-slate-200 hover:bg-slate-50 dark:border-white/10 dark:hover:bg-white/5"
             >
               Cancel
             </Button>
             <Button 
               onClick={saveRecord} 
               disabled={isSubmitting || !formData.name} 
-              className="h-11 px-6 rounded-xl font-semibold bg-[#7a1315] hover:bg-[#5a0d0f] text-white shadow-sm transition-all"
+              className="h-11 px-6 rounded-none font-semibold bg-[#0B3A82] hover:bg-[#092558] text-white shadow-sm transition-all"
             >
               {isSubmitting ? 'Saving...' : 'Save Changes'}
             </Button>

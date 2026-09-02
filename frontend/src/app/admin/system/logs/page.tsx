@@ -104,7 +104,7 @@ export default function UserLogsPage() {
         </div>
 
         {/* Filters and Search */}
-        <div className="bg-white p-4 rounded-[1.25rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 relative z-10">
+        <div className="bg-white p-4 rounded-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 relative z-10">
           <div className="relative w-full sm:w-[350px]">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
               <Search className="h-4 w-4 text-slate-400" />
@@ -114,13 +114,13 @@ export default function UserLogsPage() {
               placeholder="Search user, action, or IP..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-11 w-full bg-[#f8f9fa] border-none text-[13px] font-medium placeholder:text-slate-400 rounded-xl focus:ring-2 focus:ring-[#7a1315]/20 transition-all"
+              className="pl-10 h-11 w-full bg-[#f8f9fa] border-none text-[13px] font-medium placeholder:text-slate-400 rounded-none focus:ring-2 focus:ring-[#0B3A82]/20 transition-all"
             />
           </div>
         </div>
 
         {/* Main Table Area */}
-        <div className="bg-white rounded-[1.25rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden relative z-0">
+        <div className="bg-white rounded-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden relative z-0">
           <div className="overflow-x-auto min-h-[400px]">
             <Table>
               <TableHeader className="bg-[#fafafa]">
@@ -194,7 +194,7 @@ export default function UserLogsPage() {
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            className="h-8 px-3 rounded-lg border-slate-200 hover:border-slate-300 text-slate-600 hover:text-slate-900 shadow-sm"
+                            className="h-8 px-3 rounded-none border-slate-200 hover:border-slate-300 text-slate-600 hover:text-slate-900 shadow-sm"
                             onClick={() => setSelectedLog(log)}
                           >
                             <Eye className="w-3.5 h-3.5 mr-1.5" />
@@ -205,7 +205,7 @@ export default function UserLogsPage() {
                             <Button 
                               variant="outline" 
                               size="sm" 
-                              className="h-8 px-3 rounded-lg border-red-200 bg-red-50 hover:bg-red-100 text-red-600 shadow-sm"
+                              className="h-8 px-3 rounded-none border-red-200 bg-red-50 hover:bg-red-100 text-red-600 shadow-sm"
                               onClick={() => handleBlockUser(log.user.id, log.user.name)}
                             >
                               <ShieldAlert className="w-3.5 h-3.5 mr-1.5" />
@@ -227,13 +227,13 @@ export default function UserLogsPage() {
               Showing {filteredLogs.length === 0 ? 0 : ((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredLogs.length)} of {filteredLogs.length} entries
             </div>
             
-            <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+            <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-none p-1 shadow-sm">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1 || filteredLogs.length === 0}
-                className="h-8 w-8 p-0 rounded-lg text-slate-500 hover:text-slate-900"
+                className="h-8 w-8 p-0 rounded-none text-slate-500 hover:text-slate-900"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -251,9 +251,9 @@ export default function UserLogsPage() {
                       variant={currentPage === pageNum ? 'default' : 'ghost'}
                       size="sm"
                       onClick={() => setCurrentPage(pageNum)}
-                      className={`h-8 w-8 p-0 rounded-lg text-[13px] font-bold ${
+                      className={`h-8 w-8 p-0 rounded-none text-[13px] font-bold ${
                         currentPage === pageNum 
-                          ? 'bg-[#7a1315] hover:bg-[#5a0e0f] text-white shadow-sm' 
+                          ? 'bg-[#0B3A82] hover:bg-[#092558] text-white shadow-sm' 
                           : 'text-slate-600 hover:bg-slate-100'
                       }`}
                     >
@@ -268,7 +268,7 @@ export default function UserLogsPage() {
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages || filteredLogs.length === 0}
-                className="h-8 w-8 p-0 rounded-lg text-slate-500 hover:text-slate-900"
+                className="h-8 w-8 p-0 rounded-none text-slate-500 hover:text-slate-900"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -281,7 +281,7 @@ export default function UserLogsPage() {
       {selectedLog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setSelectedLog(null)} />
-          <div className="bg-white rounded-3xl p-6 md:p-8 w-full max-w-lg relative z-10 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-none p-6 md:p-8 w-full max-w-lg relative z-10 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             <button 
               onClick={() => setSelectedLog(null)}
               className="absolute top-6 right-6 w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors"
@@ -292,7 +292,7 @@ export default function UserLogsPage() {
             <h3 className="text-xl font-black text-slate-900 mb-6">Log Details</h3>
 
             <div className="space-y-5">
-              <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+              <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-none border border-slate-100">
                 <div className="w-12 h-12 rounded-full bg-white border-2 border-slate-200 shadow-sm overflow-hidden shrink-0 flex items-center justify-center">
                   {selectedLog.user?.photo_url ? (
                     <img src={getImageUrl(selectedLog.user.photo_url)} alt="" className="w-full h-full object-cover" />
@@ -307,17 +307,17 @@ export default function UserLogsPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                <div className="p-4 bg-white rounded-none border border-slate-100 shadow-sm">
                   <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">IP Address</div>
                   <div className="font-bold text-[14px] text-slate-900">{selectedLog.ip_address || 'N/A'}</div>
                 </div>
-                <div className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                <div className="p-4 bg-white rounded-none border border-slate-100 shadow-sm">
                   <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Timestamp</div>
                   <div className="font-bold text-[14px] text-slate-900">{new Date(selectedLog.created_at).toLocaleString()}</div>
                 </div>
               </div>
 
-              <div className="p-5 bg-[#fafafa] rounded-2xl border border-slate-100 shadow-inner">
+              <div className="p-5 bg-[#fafafa] rounded-none border border-slate-100 shadow-inner">
                 <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Action Description</div>
                 <div className="font-bold text-[14px] text-slate-800 leading-relaxed">
                   {selectedLog.action}
@@ -331,7 +331,7 @@ export default function UserLogsPage() {
             </div>
 
             <div className="mt-8 flex justify-end">
-              <Button onClick={() => setSelectedLog(null)} className="h-11 px-8 rounded-xl font-bold bg-slate-900 text-white hover:bg-slate-800">
+              <Button onClick={() => setSelectedLog(null)} className="h-11 px-8 rounded-none font-bold bg-slate-900 text-white hover:bg-slate-800">
                 Close
               </Button>
             </div>

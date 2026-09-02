@@ -131,7 +131,7 @@ export default function UserManagementPage() {
           
           <Button 
             onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#7a1315] hover:bg-[#5a0e0f] text-white transition-colors shadow-[0_4px_14px_rgba(122,19,21,0.3)] text-[14px] font-bold rounded-xl mt-4 sm:mt-0 h-auto"
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#0B3A82] hover:bg-[#092558] text-white transition-colors shadow-[0_4px_14px_rgba(11,58,130,0.3)] text-[14px] font-bold rounded-none mt-4 sm:mt-0 h-auto"
           >
             <UserPlus className="w-4 h-4" strokeWidth={3} />
             Add New User
@@ -139,7 +139,7 @@ export default function UserManagementPage() {
         </div>
 
         {/* Filters and Search */}
-        <div className="bg-white p-4 rounded-[1.25rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 relative z-10">
+        <div className="bg-white p-4 rounded-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 relative z-10">
           <div className="relative w-full sm:w-[350px]">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
               <Search className="h-4 w-4 text-slate-400" />
@@ -149,13 +149,13 @@ export default function UserManagementPage() {
               placeholder="Search by name, email, or role..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-11 w-full bg-[#f8f9fa] border-none text-[13px] font-medium placeholder:text-slate-400 rounded-xl focus:ring-2 focus:ring-[#7a1315]/20 transition-all"
+              className="pl-10 h-11 w-full bg-[#f8f9fa] border-none text-[13px] font-medium placeholder:text-slate-400 rounded-none focus:ring-2 focus:ring-[#0B3A82]/20 transition-all"
             />
           </div>
         </div>
 
         {/* Main Table Area */}
-        <div className="bg-white rounded-[1.25rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden relative z-0">
+        <div className="bg-white rounded-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden relative z-0">
           <div className="overflow-x-auto min-h-[400px]">
             <Table>
               <TableHeader className="bg-[#fafafa]">
@@ -230,7 +230,7 @@ export default function UserManagementPage() {
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            className={`h-8 px-3 rounded-lg shadow-sm ${user.is_blocked ? 'border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-600' : 'border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-600'}`}
+                            className={`h-8 px-3 rounded-none shadow-sm ${user.is_blocked ? 'border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-600' : 'border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-600'}`}
                             onClick={() => handleBlockUser(user.id, user.name, user.is_blocked)}
                           >
                             <ShieldAlert className="w-3.5 h-3.5 mr-1.5" />
@@ -240,7 +240,7 @@ export default function UserManagementPage() {
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            className="h-8 px-3 rounded-lg border-red-200 bg-red-50 hover:bg-red-100 text-red-600 shadow-sm"
+                            className="h-8 px-3 rounded-none border-red-200 bg-red-50 hover:bg-red-100 text-red-600 shadow-sm"
                             onClick={() => handleTerminateUser(user.id, user.name)}
                           >
                             <Trash2 className="w-3.5 h-3.5 mr-1.5" />
@@ -261,13 +261,13 @@ export default function UserManagementPage() {
               Showing {filteredUsers.length === 0 ? 0 : ((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredUsers.length)} of {filteredUsers.length} entries
             </div>
             
-            <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+            <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-none p-1 shadow-sm">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1 || filteredUsers.length === 0}
-                className="h-8 w-8 p-0 rounded-lg text-slate-500 hover:text-slate-900"
+                className="h-8 w-8 p-0 rounded-none text-slate-500 hover:text-slate-900"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -285,9 +285,9 @@ export default function UserManagementPage() {
                       variant={currentPage === pageNum ? 'default' : 'ghost'}
                       size="sm"
                       onClick={() => setCurrentPage(pageNum)}
-                      className={`h-8 w-8 p-0 rounded-lg text-[13px] font-bold ${
+                      className={`h-8 w-8 p-0 rounded-none text-[13px] font-bold ${
                         currentPage === pageNum 
-                          ? 'bg-[#7a1315] hover:bg-[#5a0e0f] text-white shadow-sm' 
+                          ? 'bg-[#0B3A82] hover:bg-[#092558] text-white shadow-sm' 
                           : 'text-slate-600 hover:bg-slate-100'
                       }`}
                     >
@@ -302,7 +302,7 @@ export default function UserManagementPage() {
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages || filteredUsers.length === 0}
-                className="h-8 w-8 p-0 rounded-lg text-slate-500 hover:text-slate-900"
+                className="h-8 w-8 p-0 rounded-none text-slate-500 hover:text-slate-900"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -315,7 +315,7 @@ export default function UserManagementPage() {
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsAddModalOpen(false)} />
-          <div className="bg-white rounded-3xl p-6 md:p-8 w-full max-w-md relative z-10 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-none p-6 md:p-8 w-full max-w-md relative z-10 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             <button 
               onClick={() => setIsAddModalOpen(false)}
               className="absolute top-6 right-6 w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors"
@@ -333,7 +333,7 @@ export default function UserManagementPage() {
                   required
                   value={newUserData.name}
                   onChange={(e) => setNewUserData({...newUserData, name: e.target.value})}
-                  className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#7a1315]/20 focus:border-[#7a1315]"
+                  className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-none text-[13px] font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0B3A82]/20 focus:border-[#0B3A82]"
                 />
               </div>
 
@@ -344,7 +344,7 @@ export default function UserManagementPage() {
                   required
                   value={newUserData.email}
                   onChange={(e) => setNewUserData({...newUserData, email: e.target.value})}
-                  className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#7a1315]/20 focus:border-[#7a1315]"
+                  className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-none text-[13px] font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0B3A82]/20 focus:border-[#0B3A82]"
                 />
               </div>
               
@@ -356,7 +356,7 @@ export default function UserManagementPage() {
                   minLength={8}
                   value={newUserData.password}
                   onChange={(e) => setNewUserData({...newUserData, password: e.target.value})}
-                  className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#7a1315]/20 focus:border-[#7a1315]"
+                  className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-none text-[13px] font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0B3A82]/20 focus:border-[#0B3A82]"
                 />
               </div>
 
@@ -366,7 +366,7 @@ export default function UserManagementPage() {
                   <select 
                     value={newUserData.role}
                     onChange={(e) => setNewUserData({...newUserData, role: e.target.value})}
-                    className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#7a1315]/20 focus:border-[#7a1315]"
+                    className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-none text-[13px] font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0B3A82]/20 focus:border-[#0B3A82]"
                   >
                     <option value="student">Student</option>
                     <option value="teacher">Teacher</option>
@@ -381,16 +381,16 @@ export default function UserManagementPage() {
                     type="text" 
                     value={newUserData.id_number}
                     onChange={(e) => setNewUserData({...newUserData, id_number: e.target.value})}
-                    className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#7a1315]/20 focus:border-[#7a1315]"
+                    className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-none text-[13px] font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0B3A82]/20 focus:border-[#0B3A82]"
                   />
                 </div>
               </div>
 
               <div className="pt-4 flex justify-end gap-3">
-                <Button type="button" variant="ghost" onClick={() => setIsAddModalOpen(false)} className="h-11 px-6 rounded-xl font-bold">
+                <Button type="button" variant="ghost" onClick={() => setIsAddModalOpen(false)} className="h-11 px-6 rounded-none font-bold">
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isSubmitting} className="h-11 px-8 rounded-xl font-bold bg-[#7a1315] hover:bg-[#5a0e0f] text-white">
+                <Button type="submit" disabled={isSubmitting} className="h-11 px-8 rounded-none font-bold bg-[#0B3A82] hover:bg-[#092558] text-white">
                   {isSubmitting ? 'Creating...' : 'Create User'}
                 </Button>
               </div>

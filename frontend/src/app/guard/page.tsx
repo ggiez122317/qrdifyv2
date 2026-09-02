@@ -28,7 +28,7 @@ interface StatsResponse {
 const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { color?: string; fill?: string; name: string; value: number | string }[]; label?: string }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white border border-slate-100 p-3 rounded-xl shadow-lg">
+      <div className="bg-white border border-slate-100 p-3 rounded-none shadow-lg">
         <p className="font-semibold text-slate-800 mb-1">{label}</p>
         {payload.map((entry: { color?: string; fill?: string; name: string; value: number | string }, index: number) => (
           <div key={index} className="flex items-center gap-2 text-sm">
@@ -170,7 +170,7 @@ export default function GuardStation() {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="pl-10 pr-4 py-2 bg-red-50 text-red-600 rounded-xl font-bold text-sm shadow-sm border border-red-100 focus:outline-none focus:ring-2 focus:ring-maroon-500/20 focus:border-maroon-300 cursor-pointer"
+              className="pl-10 pr-4 py-2 bg-red-50 text-red-600 rounded-none font-bold text-sm shadow-sm border border-red-100 focus:outline-none focus:ring-2 focus:ring-maroon-500/20 focus:border-maroon-300 cursor-pointer"
             />
             <Calendar className="absolute left-3.5 w-4 h-4 text-red-600 pointer-events-none" />
           </div>
@@ -179,7 +179,7 @@ export default function GuardStation() {
         {/* 4 KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden">
+          <div className="bg-white rounded-none p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden">
              <div className="flex justify-between items-start mb-2">
                 <h3 className="text-sm font-extrabold tracking-wider text-emerald-500 uppercase">Total Scanned</h3>
                 <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center">
@@ -192,7 +192,7 @@ export default function GuardStation() {
              </p>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden">
+          <div className="bg-white rounded-none p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden">
              <div className="flex justify-between items-start mb-2">
                 <h3 className="text-sm font-extrabold tracking-wider text-blue-500 uppercase">Present</h3>
                 <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
@@ -205,7 +205,7 @@ export default function GuardStation() {
              </p>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden">
+          <div className="bg-white rounded-none p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden">
              <div className="flex justify-between items-start mb-2">
                 <h3 className="text-sm font-extrabold tracking-wider text-amber-500 uppercase">Late</h3>
                 <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center">
@@ -218,7 +218,7 @@ export default function GuardStation() {
              </p>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden">
+          <div className="bg-white rounded-none p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden">
              <div className="flex justify-between items-start mb-2">
                 <h3 className="text-sm font-extrabold tracking-wider text-red-500 uppercase">Absent</h3>
                 <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center">
@@ -237,7 +237,7 @@ export default function GuardStation() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
           {/* Attendance Status Donut */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col">
+          <div className="bg-white rounded-none p-6 shadow-sm border border-slate-100 flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-slate-800">Attendance Status</h3>
               <div className="flex items-center gap-1 text-sm font-medium text-slate-600 bg-slate-50 border border-slate-100 px-3 py-1 rounded-lg cursor-pointer hover:bg-slate-100">
@@ -290,7 +290,7 @@ export default function GuardStation() {
                     ))}
                   </div>
 
-                  <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 flex items-center justify-between">
+                  <div className="bg-slate-50 rounded-none p-4 border border-slate-100 flex items-center justify-between">
                      <span className="text-sm font-semibold text-slate-600">Total Users</span>
                      <span className="text-xl font-extrabold text-slate-800">{totalUsers}</span>
                   </div>
@@ -299,7 +299,7 @@ export default function GuardStation() {
           </div>
 
           {/* Recent Scans List */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col">
+          <div className="bg-white rounded-none p-6 shadow-sm border border-slate-100 flex flex-col">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-bold text-slate-800">Recent Scans</h3>
               <button className="text-xs font-bold text-maroon-600 bg-red-50 hover:bg-red-100 px-4 py-1.5 rounded-lg transition-colors">
@@ -362,7 +362,7 @@ export default function GuardStation() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
           {/* Attendance Trend (Area Chart) */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col">
+          <div className="bg-white rounded-none p-6 shadow-sm border border-slate-100 flex flex-col">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-bold text-slate-800">Attendance Trend <span className="text-sm font-medium text-slate-400 ml-1">(This Week)</span></h3>
               <div className="flex items-center gap-1 text-sm font-medium text-slate-600 bg-slate-50 border border-slate-100 px-3 py-1 rounded-lg cursor-pointer hover:bg-slate-100">
@@ -389,7 +389,7 @@ export default function GuardStation() {
           </div>
 
           {/* Scans by Role Donut */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col">
+          <div className="bg-white rounded-none p-6 shadow-sm border border-slate-100 flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-slate-800">Scans by Role</h3>
               <div className="flex items-center gap-1 text-sm font-medium text-slate-600 bg-slate-50 border border-slate-100 px-3 py-1 rounded-lg cursor-pointer hover:bg-slate-100">
@@ -437,7 +437,7 @@ export default function GuardStation() {
                     ))}
                   </div>
 
-                  <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 flex items-center justify-between">
+                  <div className="bg-slate-50 rounded-none p-4 border border-slate-100 flex items-center justify-between">
                      <span className="text-sm font-semibold text-slate-600">Total Scans</span>
                      <span className="text-xl font-extrabold text-slate-800">{totalScans}</span>
                   </div>

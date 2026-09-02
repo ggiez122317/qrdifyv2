@@ -60,7 +60,7 @@ export default function SettingsPage() {
       <div className="flex flex-col md:flex-row gap-6">
         {/* Left Column - Navigation */}
         <div className="w-full md:w-64 shrink-0">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden sticky top-6">
+          <div className="bg-white rounded-none shadow-sm border border-slate-100 overflow-hidden sticky top-6">
             <nav className="flex flex-col p-2 space-y-1">
               <button 
                 onClick={() => setActiveTab('feedback')}

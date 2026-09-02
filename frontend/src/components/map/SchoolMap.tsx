@@ -263,12 +263,12 @@ export default function SchoolMap({ mode = 'admin' }: { mode?: 'admin' | 'princi
   const mapElement = (
     <>
       {isDrawing && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1001] bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg animate-pulse">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1001] bg-blue-600 text-white px-4 py-2 rounded-none text-sm font-bold shadow-lg animate-pulse">
           Click on the map to add boundary points
         </div>
       )}
 
-      <div className="absolute top-4 left-4 z-[1000] w-64 bg-white rounded-[10px] shadow-sm border border-slate-200 flex items-center px-3.5 py-2.5">
+      <div className="absolute top-4 left-4 z-[1000] w-64 bg-white rounded-none shadow-sm border border-slate-200 flex items-center px-3.5 py-2.5">
         <Search className="w-[18px] h-[18px] text-slate-400 mr-2" />
         <input
           type="text"
@@ -279,7 +279,7 @@ export default function SchoolMap({ mode = 'admin' }: { mode?: 'admin' | 'princi
         />
       </div>
 
-      <div className="absolute top-20 left-4 z-[1000] flex flex-col bg-white rounded-[10px] shadow-sm border border-slate-200 overflow-hidden">
+      <div className="absolute top-20 left-4 z-[1000] flex flex-col bg-white rounded-none shadow-sm border border-slate-200 overflow-hidden">
         <button onClick={() => zoomRef.current?.zoomIn()} className="w-10 h-10 flex items-center justify-center hover:bg-slate-50 border-b border-slate-100 text-slate-600"><Plus className="w-[18px] h-[18px]" /></button>
         <button onClick={() => zoomRef.current?.zoomOut()} className="w-10 h-10 flex items-center justify-center hover:bg-slate-50 border-b border-slate-100 text-slate-600"><Minus className="w-[18px] h-[18px]" /></button>
         <button onClick={locateUser} className="w-10 h-10 flex items-center justify-center hover:bg-slate-50 border-b border-slate-100 text-slate-600"><Crosshair className="w-[18px] h-[18px]" /></button>
@@ -288,26 +288,26 @@ export default function SchoolMap({ mode = 'admin' }: { mode?: 'admin' | 'princi
 
       {!isFullscreen && (
         <div className="absolute top-4 right-4 z-[1000] w-56 flex flex-col gap-3">
-          <div className="bg-white rounded-[12px] shadow-sm border border-slate-200 p-4">
+          <div className="bg-white rounded-none shadow-sm border border-slate-200 p-4">
             <h3 className="font-bold text-slate-800 text-[12px] mb-3">Map Style</h3>
             <div className="flex gap-1.5">
               <button
                 onClick={() => setMapType('street')}
-                className={`flex-1 py-2 rounded-[8px] text-[11px] font-bold transition-all ${mapType === 'street' ? 'bg-[#7f1d1d] text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                className={`flex-1 py-2 rounded-none text-[11px] font-bold transition-all ${mapType === 'street' ? 'bg-[#0B3A82] text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
               >Street</button>
               <button
                 onClick={() => setMapType('satellite')}
-                className={`flex-1 py-2 rounded-[8px] text-[11px] font-bold transition-all ${mapType === 'satellite' ? 'bg-[#7f1d1d] text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                className={`flex-1 py-2 rounded-none text-[11px] font-bold transition-all ${mapType === 'satellite' ? 'bg-[#0B3A82] text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
               >Satellite</button>
             </div>
           </div>
 
-          <div className="bg-white rounded-[12px] shadow-sm border border-slate-200 p-4">
+          <div className="bg-white rounded-none shadow-sm border border-slate-200 p-4">
             <h3 className="font-bold text-slate-800 text-[12px] mb-3">Map Layers</h3>
             <div className="flex flex-col gap-2.5">
               {(['schools', 'geofences', 'roads', 'rivers', 'landmarks'] as const).map((key) => (
                 <label key={key} className="flex items-center gap-3 cursor-pointer group" onClick={() => setLayers(prev => ({ ...prev, [key]: !prev[key] }))}>
-                  <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${layers[key] ? 'border-[#7f1d1d] bg-[#7f1d1d]' : 'border-slate-300 bg-white'}`}>
+                  <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${layers[key] ? 'border-[#0B3A82] bg-[#0B3A82]' : 'border-slate-300 bg-white'}`}>
                     {layers[key] && <CheckSquare className="w-3 h-3 text-white" />}
                   </div>
                   {key === 'schools' && <Building2 className="w-[14px] h-[14px] text-slate-400" />}
@@ -321,7 +321,7 @@ export default function SchoolMap({ mode = 'admin' }: { mode?: 'admin' | 'princi
             </div>
           </div>
 
-          <div className="bg-white rounded-[12px] shadow-sm border border-slate-200 p-4">
+          <div className="bg-white rounded-none shadow-sm border border-slate-200 p-4">
             <h3 className="font-bold text-slate-800 text-[12px] mb-3">Legend</h3>
             <div className="flex flex-col gap-2.5">
               <div className="flex items-center gap-3">
@@ -346,7 +346,7 @@ export default function SchoolMap({ mode = 'admin' }: { mode?: 'admin' | 'princi
       )}
 
       <div className="absolute bottom-4 left-4 z-[1000]">
-        <div className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-[6px] border border-slate-200 shadow-sm flex items-end gap-1 border-b-2 border-l-2 border-b-slate-800 border-l-slate-800 h-6">
+        <div className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-none border border-slate-200 shadow-sm flex items-end gap-1 border-b-2 border-l-2 border-b-slate-800 border-l-slate-800 h-6">
           <span className="text-[10px] font-bold text-slate-800 leading-none mb-0.5 ml-1">100 m</span>
         </div>
       </div>
@@ -418,7 +418,7 @@ export default function SchoolMap({ mode = 'admin' }: { mode?: 'admin' | 'princi
               <div className="flex flex-col gap-2 p-1 min-w-[150px]">
                 {student.photo_url && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={student.photo_url} alt={student.name} className="w-12 h-12 rounded-full mx-auto" />
+                  <img src={student.photo_url} alt={student.name} className="w-12 h-12 rounded-none mx-auto" />
                 )}
                 <div className="text-center">
                   <p className="font-bold text-sm m-0">{student.name}</p>
@@ -444,19 +444,19 @@ export default function SchoolMap({ mode = 'admin' }: { mode?: 'admin' | 'princi
         <div className="w-80 bg-white border-l border-slate-200 shadow-2xl flex flex-col z-[101]">
           <div className="p-6 border-b border-slate-100 flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-rose-50 text-[#7f1d1d] flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-none bg-rose-50 text-[#0B3A82] flex items-center justify-center shrink-0">
                 <MapPin className="w-5 h-5" />
               </div>
               <h2 className="text-lg font-bold text-slate-800">Map Toolkit</h2>
             </div>
-            <button onClick={() => { setIsFullscreen(false); setIsDrawing(false); }} className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center transition-colors">
+            <button onClick={() => { setIsFullscreen(false); setIsDrawing(false); }} className="w-8 h-8 rounded-none hover:bg-slate-100 flex items-center justify-center transition-colors">
               <X className="w-5 h-5 text-slate-500" />
             </button>
           </div>
           <div className="p-6 flex flex-col gap-4 flex-1 overflow-y-auto">
             {mode === 'principal' ? (
               <div className="flex flex-col gap-4">
-                <div className="bg-red-50 border border-red-100 rounded-[12px] p-4 mb-2">
+                <div className="bg-red-50 border border-red-100 rounded-none p-4 mb-2">
                   <p className="text-[13px] font-bold text-red-700">Outside Perimeter Alert</p>
                   <p className="text-[11px] text-red-600 mt-1">Students listed below are currently detected outside the active geofence boundary.</p>
                 </div>
@@ -468,12 +468,12 @@ export default function SchoolMap({ mode = 'admin' }: { mode?: 'admin' | 'princi
                 ) : (
                   <div className="flex flex-col gap-3">
                     {studentsOutside.map(student => (
-                      <div key={student.id} className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-xl shadow-sm">
+                      <div key={student.id} className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-none shadow-sm">
                         {student.photo_url ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={student.photo_url} alt={student.name} className="w-10 h-10 rounded-full shrink-0" />
+                          <img src={student.photo_url} alt={student.name} className="w-10 h-10 rounded-none shrink-0" />
                         ) : (
-                          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0"><Users className="w-5 h-5 text-slate-400" /></div>
+                          <div className="w-10 h-10 rounded-none bg-slate-100 flex items-center justify-center shrink-0"><Users className="w-5 h-5 text-slate-400" /></div>
                         )}
                         <div className="flex-1 min-w-0">
                           <p className="text-[13px] font-bold text-slate-800 truncate">{student.name}</p>
@@ -489,18 +489,18 @@ export default function SchoolMap({ mode = 'admin' }: { mode?: 'admin' | 'princi
                 <p className="text-[13px] text-slate-500 mb-2">Use the tools below to monitor students or edit the campus geofence boundary.</p>
                 {isDrawing ? (
                   <div className="flex flex-col gap-3">
-                    <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl mb-2">
+                    <div className="p-4 bg-blue-50 border border-blue-100 rounded-none mb-2">
                       <p className="text-sm text-blue-700 font-medium">Drawing Mode Active</p>
                       <p className="text-xs text-blue-600/80 mt-1">Click the map to place boundary points.</p>
                     </div>
-                    <Button onClick={saveGeofence} className="w-full bg-green-600 hover:bg-green-700 text-white h-11 rounded-xl"><Save className="w-4 h-4 mr-2" /> Save Boundary</Button>
-                    <Button variant="outline" onClick={clearGeofence} className="w-full text-red-600 h-11 rounded-xl border-red-200 hover:bg-red-50"><Trash2 className="w-4 h-4 mr-2" /> Clear Points</Button>
-                    <Button variant="secondary" onClick={() => setIsDrawing(false)} className="w-full h-11 rounded-xl">Cancel</Button>
+                    <Button onClick={saveGeofence} className="w-full bg-green-600 hover:bg-green-700 text-white h-11 rounded-none"><Save className="w-4 h-4 mr-2" /> Save Boundary</Button>
+                    <Button variant="outline" onClick={clearGeofence} className="w-full text-red-600 h-11 rounded-none border-red-200 hover:bg-red-50"><Trash2 className="w-4 h-4 mr-2" /> Clear Points</Button>
+                    <Button variant="secondary" onClick={() => setIsDrawing(false)} className="w-full h-11 rounded-none">Cancel</Button>
                   </div>
                 ) : (
                   <div className="flex flex-col gap-3">
-                    <Button onClick={() => setIsDrawing(true)} className="w-full bg-blue-600 hover:bg-blue-700 text-white h-11 rounded-xl shadow-sm"><Edit2 className="w-4 h-4 mr-2" /> Add Border Line</Button>
-                    <Button variant="outline" onClick={() => fetchMapData()} className="w-full h-11 rounded-xl text-slate-600"><RefreshCw className="w-4 h-4 mr-2" /> Refresh Data</Button>
+                    <Button onClick={() => setIsDrawing(true)} className="w-full bg-blue-600 hover:bg-blue-700 text-white h-11 rounded-none shadow-sm"><Edit2 className="w-4 h-4 mr-2" /> Add Border Line</Button>
+                    <Button variant="outline" onClick={() => fetchMapData()} className="w-full h-11 rounded-none text-slate-600"><RefreshCw className="w-4 h-4 mr-2" /> Refresh Data</Button>
                   </div>
                 )}
               </>
@@ -517,49 +517,49 @@ export default function SchoolMap({ mode = 'admin' }: { mode?: 'admin' | 'princi
     <div className="relative h-full w-full flex flex-col gap-6">
 
       {/* Header */}
-      <div className="flex justify-between items-center bg-white p-5 rounded-[16px] shadow-sm border border-slate-100">
+      <div className="flex justify-between items-center bg-white p-5 rounded-none shadow-sm border border-slate-100">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center shrink-0 border border-rose-100">
-            <Map className="w-6 h-6 text-[#7f1d1d]" />
+          <div className="w-12 h-12 rounded-none bg-rose-50 flex items-center justify-center shrink-0 border border-rose-100">
+            <Map className="w-6 h-6 text-[#0B3A82]" />
           </div>
           <div>
             <h1 className="text-[22px] font-bold text-slate-900 tracking-tight">School Map</h1>
             <p className="text-[13px] text-slate-500 mt-0.5">Monitor student locations and set the geofence perimeter.</p>
           </div>
         </div>
-        <Button onClick={() => setIsFullscreen(true)} className="bg-[#7f1d1d] hover:bg-rose-900 text-white rounded-[10px] h-[42px] px-5 font-bold shadow-sm">
+        <Button onClick={() => setIsFullscreen(true)} className="bg-[#0B3A82] hover:bg-rose-900 text-white rounded-none h-[42px] px-5 font-bold shadow-sm">
           <Maximize2 className="w-[15px] h-[15px] mr-2" /> Fullscreen Mode
         </Button>
       </div>
 
       {mode === 'admin' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-[16px] border border-slate-100 shadow-sm p-5 flex items-center gap-4">
-          <div className="w-[52px] h-[52px] rounded-full bg-rose-50 text-rose-600 flex items-center justify-center shrink-0"><Building2 className="w-6 h-6" /></div>
+        <div className="bg-white rounded-none border border-slate-100 shadow-sm p-5 flex items-center gap-4">
+          <div className="w-[52px] h-[52px] rounded-none bg-rose-50 text-rose-600 flex items-center justify-center shrink-0"><Building2 className="w-6 h-6" /></div>
           <div>
             <h3 className="text-[22px] font-black text-slate-900 leading-none mb-1.5">{stats?.total_schools ?? 0}</h3>
             <p className="text-[12px] font-bold text-slate-700 leading-tight">Total Schools</p>
             <p className="text-[11px] text-slate-400">Active campuses</p>
           </div>
         </div>
-        <div className="bg-white rounded-[16px] border border-slate-100 shadow-sm p-5 flex items-center gap-4">
-          <div className="w-[52px] h-[52px] rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center shrink-0"><MapPin className="w-6 h-6 fill-emerald-500" /></div>
+        <div className="bg-white rounded-none border border-slate-100 shadow-sm p-5 flex items-center gap-4">
+          <div className="w-[52px] h-[52px] rounded-none bg-emerald-50 text-emerald-500 flex items-center justify-center shrink-0"><MapPin className="w-6 h-6 fill-emerald-500" /></div>
           <div>
             <h3 className="text-[22px] font-black text-slate-900 leading-none mb-1.5">{stats?.active_geofences ?? 0}</h3>
             <p className="text-[12px] font-bold text-slate-700 leading-tight">Active Geofences</p>
             <p className="text-[11px] text-slate-400">Currently monitoring</p>
           </div>
         </div>
-        <div className="bg-white rounded-[16px] border border-slate-100 shadow-sm p-5 flex items-center gap-4">
-          <div className="w-[52px] h-[52px] rounded-full bg-blue-50 text-blue-500 flex items-center justify-center shrink-0"><Users className="w-6 h-6" /></div>
+        <div className="bg-white rounded-none border border-slate-100 shadow-sm p-5 flex items-center gap-4">
+          <div className="w-[52px] h-[52px] rounded-none bg-blue-50 text-blue-500 flex items-center justify-center shrink-0"><Users className="w-6 h-6" /></div>
           <div>
             <h3 className="text-[22px] font-black text-slate-900 leading-none mb-1.5">{(stats?.total_students ?? 0).toLocaleString()}</h3>
             <p className="text-[12px] font-bold text-slate-700 leading-tight">Students Located</p>
             <p className="text-[11px] text-slate-400">Within campus</p>
           </div>
         </div>
-        <div className="bg-white rounded-[16px] border border-slate-100 shadow-sm p-5 flex items-center gap-4">
-          <div className="w-[52px] h-[52px] rounded-full bg-purple-50 text-purple-600 flex items-center justify-center shrink-0"><Map className="w-6 h-6" /></div>
+        <div className="bg-white rounded-none border border-slate-100 shadow-sm p-5 flex items-center gap-4">
+          <div className="w-[52px] h-[52px] rounded-none bg-purple-50 text-purple-600 flex items-center justify-center shrink-0"><Map className="w-6 h-6" /></div>
           <div>
             <h3 className="text-[22px] font-black text-slate-900 leading-none mb-1.5">{stats?.total_area ?? 0} km²</h3>
             <p className="text-[12px] font-bold text-slate-700 leading-tight">Campus Area</p>
@@ -570,13 +570,13 @@ export default function SchoolMap({ mode = 'admin' }: { mode?: 'admin' | 'princi
       )}
 
       {/* Map Section */}
-      <div className={`w-full ${mode === 'admin' ? 'min-h-[500px] h-[55vh]' : 'h-[calc(100vh-200px)] min-h-[600px]'} rounded-[16px] overflow-hidden border border-slate-200 shadow-sm relative z-0`}>
+      <div className={`w-full ${mode === 'admin' ? 'min-h-[500px] h-[55vh]' : 'h-[calc(100vh-200px)] min-h-[600px]'} rounded-none overflow-hidden border border-slate-200 shadow-sm relative z-0`}>
         {mapElement}
       </div>
 
       {/* Schools Table Section (Hidden for Principals) */}
       {mode !== 'principal' && (
-        <div className="bg-white border border-slate-100 shadow-sm rounded-[16px] overflow-hidden mb-8">
+        <div className="bg-white border border-slate-100 shadow-sm rounded-none overflow-hidden mb-8">
         <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <h2 className="text-[15px] font-bold text-slate-900">Schools ({schools.length})</h2>
           <div className="flex items-center gap-3">
@@ -587,14 +587,14 @@ export default function SchoolMap({ mode = 'admin' }: { mode?: 'admin' | 'princi
                 placeholder="Search schools..."
                 value={schoolSearchTerm}
                 onChange={e => setSchoolSearchTerm(e.target.value)}
-                className="pl-9 pr-4 py-2 border border-slate-200 rounded-[10px] text-[13px] text-slate-700 w-full sm:w-64 outline-none focus:border-slate-300 transition-colors placeholder:text-slate-400"
+                className="pl-9 pr-4 py-2 border border-slate-200 rounded-none text-[13px] text-slate-700 w-full sm:w-64 outline-none focus:border-slate-300 transition-colors placeholder:text-slate-400"
               />
             </div>
             <Dialog open={addDialogOpen} onOpenChange={(open) => { setAddDialogOpen(open); if (!open) { setEditingSchoolId(null); setFormData({ name: '', type: 'Elementary', latitude: '', longitude: '', student_count: '0', status: 'Active', geofence_area: '' }); } }}>
-              <DialogTrigger className="flex items-center gap-1.5 px-4 py-2.5 bg-[#7f1d1d] hover:bg-rose-900 text-white rounded-[10px] text-[13px] font-bold transition-colors shadow-sm shrink-0">
+              <DialogTrigger className="flex items-center gap-1.5 px-4 py-2.5 bg-[#0B3A82] hover:bg-rose-900 text-white rounded-none text-[13px] font-bold transition-colors shadow-sm shrink-0">
                 <Plus className="w-4 h-4" /> {editingSchoolId ? 'Edit School' : 'Add School'}
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[480px] rounded-[20px] p-6">
+              <DialogContent className="sm:max-w-[480px] rounded-none p-6">
                 <DialogHeader>
                   <DialogTitle className="text-xl font-bold">{editingSchoolId ? 'Edit School' : 'Add School'}</DialogTitle>
                 </DialogHeader>
@@ -606,7 +606,7 @@ export default function SchoolMap({ mode = 'admin' }: { mode?: 'admin' | 'princi
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label className="text-sm font-semibold">Type</Label>
-                      <select value={formData.type} onChange={e => setFormData(p => ({ ...p, type: e.target.value }))} className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm mt-1">
+                      <select value={formData.type} onChange={e => setFormData(p => ({ ...p, type: e.target.value }))} className="flex h-10 w-full rounded-none border border-slate-200 bg-white px-3 py-2 text-sm mt-1">
                         <option>Elementary</option>
                         <option>Secondary</option>
                         <option>Tertiary</option>
@@ -614,7 +614,7 @@ export default function SchoolMap({ mode = 'admin' }: { mode?: 'admin' | 'princi
                     </div>
                     <div>
                       <Label className="text-sm font-semibold">Status</Label>
-                      <select value={formData.status} onChange={e => setFormData(p => ({ ...p, status: e.target.value }))} className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm mt-1">
+                      <select value={formData.status} onChange={e => setFormData(p => ({ ...p, status: e.target.value }))} className="flex h-10 w-full rounded-none border border-slate-200 bg-white px-3 py-2 text-sm mt-1">
                         <option>Active</option>
                         <option>Inactive</option>
                       </select>
@@ -642,7 +642,7 @@ export default function SchoolMap({ mode = 'admin' }: { mode?: 'admin' | 'princi
                   </div>
                   <div className="flex justify-end gap-3 pt-2">
                     <Button variant="outline" onClick={() => setAddDialogOpen(false)}>Cancel</Button>
-                    <Button onClick={addSchool} className="bg-[#7f1d1d] hover:bg-rose-900 text-white">
+                    <Button onClick={addSchool} className="bg-[#0B3A82] hover:bg-rose-900 text-white">
                       {editingSchoolId ? 'Save Changes' : 'Add School'}
                     </Button>
                   </div>
@@ -677,15 +677,15 @@ export default function SchoolMap({ mode = 'admin' }: { mode?: 'admin' | 'princi
                   <td className="px-6 py-4 text-[13px] text-slate-600 font-medium">{school.type}</td>
                   <td className="px-6 py-4 text-[13px] text-slate-600 font-medium">{school.student_count}</td>
                   <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-[6px] text-[11px] font-bold ${school.status === 'Active' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>{school.status}</span>
+                    <span className={`inline-flex items-center px-2 py-1 rounded-none text-[11px] font-bold ${school.status === 'Active' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>{school.status}</span>
                   </td>
                   <td className="px-6 py-4 text-[13px] text-slate-600 font-medium">{school.geofence_area ? `${school.geofence_area} km²` : '—'}</td>
                   <td className="px-6 py-4 text-[13px] text-slate-600 font-medium">{new Date(school.updated_at || school.created_at || new Date().toISOString()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
-                      <button onClick={() => flyToSchool(school)} className="w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 border border-slate-200"><Eye className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => openEditSchool(school)} className="w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 border border-slate-200"><Edit2 className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => deleteSchool(school.id)} className="w-7 h-7 flex items-center justify-center rounded-md text-red-400 hover:text-red-600 hover:bg-red-50 border border-slate-200"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => flyToSchool(school)} className="w-7 h-7 flex items-center justify-center rounded-none text-slate-400 hover:text-slate-600 hover:bg-slate-100 border border-slate-200"><Eye className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => openEditSchool(school)} className="w-7 h-7 flex items-center justify-center rounded-none text-slate-400 hover:text-slate-600 hover:bg-slate-100 border border-slate-200"><Edit2 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => deleteSchool(school.id)} className="w-7 h-7 flex items-center justify-center rounded-none text-red-400 hover:text-red-600 hover:bg-red-50 border border-slate-200"><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
                   </td>
                 </tr>

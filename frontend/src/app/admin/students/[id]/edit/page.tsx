@@ -35,7 +35,7 @@ export default function EditStudentPage() {
 
   useEffect(() => {
     api.get('/api/grade-levels').then(r => setGradeLevels(r.data));
-    api.get('/api/admin/sections/list-all').then(r => setSections(r.data));
+    api.get('/api/sections/list-all').then(r => setSections(r.data));
     api.get('/api/subjects').then(r => setSubjects(r.data));
   }, []);
 
@@ -115,7 +115,7 @@ export default function EditStudentPage() {
         
         <div className="flex flex-col flex-1 min-w-0 h-full">
           <div className="flex items-center gap-4 mb-6 shrink-0">
-            <Link href="/admin/students" className="p-2 bg-white dark:bg-[#161920] border border-slate-200 dark:border-white/5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors shadow-sm text-slate-500 dark:text-slate-400">
+            <Link href="/admin/students" className="p-2 bg-white dark:bg-[#161920] border border-slate-200 dark:border-white/5 rounded-none hover:bg-slate-50 dark:hover:bg-white/5 transition-colors shadow-sm text-slate-500 dark:text-slate-400">
               <ChevronLeft className="w-5 h-5" />
             </Link>
             <div>
@@ -124,7 +124,7 @@ export default function EditStudentPage() {
             </div>
           </div>
   
-          <div className="flex-1 overflow-y-auto bg-white dark:bg-[#161920] rounded-2xl shadow-sm border border-slate-200 dark:border-white/5 p-8 h-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="flex-1 overflow-y-auto bg-white dark:bg-[#161920] rounded-none shadow-sm border border-slate-200 dark:border-white/5 p-8 h-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <form onSubmit={handleSubmit} className="space-y-8 max-w-2xl">
               
               <div className="space-y-6">
@@ -164,7 +164,7 @@ export default function EditStudentPage() {
                       onChange={handleChange}
                       onFocus={() => setActiveSide('front')}
                       required
-                      className="flex h-12 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-[#7a1315]/20 focus:border-[#7a1315]/30 dark:border-white/10 dark:bg-[#0f1115] dark:text-white"
+                      className="flex h-12 w-full rounded-none border border-slate-200 bg-slate-50 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-[#0B3A82]/20 focus:border-[#0B3A82]/30 dark:border-white/10 dark:bg-[#0f1115] dark:text-white"
                     >
                       <option value="">Select Grade Level</option>
                       {gradeLevels.map(gl => (
@@ -182,7 +182,7 @@ export default function EditStudentPage() {
                       onChange={handleChange}
                       onFocus={() => setActiveSide('front')}
                       required
-                      className="flex h-12 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-[#7a1315]/20 focus:border-[#7a1315]/30 dark:border-white/10 dark:bg-[#0f1115] dark:text-white"
+                      className="flex h-12 w-full rounded-none border border-slate-200 bg-slate-50 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-[#0B3A82]/20 focus:border-[#0B3A82]/30 dark:border-white/10 dark:bg-[#0f1115] dark:text-white"
                     >
                       <option value="">Select Section</option>
                       {sections.map(sec => (
@@ -209,7 +209,7 @@ export default function EditStudentPage() {
                                   : [...prev.subjects, subject.id]
                               }));
                             }}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                            className={`px-3 py-1.5 rounded-none text-xs font-semibold transition-all border ${
                               isSelected 
                                 ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm' 
                                 : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 dark:bg-[#161920] dark:border-white/10 dark:text-slate-300'
@@ -279,18 +279,18 @@ export default function EditStudentPage() {
                   </div>
                 </div>
                 
-                <div className="flex bg-slate-100 dark:bg-[#161920] p-1 rounded-lg">
+                <div className="flex bg-slate-100 dark:bg-[#161920] p-1 rounded-none">
                   <button 
                     type="button"
                     onClick={() => setActiveSide('front')}
-                    className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${activeSide === 'front' ? 'bg-white dark:bg-white/10 text-maroon-600 dark:text-white shadow-sm border border-slate-200/50 dark:border-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-none transition-all ${activeSide === 'front' ? 'bg-white dark:bg-white/10 text-maroon-600 dark:text-white shadow-sm border border-slate-200/50 dark:border-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
                   >
                     Front View
                   </button>
                   <button 
                     type="button"
                     onClick={() => setActiveSide('back')}
-                    className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${activeSide === 'back' ? 'bg-white dark:bg-white/10 text-maroon-600 dark:text-white shadow-sm border border-slate-200/50 dark:border-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-none transition-all ${activeSide === 'back' ? 'bg-white dark:bg-white/10 text-maroon-600 dark:text-white shadow-sm border border-slate-200/50 dark:border-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
                   >
                     Back View
                   </button>

@@ -17,7 +17,8 @@ import {
   Users,
   GraduationCap,
   TrendingUp,
-  UserPlus
+  UserPlus,
+  Trash
 } from 'lucide-react';
 import { getImageUrl } from '@/lib/utils';
 import { TableLoadingState } from '@/components/ui/TableLoadingState';
@@ -56,6 +57,7 @@ export default function StudentsManagementPage() {
   const [selectedStudent, setSelectedStudent] = useState<StudentRecord | null>(null);
   const [recordToDelete, setRecordToDelete] = useState<StudentRecord | null>(null);
   const [records, setRecords] = useState<StudentRecord[]>([]);
+  const [selectedIds, setSelectedIds] = useState<(number | string)[]>([]);
   const [stats, setStats] = useState<{
     totalStudents: number;
     attendanceRate: number;
@@ -69,6 +71,32 @@ export default function StudentsManagementPage() {
   const [isLoading, setIsLoading] = useState(true);
   
   const itemsPerPage = 10;
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === paginatedRecords.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(paginatedRecords.map(r => r.id));
+    }
+  };
+
+  const toggleSelect = (id: number | string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const bulkDelete = async () => {
+    if (!confirm(`Delete ${selectedIds.length} selected student(s)?`)) return;
+    try {
+      await Promise.all(selectedIds.map(id => api.delete(`/api/students/${id}`)));
+      setRecords(prev => prev.filter(r => !selectedIds.includes(r.id)));
+      setSelectedIds([]);
+      localStorage.setItem('toast_message', `${selectedIds.length} student(s) deleted successfully`);
+      window.dispatchEvent(new Event('toast-trigger'));
+    } catch {
+      localStorage.setItem('toast_message', 'Failed to delete some records');
+      window.dispatchEvent(new Event('toast-trigger'));
+    }
+  };
 
   const generateSparklinePath = (data: number[]) => {
     if (!data || data.length === 0) return '';
@@ -159,7 +187,7 @@ export default function StudentsManagementPage() {
           
           <Link 
             href="/admin/students/create"
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#7a1315] hover:bg-[#5a0e0f] text-white transition-colors shadow-[0_4px_14px_rgba(122,19,21,0.3)] text-[14px] font-bold rounded-xl mt-4 sm:mt-0"
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#0B3A82] hover:bg-[#092558] text-white transition-colors shadow-[0_4px_14px_rgba(11,58,130,0.3)] text-[14px] font-bold rounded-none mt-4 sm:mt-0"
           >
             <Plus className="w-4 h-4" strokeWidth={3} />
             Add New Student
@@ -169,22 +197,22 @@ export default function StudentsManagementPage() {
         {/* Statistics Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* Total Students */}
-          <div className="bg-white rounded-[1.25rem] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 relative overflow-hidden">
-            <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center mb-4">
-              <Users className="w-5 h-5 text-red-500" />
+          <div className="bg-white rounded-none p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 relative overflow-hidden">
+            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center mb-4">
+              <Users className="w-5 h-5 text-[#0B3A82]" />
             </div>
             <h3 className="text-2xl font-black text-slate-900 mb-1">{stats ? stats.totalStudents.toLocaleString() : '...'}</h3>
             <p className="text-xs font-bold text-slate-800 mb-1">Total Students</p>
             <p className="text-[11px] font-medium text-slate-500">All registered students</p>
             <div className="absolute bottom-4 right-4 w-16 h-8 opacity-40">
-              <svg viewBox="0 0 100 30" preserveAspectRatio="none" className="w-full h-full text-red-400 stroke-current" fill="none">
+              <svg viewBox="0 0 100 30" preserveAspectRatio="none" className="w-full h-full text-[#0B3A82] stroke-current" fill="none">
                 <path d={stats ? generateSparklinePath(stats.sparklines.total) : ""} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
           </div>
           
           {/* Enrolled Students */}
-          <div className="bg-white rounded-[1.25rem] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 relative overflow-hidden">
+          <div className="bg-white rounded-none p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 relative overflow-hidden">
             <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center mb-4">
               <GraduationCap className="w-5 h-5 text-emerald-500" />
             </div>
@@ -199,7 +227,7 @@ export default function StudentsManagementPage() {
           </div>
 
           {/* Attendance Rate */}
-          <div className="bg-white rounded-[1.25rem] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 relative overflow-hidden">
+          <div className="bg-white rounded-none p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 relative overflow-hidden">
             <div className="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center mb-4">
               <TrendingUp className="w-5 h-5 text-yellow-500" />
             </div>
@@ -214,7 +242,7 @@ export default function StudentsManagementPage() {
           </div>
 
           {/* New This Month */}
-          <div className="bg-white rounded-[1.25rem] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 relative overflow-hidden">
+          <div className="bg-white rounded-none p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 relative overflow-hidden">
             <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center mb-4">
               <UserPlus className="w-5 h-5 text-indigo-500" />
             </div>
@@ -229,14 +257,25 @@ export default function StudentsManagementPage() {
           </div>
         </div>
 
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            {selectedIds.length > 0 && (
+              <button 
+                onClick={bulkDelete}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-[13px] font-bold rounded-none transition-colors shadow-sm"
+              >
+                <Trash className="w-4 h-4" />
+                Delete Selected ({selectedIds.length})
+              </button>
+            )}
+          </div>
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <div className="relative flex-1 sm:flex-none">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-slate-400" />
               <input 
                 type="text"
                 placeholder="Search by name, LRN, email or ID..." 
-                className="pl-11 pr-4 py-2.5 w-full sm:w-[320px] bg-white border border-slate-200 rounded-xl text-[13px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#7a1315]/20 focus:border-[#7a1315]/30 transition-all placeholder:text-slate-400 font-medium shadow-sm"
+                className="pl-11 pr-4 py-2.5 w-full sm:w-[320px] bg-white border border-slate-200 rounded-none text-[13px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0B3A82]/20 focus:border-[#0B3A82]/30 transition-all placeholder:text-slate-400 font-medium shadow-sm"
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
@@ -248,7 +287,7 @@ export default function StudentsManagementPage() {
             <div className="relative">
               <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-slate-400" />
               <select 
-                className="pl-11 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-[13px] text-slate-800 font-bold focus:outline-none focus:ring-2 focus:ring-[#7a1315]/20 focus:border-[#7a1315]/30 appearance-none cursor-pointer shadow-sm"
+                className="pl-11 pr-10 py-2.5 bg-white border border-slate-200 rounded-none text-[13px] text-slate-800 font-bold focus:outline-none focus:ring-2 focus:ring-[#0B3A82]/20 focus:border-[#0B3A82]/30 appearance-none cursor-pointer shadow-sm"
                 value={statusFilter}
                 onChange={(e) => {
                   setStatusFilter(e.target.value);
@@ -266,12 +305,20 @@ export default function StudentsManagementPage() {
         </div>
 
         {/* Data Table */}
-        <div className="bg-white rounded-[1.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden">
+        <div className="bg-white rounded-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader className="bg-transparent border-b border-slate-100">
                 <TableRow className="hover:bg-transparent border-b-0">
-                  <TableHead className="w-[300px] font-black text-slate-900 py-6 pl-8">Student</TableHead>
+                  <TableHead className="w-[50px] py-6 pl-8">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.length === paginatedRecords.length && paginatedRecords.length > 0}
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 accent-[#0B3A82] cursor-pointer"
+                    />
+                  </TableHead>
+                  <TableHead className="w-[300px] font-black text-slate-900 py-6">Student</TableHead>
                   <TableHead className="font-black text-slate-900 text-center py-6">LRN</TableHead>
                   <TableHead className="font-black text-slate-900 text-center py-6">Grade & Section</TableHead>
                   <TableHead className="font-black text-slate-900 text-center py-6">Status</TableHead>
@@ -280,10 +327,10 @@ export default function StudentsManagementPage() {
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableLoadingState colSpan={5} message="Loading students..." />
+                  <TableLoadingState colSpan={6} message="Loading students..." />
                 ) : paginatedRecords.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-[400px] text-center border-b-0">
+                    <TableCell colSpan={6} className="h-[400px] text-center border-b-0">
                       <div className="flex flex-col items-center justify-center">
                         <div className="relative mb-8 mt-4">
                            <div className="absolute inset-0 bg-slate-100/50 rounded-full blur-3xl transform scale-150"></div>
@@ -306,8 +353,16 @@ export default function StudentsManagementPage() {
                   paginatedRecords.map((record) => (
                     <TableRow key={record.id} className="hover:bg-slate-50/50 transition-colors border-b border-slate-100">
                       <TableCell className="py-4 pl-8">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(record.id)}
+                          onChange={() => toggleSelect(record.id)}
+                          className="w-4 h-4 accent-[#0B3A82] cursor-pointer"
+                        />
+                      </TableCell>
+                      <TableCell className="py-4">
                         <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-full bg-[#7a1315] text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0 overflow-hidden">
+                          <div className="w-10 h-10 rounded-full bg-[#0B3A82] text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0 overflow-hidden">
                             {record.photo_url ? (
                               <Image src={getImageUrl(record.photo_url) || ''} alt={record.name} width={40} height={40} className="w-full h-full object-cover" unoptimized={true} />
                             ) : (
@@ -344,14 +399,14 @@ export default function StudentsManagementPage() {
                               }
                               setIsViewModalOpen(true);
                             }}
-                            className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-600 border border-slate-200 hover:border-slate-300 rounded-lg bg-white transition-all shadow-sm"
+                            className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-600 border border-slate-200 hover:border-slate-300 rounded-none bg-white transition-all shadow-sm"
                             title="View Profile"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
                           <Link 
                             href={`/admin/students/${record.id}/edit`}
-                            className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-600 border border-slate-200 hover:border-slate-300 rounded-lg bg-white transition-all shadow-sm"
+                            className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-600 border border-slate-200 hover:border-slate-300 rounded-none bg-white transition-all shadow-sm"
                             title="Edit Record"
                           >
                             <Edit2 className="w-4 h-4" />
@@ -361,7 +416,7 @@ export default function StudentsManagementPage() {
                               setRecordToDelete(record);
                               setIsDeleteModalOpen(true);
                             }}
-                            className="w-8 h-8 flex items-center justify-center text-red-400 hover:text-red-600 border border-red-100 hover:border-red-200 rounded-lg bg-white transition-all shadow-sm"
+                            className="w-8 h-8 flex items-center justify-center text-[#0B3A82] hover:text-red-600 border border-red-100 hover:border-red-200 rounded-none bg-white transition-all shadow-sm"
                             title="Delete Record"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -386,20 +441,20 @@ export default function StudentsManagementPage() {
                 size="sm" 
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="h-8 w-8 p-0 rounded-lg border-slate-200 text-slate-400 hover:text-slate-900 bg-white shadow-sm"
+                className="h-8 w-8 p-0 rounded-none border-slate-200 text-slate-400 hover:text-slate-900 bg-white shadow-sm"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               
               <div className="flex items-center gap-1.5 mx-2">
                 {[...Array(Math.min(3, totalPages))].map((_, i) => (
-                  <button key={i} className={`h-8 w-8 rounded-lg text-[13px] font-bold shadow-sm transition-all ${currentPage === i + 1 ? 'bg-[#7a1315] text-white' : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'}`} onClick={() => setCurrentPage(i+1)}>
+                  <button key={i} className={`h-8 w-8 rounded-none text-[13px] font-bold shadow-sm transition-all ${currentPage === i + 1 ? 'bg-[#0B3A82] text-white' : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'}`} onClick={() => setCurrentPage(i+1)}>
                     {i + 1}
                   </button>
                 ))}
                 {totalPages > 4 && <span className="text-slate-400 font-black px-1 tracking-widest">...</span>}
                 {totalPages > 3 && (
-                  <button className={`h-8 w-8 rounded-lg text-[13px] font-bold shadow-sm transition-all ${currentPage === totalPages ? 'bg-[#7a1315] text-white' : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'}`} onClick={() => setCurrentPage(totalPages)}>
+                  <button className={`h-8 w-8 rounded-none text-[13px] font-bold shadow-sm transition-all ${currentPage === totalPages ? 'bg-[#0B3A82] text-white' : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'}`} onClick={() => setCurrentPage(totalPages)}>
                     {totalPages}
                   </button>
                 )}
@@ -410,7 +465,7 @@ export default function StudentsManagementPage() {
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages || totalPages === 0}
-                className="h-8 w-8 p-0 rounded-lg border-slate-200 text-slate-400 hover:text-slate-900 bg-white shadow-sm"
+                className="h-8 w-8 p-0 rounded-none border-slate-200 text-slate-400 hover:text-slate-900 bg-white shadow-sm"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>

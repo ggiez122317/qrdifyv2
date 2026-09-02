@@ -46,7 +46,7 @@ export default function CreateStudentPage() {
 
   useEffect(() => {
     api.get('/api/grade-levels').then(r => setGradeLevels(r.data));
-    api.get('/api/admin/sections/list-all').then(r => setSections(r.data));
+    api.get('/api/sections/list-all').then(r => setSections(r.data));
     api.get('/api/teachers').then(r => setTeachers(r.data.data || r.data));
   }, []);
 
@@ -109,7 +109,7 @@ export default function CreateStudentPage() {
         <div className="flex flex-col flex-1 min-w-0 h-full">
           {/* Header */}
           <div className="flex items-center gap-4 mb-6 shrink-0">
-            <Link href="/admin/students" className="p-2 bg-white dark:bg-[#161920] border border-slate-200 dark:border-white/5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors shadow-sm text-slate-500 dark:text-slate-400">
+            <Link href="/admin/students" className="p-2 bg-white dark:bg-[#161920] border border-slate-200 dark:border-white/5 rounded-none hover:bg-slate-50 dark:hover:bg-white/5 transition-colors shadow-sm text-slate-500 dark:text-slate-400">
               <ChevronLeft className="w-5 h-5" />
             </Link>
             <div>
@@ -119,7 +119,7 @@ export default function CreateStudentPage() {
           </div>
   
           {/* Left Column: Scrollable Form */}
-          <div className="flex-1 overflow-y-auto bg-white dark:bg-[#161920] rounded-2xl shadow-sm border border-slate-200 dark:border-white/5 p-8 h-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="flex-1 overflow-y-auto bg-white dark:bg-[#161920] rounded-none shadow-sm border border-slate-200 dark:border-white/5 p-8 h-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <form onSubmit={handleSubmit} className="space-y-8 max-w-2xl">
               
               <div className="space-y-6">
@@ -159,7 +159,7 @@ export default function CreateStudentPage() {
                       onChange={handleChange}
                       onFocus={() => setActiveSide('front')}
                       required
-                      className="flex h-12 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-[#7a1315]/20 focus:border-[#7a1315]/30 dark:border-white/10 dark:bg-[#0f1115] dark:text-white"
+                      className="flex h-12 w-full rounded-none border border-slate-200 bg-slate-50 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-[#0B3A82]/20 focus:border-[#0B3A82]/30 dark:border-white/10 dark:bg-[#0f1115] dark:text-white"
                     >
                       <option value="">Select Grade Level</option>
                       {gradeLevels.map(gl => (
@@ -177,7 +177,7 @@ export default function CreateStudentPage() {
                       onChange={handleChange}
                       onFocus={() => setActiveSide('front')}
                       required
-                      className="flex h-12 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-[#7a1315]/20 focus:border-[#7a1315]/30 dark:border-white/10 dark:bg-[#0f1115] dark:text-white"
+                      className="flex h-12 w-full rounded-none border border-slate-200 bg-slate-50 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-[#0B3A82]/20 focus:border-[#0B3A82]/30 dark:border-white/10 dark:bg-[#0f1115] dark:text-white"
                     >
                       <option value="">Select Section</option>
                       {sections.map(sec => (
@@ -204,7 +204,7 @@ export default function CreateStudentPage() {
                         className="bg-slate-50 dark:bg-[#0f1115] dark:border-white/10 dark:text-white h-12 text-base w-full"
                       />
                       {isTeacherDropdownOpen && (
-                        <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-[#161920] border border-slate-200 dark:border-white/10 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                        <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-[#161920] border border-slate-200 dark:border-white/10 rounded-none shadow-lg z-50 max-h-60 overflow-y-auto">
                           {teachers
                             .filter(t => t.name.toLowerCase().includes(teacherSearch.toLowerCase()))
                             .map(teacher => (
@@ -298,18 +298,18 @@ export default function CreateStudentPage() {
                   </div>
                 </div>
                 
-                <div className="flex bg-slate-100 dark:bg-[#161920] p-1 rounded-lg">
+                <div className="flex bg-slate-100 dark:bg-[#161920] p-1 rounded-none">
                   <button 
                     type="button"
                     onClick={() => setActiveSide('front')}
-                    className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${activeSide === 'front' ? 'bg-white dark:bg-white/10 text-maroon-600 dark:text-white shadow-sm border border-slate-200/50 dark:border-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-none transition-all ${activeSide === 'front' ? 'bg-white dark:bg-white/10 text-maroon-600 dark:text-white shadow-sm border border-slate-200/50 dark:border-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
                   >
                     Front View
                   </button>
                   <button 
                     type="button"
                     onClick={() => setActiveSide('back')}
-                    className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${activeSide === 'back' ? 'bg-white dark:bg-white/10 text-maroon-600 dark:text-white shadow-sm border border-slate-200/50 dark:border-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-none transition-all ${activeSide === 'back' ? 'bg-white dark:bg-white/10 text-maroon-600 dark:text-white shadow-sm border border-slate-200/50 dark:border-white/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
                   >
                     Back View
                   </button>

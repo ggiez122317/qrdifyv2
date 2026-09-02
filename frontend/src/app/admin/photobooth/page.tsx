@@ -116,7 +116,7 @@ export default function PhotoBoothPage() {
               <input 
                 type="text"
                 placeholder="Search by name..." 
-                className="pl-10 pr-4 py-2.5 w-full sm:w-[250px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-maroon-500/20 focus:border-maroon-300 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium shadow-sm"
+                className="pl-10 pr-4 py-2.5 w-full sm:w-[250px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-none text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-maroon-500/20 focus:border-maroon-300 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium shadow-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -125,7 +125,7 @@ export default function PhotoBoothPage() {
             <div className="relative">
               <Filter className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <select 
-                className="pl-10 pr-9 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-700 dark:text-slate-200 font-semibold focus:outline-none focus:ring-2 focus:ring-maroon-500/20 focus:border-maroon-300 appearance-none cursor-pointer shadow-sm"
+                className="pl-10 pr-9 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-none text-sm text-slate-700 dark:text-slate-200 font-semibold focus:outline-none focus:ring-2 focus:ring-maroon-500/20 focus:border-maroon-300 appearance-none cursor-pointer shadow-sm"
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
               >
@@ -142,7 +142,7 @@ export default function PhotoBoothPage() {
         <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0">
           
           {/* Left Column: List */}
-          <div className="w-full lg:w-[380px] flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden shrink-0">
+          <div className="w-full lg:w-[380px] flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-none shadow-sm overflow-hidden shrink-0">
             <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
               <h3 className="font-bold text-slate-800 dark:text-slate-100">Missing Photos <span className="text-maroon-600 dark:text-maroon-400 bg-maroon-50 dark:bg-maroon-900/30 px-2 py-0.5 rounded-full text-xs ml-2">{filteredRecords.length}</span></h3>
             </div>
@@ -165,7 +165,7 @@ export default function PhotoBoothPage() {
                   <button 
                     key={person.id} 
                     onClick={() => handleSelectUser(person)}
-                    className={`w-full text-left p-4 rounded-xl border transition-all duration-200 flex items-center gap-4 ${
+                    className={`w-full text-left p-4 rounded-none border transition-all duration-200 flex items-center gap-4 ${
                       selectedUser?.id === person.id 
                         ? 'border-maroon-500 bg-maroon-50 dark:bg-maroon-900/20 shadow-sm ring-1 ring-maroon-500/20' 
                         : 'border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-slate-200 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700/50'
@@ -196,7 +196,7 @@ export default function PhotoBoothPage() {
           </div>
 
           {/* Right Column: Capture & Preview */}
-          <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden flex flex-col relative">
+          <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-none shadow-sm overflow-hidden flex flex-col relative">
             {!selectedUser ? (
               <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50/30 dark:bg-slate-800/30">
                 <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600 rounded-full flex items-center justify-center mb-6 shadow-inner">
@@ -217,7 +217,7 @@ export default function PhotoBoothPage() {
                     <CameraCapture onCapture={handleCapture} />
                   ) : (
                     <div className="w-full flex flex-col items-center justify-center animate-in fade-in zoom-in duration-300">
-                      <div className="relative w-64 h-64 rounded-3xl overflow-hidden border-4 border-white shadow-xl mb-8 group">
+                      <div className="relative w-64 h-64 rounded-none overflow-hidden border-4 border-white shadow-xl mb-8 group">
                         <img src={previewPhoto} alt="Captured preview" className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
                           <Button onClick={() => setPreviewPhoto(null)} variant="ghost" className="text-white hover:bg-white/20 hover:text-white rounded-full">
@@ -231,14 +231,14 @@ export default function PhotoBoothPage() {
                         <Button 
                           onClick={() => setPreviewPhoto(null)} 
                           variant="outline" 
-                          className="flex-1 h-12 rounded-xl text-slate-600 font-semibold"
+                          className="flex-1 h-12 rounded-none text-slate-600 font-semibold"
                           disabled={isSaving}
                         >
                           Retake
                         </Button>
                         <Button 
                           onClick={handleSavePhoto} 
-                          className="flex-[2] h-12 bg-maroon-600 hover:bg-maroon-700 text-white rounded-xl shadow-md font-bold text-[15px]"
+                          className="flex-[2] h-12 bg-maroon-600 hover:bg-maroon-700 text-white rounded-none shadow-md font-bold text-[15px]"
                           disabled={isSaving}
                         >
                           {isSaving ? (
@@ -276,7 +276,7 @@ export default function PhotoBoothPage() {
                     </div>
                     
                     {!previewPhoto && (
-                      <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-6 bg-slate-100 dark:bg-slate-800 py-2 px-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-6 bg-slate-100 dark:bg-slate-800 py-2 px-3 rounded-none border border-slate-200 dark:border-slate-700">
                         Take a photo to see it previewed here.
                       </p>
                     )}

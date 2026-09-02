@@ -89,8 +89,7 @@ export default function LoginPage() {
                 <Image src="/school-logo.jpg" alt="School Logo" width={52} height={52} className="w-full h-full object-cover rounded-full" style={{ width: 'auto', height: 'auto' }} unoptimized priority />
               </div>
               <div className="flex flex-col">
-                <span className="font-extrabold text-[24px] leading-tight tracking-[0.03em] text-slate-800 drop-shadow-sm">Trento West Central</span>
-                <span className="font-extrabold text-[16px] leading-tight tracking-[0.03em] text-slate-600 drop-shadow-sm">Elementary SPED Center</span>
+                <span className="font-extrabold text-[24px] leading-tight tracking-[0.03em] text-slate-800 drop-shadow-sm">TWCES</span>
               </div>
             </div>
 
@@ -143,15 +142,14 @@ export default function LoginPage() {
         
         {/* Mobile Header (Hidden on Desktop) */}
         <div className="lg:hidden flex flex-col items-center justify-center pt-12 pb-6">
-           <div className="flex items-center gap-4">
-             <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm p-1 border border-slate-100">
-               <Image src="/school-logo.jpg" alt="School Logo" width={44} height={44} className="w-full h-full object-cover rounded-full" style={{ width: 'auto', height: 'auto' }} unoptimized priority />
-             </div>
-             <div className="flex flex-col">
-               <span className="font-extrabold text-[16px] leading-tight tracking-[0.03em] text-[#0B3A82]">Trento West Central</span>
-               <span className="font-extrabold text-[12px] leading-tight tracking-[0.03em] text-slate-500">Elementary SPED Center</span>
-             </div>
-           </div>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm p-1 border border-slate-100">
+                <Image src="/school-logo.jpg" alt="School Logo" width={44} height={44} className="w-full h-full object-cover rounded-full" style={{ width: 'auto', height: 'auto' }} unoptimized priority />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-extrabold text-[16px] leading-tight tracking-[0.03em] text-[#0B3A82]">TWCES</span>
+              </div>
+            </div>
         </div>
 
         <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-12 w-full max-w-[580px] mx-auto">
@@ -262,7 +260,7 @@ export default function LoginPage() {
         
         {/* Footer */}
         <div className="mt-auto flex flex-col md:flex-row items-center justify-center gap-4 py-6 text-[11px] font-bold text-slate-400 w-full px-8">
-          <p>&copy; 2026 Trento West Central Elementary SPED Center. All rights reserved.</p>
+          <p>&copy; 2026 TWCES. All rights reserved.</p>
           <div className="hidden md:block w-px h-3 bg-slate-200"></div>
           <div className="flex items-center gap-4">
             <a href="#" className="hover:text-slate-600 transition-colors">Privacy Policy</a>
@@ -354,7 +352,7 @@ export default function LoginPage() {
             <div className="w-8 h-[3px] rounded-full bg-[#0B3A82] mx-auto mt-4 mb-5"></div>
             
             <DialogDescription className="text-[14px] font-medium text-slate-600 leading-relaxed max-w-[400px] mx-auto mb-8">
-              Trento West Central Elementary SPED Center is currently undergoing maintenance to improve your user experience. We would like to say sorry for the inconveniences while the system have ongoing repairs and updates.
+              The system is currently undergoing maintenance to improve your user experience. We would like to say sorry for the inconveniences while the system have ongoing repairs and updates.
             </DialogDescription>
             
             {/* Notification Box */}

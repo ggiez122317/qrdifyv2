@@ -9,7 +9,7 @@ import { IosToast } from "@/components/ui/ios-toast";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "Trento West Central Elementary SPED Center - Smart, Secure, Seamless Attendance",
+  title: "TWCES - Smart, Secure, Seamless Attendance",
   description: "QR Attendance System",
   icons: {
     icon: "/school-logo.jpg",

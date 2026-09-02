@@ -61,6 +61,12 @@ class SubjectController extends Controller
         ], 201);
     }
 
+    public function show($id)
+    {
+        $subject = Subject::findOrFail($id);
+        return response()->json($subject);
+    }
+
     public function update(Request $request, $id)
     {
         $subject = Subject::findOrFail($id);

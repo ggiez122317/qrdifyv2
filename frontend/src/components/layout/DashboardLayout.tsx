@@ -232,8 +232,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#0B3A82] flex flex-col items-center justify-center gap-6">
-        <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-xl p-1.5">
-          <Image src="/school-logo.jpg" alt="Logo" width={72} height={72} className="w-full h-full object-cover rounded-full" unoptimized priority />
+        <div className="w-20 h-20 rounded-md bg-white flex items-center justify-center shadow-xl p-1.5">
+           <Image src="/school-logo.jpg" alt="TWCES" width={72} height={72} className="w-full h-full object-cover rounded-md" unoptimized priority />
         </div>
         <div className="flex items-center gap-3">
           <svg className="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -295,6 +295,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     ] : isAdmin ? [
       { name: 'Students', href: '/admin/students', icon: GraduationCap },
       { name: 'Teachers', href: '/admin/teachers', icon: Presentation },
+      { name: 'Attendance Logs', href: '/admin/attendance', icon: History },
       { name: 'Category Level', href: '/admin/category-level', icon: ClipboardList },
       { name: 'School Map', href: '/admin/school-map', icon: MapPin },
       { name: 'Photo Booth', href: '/admin/photobooth', icon: Camera }
@@ -322,7 +323,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return (
       <Link
         href={item.href}
-        className={`flex items-center px-4 py-3 mx-4 rounded-xl font-bold transition-all duration-200 relative group overflow-visible ${
+        className={`flex items-center px-4 py-3 mx-4 rounded-md font-bold transition-all duration-200 relative group overflow-visible ${
           isActive 
             ? 'text-white bg-white/15 shadow-[0_4px_12px_rgba(0,0,0,0.1)]' 
             : 'text-white/70 hover:bg-white/5 hover:text-white'
@@ -336,7 +337,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         
         {/* Tooltip for collapsed state */}
         {sidebarCollapsed && (
-          <div className="absolute left-[calc(100%+16px)] top-1/2 -translate-y-1/2 px-3 py-2 bg-slate-800 text-white text-xs font-bold rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-[100]">
+          <div className="absolute left-[calc(100%+16px)] top-1/2 -translate-y-1/2 px-3 py-2 bg-slate-800 text-white text-xs font-bold rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-[100]">
             {item.name}
             <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
           </div>
@@ -348,7 +349,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div className="h-screen w-full overflow-hidden bg-[#F8FAFC] dark:bg-[#0f1115] flex text-slate-900 dark:text-slate-100 font-sans selection:bg-maroon-500 selection:text-white transition-colors duration-300">
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 bg-[#611013] border-r border-[#611013] transition-all duration-300 ease-in-out flex flex-col shrink-0 shadow-2xl 
+      <aside className={`fixed inset-y-0 left-0 z-50 bg-[#0B3A82] border-r border-[#0B3A82] transition-all duration-300 ease-in-out flex flex-col shrink-0 shadow-2xl 
         ${sidebarCollapsed ? 'md:w-[88px] md:translate-x-0 md:relative z-[60]' : 'md:w-[260px] md:translate-x-0 md:relative'}
         ${sidebarOpen ? 'w-[260px] translate-x-0' : 'w-[260px] -translate-x-full md:translate-x-0'}
       `}>
@@ -356,7 +357,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Collapse Button */}
         <button 
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className={`absolute -right-4 top-8 bg-white text-slate-400 hover:text-slate-600 w-8 h-8 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] items-center justify-center z-[70] hidden md:flex transition-transform duration-300 ${sidebarCollapsed ? 'rotate-180' : ''}`}
+          className={`absolute -right-4 top-8 bg-white text-slate-400 hover:text-slate-600 w-8 h-8 rounded-md shadow-[0_2px_8px_rgba(0,0,0,0.15)] items-center justify-center z-[70] hidden md:flex transition-transform duration-300 ${sidebarCollapsed ? 'rotate-180' : ''}`}
         >
           <ChevronLeft className="w-4 h-4" strokeWidth={3} />
         </button>
@@ -365,22 +366,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className={`flex items-center h-[96px] px-6 w-full shrink-0 ${sidebarCollapsed ? 'justify-center px-0' : ''}`}>
           <div className="flex items-center justify-center shrink-0">
             <Image 
-              src="/logo.png" 
-              alt="Qridify" 
+              src="/school-logo.jpg" 
+              alt="TWCES" 
               width={52} 
               height={52} 
               priority 
               unoptimized 
-              className="w-[52px] h-[52px] object-contain drop-shadow-sm rounded-full bg-white" 
+              className="w-[52px] h-[52px] object-cover drop-shadow-sm rounded-full bg-white" 
             />
           </div>
           {!sidebarCollapsed && (
             <div className="flex flex-col ml-4 overflow-hidden whitespace-nowrap">
-              <span className="font-black text-[22px] text-white tracking-widest leading-tight">
-                QRIDIFY
-              </span>
-              <span className="text-[9px] text-white/70 font-bold tracking-[0.1em] mt-0.5 uppercase">
-                Smart • Secure • Seamless
+              <span className="font-black text-[20px] text-white tracking-tight leading-tight">
+                TWCES
               </span>
             </div>
           )}
@@ -425,7 +423,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           {(user.roles[0] === 'admin' || user.roles[0] === 'super-admin') && (
             <div 
               onClick={toggleMaintenance}
-              className={`bg-[#510b10] rounded-xl p-3 flex items-center justify-between mb-4 shadow-sm cursor-pointer hover:bg-[#4a0a0e] transition-colors relative group overflow-visible ${sidebarCollapsed ? 'justify-center p-2' : ''}`}
+              className={`bg-[#0A2D6B] rounded-md p-3 flex items-center justify-between mb-4 shadow-sm cursor-pointer hover:bg-[#092558] transition-colors relative group overflow-visible ${sidebarCollapsed ? 'justify-center p-2' : ''}`}
             >
               <div className="flex items-center gap-3">
                 <div className="relative flex items-center justify-center shrink-0">
@@ -441,13 +439,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 )}
               </div>
               {!sidebarCollapsed && (
-                <div className={`w-9 h-5 rounded-full flex items-center transition-colors px-0.5 shrink-0 ${isMaintenanceMode ? 'bg-amber-500' : 'bg-black/20'}`}>
-                  <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${isMaintenanceMode ? 'translate-x-4' : 'translate-x-0'}`} />
+                <div className={`w-9 h-5 rounded-md flex items-center transition-colors px-0.5 shrink-0 ${isMaintenanceMode ? 'bg-amber-500' : 'bg-black/20'}`}>
+                  <div className={`w-4 h-4 rounded-md bg-white shadow-sm transition-transform ${isMaintenanceMode ? 'translate-x-4' : 'translate-x-0'}`} />
                 </div>
               )}
               {/* Tooltip for collapsed state */}
               {sidebarCollapsed && (
-                <div className="absolute left-[calc(100%+16px)] top-1/2 -translate-y-1/2 px-3 py-2 bg-slate-800 text-white text-xs font-bold rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-[100]">
+                <div className="absolute left-[calc(100%+16px)] top-1/2 -translate-y-1/2 px-3 py-2 bg-slate-800 text-white text-xs font-bold rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-[100]">
                   Maintenance: {isMaintenanceMode ? 'ON' : 'OFF'}
                   <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
                 </div>
@@ -457,14 +455,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
           <button 
             onClick={handleLogout}
-            className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-white border border-white/10 hover:bg-white/10 font-bold transition-all bg-[#7a1315]/20 shadow-sm text-[13px] relative group overflow-visible ${sidebarCollapsed ? 'px-0' : 'px-6'}`}
+            className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-md text-white border border-white/10 hover:bg-white/10 font-bold transition-all bg-[#0A2D6B]/50 shadow-sm text-[13px] relative group overflow-visible ${sidebarCollapsed ? 'px-0' : 'px-6'}`}
           >
             <LogOut className="w-[16px] h-[16px] shrink-0" />
             {!sidebarCollapsed && <span>Sign Out</span>}
             
             {/* Tooltip for collapsed state */}
             {sidebarCollapsed && (
-              <div className="absolute left-[calc(100%+16px)] top-1/2 -translate-y-1/2 px-3 py-2 bg-slate-800 text-white text-xs font-bold rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-[100]">
+              <div className="absolute left-[calc(100%+16px)] top-1/2 -translate-y-1/2 px-3 py-2 bg-slate-800 text-white text-xs font-bold rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-[100]">
                 Sign Out
                 <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
               </div>
@@ -483,7 +481,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 setSidebarOpen(!sidebarOpen);
                 if (sidebarCollapsed) setSidebarCollapsed(false);
               }}
-              className="p-2.5 mr-4 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors"
+              className="p-2.5 mr-4 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 rounded-md transition-colors"
             >
               <Menu className="w-6 h-6" />
             </button>
@@ -492,7 +490,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <div className="hidden md:flex items-center text-[15px] font-bold">
               <span className="text-slate-500 dark:text-slate-300">Dashboard</span>
               <span className="mx-2 text-slate-400 dark:text-slate-500 font-normal">&gt;</span>
-              <span className="text-[#7a1315] dark:text-red-500 capitalize">
+              <span className="text-[#0B3A82] dark:text-blue-500 capitalize">
                 {pathname.split('/').pop()?.replace('-', ' ') || 'Overview'}
               </span>
             </div>
@@ -502,24 +500,24 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <div className="flex items-center space-x-3">
                 {/* Notification Modal */}
                 <Dialog>
-                  <DialogTrigger className="relative p-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all duration-300 cursor-pointer">
+                  <DialogTrigger className="relative p-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-all duration-300 cursor-pointer">
                     <Bell className="w-7 h-7" />
                     {unreadCount > 0 && (
-                      <span className="absolute top-1.5 right-1.5 flex items-center justify-center w-5 h-5 bg-red-500 border-2 border-white dark:border-slate-900 rounded-full text-[10px] font-bold text-white leading-none">
+                      <span className="absolute top-1.5 right-1.5 flex items-center justify-center w-5 h-5 bg-red-500 border-2 border-white dark:border-slate-900 rounded-md text-[10px] font-bold text-white leading-none">
                         {unreadCount}
                       </span>
                     )}
                   </DialogTrigger>
                   <DialogContent 
-                    closeClassName="top-6 right-6 text-slate-400 hover:text-slate-600 hover:bg-slate-100 bg-slate-50 rounded-full w-8 h-8 flex items-center justify-center border-none transition-colors"
-                    className="sm:max-w-[720px] gap-0 rounded-[32px] overflow-hidden p-0 border-none shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)] dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100 bg-white"
+                    closeClassName="top-6 right-6 text-slate-400 hover:text-slate-600 hover:bg-slate-100 bg-slate-50 rounded-md w-8 h-8 flex items-center justify-center border-none transition-colors"
+                    className="sm:max-w-[720px] gap-0 rounded-md overflow-hidden p-0 border-none shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)] dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100 bg-white"
                   >
                     <DialogHeader className="px-8 pt-8 pb-5 border-none m-0">
                       <div className="flex items-center gap-4">
-                        <div className="w-[64px] h-[64px] rounded-full bg-[#fff5f5] flex items-center justify-center shrink-0">
+                        <div className="w-[64px] h-[64px] rounded-md bg-blue-50 flex items-center justify-center shrink-0">
                           <div className="relative">
-                            <Bell className="w-[28px] h-[28px] text-[#7a1315]" strokeWidth={2.5} />
-                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-[#fff5f5]"></div>
+                            <Bell className="w-[28px] h-[28px] text-[#0B3A82]" strokeWidth={2.5} />
+                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-md border-2 border-blue-50"></div>
                           </div>
                         </div>
                         <div className="flex flex-col items-start mt-1">
@@ -543,20 +541,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                           <button
                             key={f.key}
                             onClick={() => setNotifFilter(f.key as typeof notifFilter)}
-                            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-[10px] transition-all ${
+                            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-md transition-all ${
                               notifFilter === f.key
-                                ? 'bg-[#7a1315] text-white'
+                                ? 'bg-[#0B3A82] text-white'
                                 : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
                             }`}
                           >
                             <span className="text-[12px] font-bold">{f.label}</span>
-                            <span className={`flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold ${
+                            <span className={`flex items-center justify-center w-5 h-5 rounded-md text-[10px] font-bold ${
                               notifFilter === f.key ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
                             }`}>{f.count}</span>
                           </button>
                         ))}
                       </div>
-                      <button onClick={() => markAsReadMutation.mutate(undefined)} className="flex items-center gap-1.5 text-[12.5px] font-bold text-[#7a1315] hover:text-[#5a0d0f] transition-colors">
+                      <button onClick={() => markAsReadMutation.mutate(undefined)} className="flex items-center gap-1.5 text-[12.5px] font-bold text-[#0B3A82] hover:text-[#092558] transition-colors">
                         <CheckCircle2 className="w-4 h-4" strokeWidth={2.5} />
                         Mark all as read
                       </button>
@@ -564,15 +562,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
                     <div className="flex flex-col px-8 py-6 max-h-[440px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] space-y-7 bg-white">
                        {filteredNotifications.length === 0 ? (
-                         <div className="flex flex-col items-center justify-center py-10 pb-12 text-slate-400">
-                           <div className="relative mb-6">
-                             <div className="w-[120px] h-[120px] rounded-full bg-[#fff5f5] flex items-center justify-center">
-                               <Bell className="w-[56px] h-[56px] text-[#7a1315]" strokeWidth={1.5} />
-                             </div>
-                             <div className="absolute bottom-2 right-2 w-[34px] h-[34px] bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100">
-                               <CheckCircle2 className="w-[22px] h-[22px] text-[#7a1315]" strokeWidth={2.5} />
-                             </div>
-                           </div>
+                          <div className="flex flex-col items-center justify-center py-10 pb-12 text-slate-400">
+                            <div className="relative mb-6">
+                              <div className="w-[120px] h-[120px] rounded-md bg-blue-50 flex items-center justify-center">
+                                <Bell className="w-[56px] h-[56px] text-[#0B3A82]" strokeWidth={1.5} />
+                              </div>
+                              <div className="absolute bottom-2 right-2 w-[34px] h-[34px] bg-white rounded-md flex items-center justify-center shadow-sm border border-slate-100">
+                                <CheckCircle2 className="w-[22px] h-[22px] text-[#0B3A82]" strokeWidth={2.5} />
+                              </div>
+                            </div>
                            <p className="font-extrabold text-[22px] text-slate-900 mb-2">No new notifications</p>
                            <p className="text-[15px] font-medium text-slate-500">You&apos;re all caught up!</p>
                          </div>
@@ -621,10 +619,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                                      <div 
                                        key={notification.id} 
                                        onClick={() => { setSelectedNotif(notification); if (!notification.read_at) markAsReadMutation.mutate(notification.id); }}
-                                       className="p-4 rounded-[1.25rem] border border-slate-100 bg-white flex items-center justify-between gap-4 shadow-[0_2px_15px_rgba(0,0,0,0.03)] cursor-pointer hover:border-slate-200 hover:shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all"
+                                       className="p-4 rounded-md border border-slate-100 bg-white flex items-center justify-between gap-4 shadow-[0_2px_15px_rgba(0,0,0,0.03)] cursor-pointer hover:border-slate-200 hover:shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all"
                                      >
                                        <div className="flex items-center gap-4">
-                                         <div className={`w-12 h-12 rounded-[14px] flex items-center justify-center shrink-0 ${iconClass}`}>
+                                         <div className={`w-12 h-12 rounded-md flex items-center justify-center shrink-0 ${iconClass}`}>
                                            <IconToUse className="w-5 h-5" strokeWidth={2.5} />
                                          </div>
                                          <div className="flex flex-col">
@@ -637,7 +635,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                                            {group.title === 'YESTERDAY' ? `Yesterday, ` : group.title === 'EARLIER' ? `${new Date(notification.created_at).toLocaleDateString()} - ` : ''}
                                            {new Date(notification.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                          </span>
-                                         <div className={`w-2 h-2 rounded-full ${notification.read_at ? 'bg-slate-300' : 'bg-red-500'}`} />
+                                         <div className={`w-2 h-2 rounded-md ${notification.read_at ? 'bg-slate-300' : 'bg-red-500'}`} />
                                        </div>
                                      </div>
                                    );
@@ -650,18 +648,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     </div>
                     
 <div className="px-6 pb-6 bg-white">
-                      <Link href={notifBasePath} className="p-4 rounded-[20px] bg-red-50 hover:bg-red-100 border border-red-100 flex items-center justify-between transition-colors group">
+                      <Link href={notifBasePath} className="p-4 rounded-md bg-blue-50 hover:bg-blue-100 border border-blue-100 flex items-center justify-between transition-colors group">
                         <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-full bg-red-100 group-hover:bg-red-200 flex items-center justify-center shrink-0 transition-colors">
-                            <Bell className="w-5 h-5 text-[#7a1315]" />
+                          <div className="w-10 h-10 rounded-md bg-blue-100 group-hover:bg-blue-200 flex items-center justify-center shrink-0 transition-colors">
+                            <Bell className="w-5 h-5 text-[#0B3A82]" />
                           </div>
                           <div className="flex flex-col">
-                            <p className="text-[14px] font-bold text-[#7a1315]">View all notifications</p>
-                            <p className="text-[12px] font-medium text-[#7a1315]/80">See full history and manage notifications</p>
+                            <p className="text-[14px] font-bold text-[#0B3A82]">View all notifications</p>
+                            <p className="text-[12px] font-medium text-[#0B3A82]/80">See full history and manage notifications</p>
                           </div>
                         </div>
-                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm shrink-0 group-hover:shadow transition-all">
-                          <ArrowRight className="w-5 h-5 text-[#7a1315]" />
+                        <div className="w-10 h-10 rounded-md bg-white flex items-center justify-center shadow-sm shrink-0 group-hover:shadow transition-all">
+                          <ArrowRight className="w-5 h-5 text-[#0B3A82]" />
                         </div>
                       </Link>
                     </div>
@@ -671,13 +669,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 {/* Notification Detail Modal */}
                 <Dialog open={!!selectedNotif} onOpenChange={(open) => { if (!open) setSelectedNotif(null); }}>
                   <DialogContent 
-                    closeClassName="top-5 right-5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full w-8 h-8 flex items-center justify-center border-none transition-colors"
-                    className="sm:max-w-[480px] rounded-[28px] overflow-hidden p-0 border-none shadow-[0_20px_60px_-15px_rgba(0,0,0,0.2)]"
+                    closeClassName="top-5 right-5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md w-8 h-8 flex items-center justify-center border-none transition-colors"
+                    className="sm:max-w-[480px] rounded-md overflow-hidden p-0 border-none shadow-[0_20px_60px_-15px_rgba(0,0,0,0.2)]"
                   >
                     {selectedNotif && (
                       <div className="p-7">
                         <div className="flex items-center gap-4 mb-6">
-                          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${
+                          <div className={`w-14 h-14 rounded-md flex items-center justify-center shrink-0 ${
                             selectedNotif.data?.type === 'time_in' ? 'bg-emerald-50 text-emerald-600' :
                             selectedNotif.data?.type === 'time_out' ? 'bg-amber-50 text-amber-600' :
                             selectedNotif.data?.type === 'system' ? 'bg-purple-50 text-purple-600' :
@@ -692,9 +690,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                             <h3 className="text-[18px] font-bold text-slate-900 tracking-tight truncate">{selectedNotif.data?.title || 'Notification'}</h3>
                             <p className="text-[13px] font-medium text-slate-400 mt-0.5">{new Date(selectedNotif.created_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                           </div>
-                          <div className={`w-3 h-3 rounded-full shrink-0 ${selectedNotif.read_at ? 'bg-slate-300' : 'bg-red-500'}`} />
+                          <div className={`w-3 h-3 rounded-md shrink-0 ${selectedNotif.read_at ? 'bg-slate-300' : 'bg-red-500'}`} />
                         </div>
-                        <div className="bg-slate-50 rounded-2xl p-5">
+                        <div className="bg-slate-50 rounded-md p-5">
                           <p className="text-[14px] text-slate-700 leading-relaxed whitespace-pre-wrap">{selectedNotif.data?.message || 'No additional details.'}</p>
                         </div>
                       </div>
@@ -705,7 +703,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                {/* Theme Toggle */}
                <button 
                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                 className="relative p-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all duration-300 cursor-pointer"
+                 className="relative p-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-all duration-300 cursor-pointer"
                >
                  {theme === 'dark' ? (
                    <Sun className="w-7 h-7" />
@@ -723,19 +721,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                  onClick={() => setProfileOpen(!profileOpen)}
                  className="flex items-center gap-3 cursor-pointer group"
                >
-                 <div className="hidden md:flex items-center gap-3">
-                   <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center shrink-0">
-                     <ShieldCheck className="w-[22px] h-[22px] text-[#7a1315]" strokeWidth={2.5} />
-                   </div>
+                  <div className="hidden md:flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-md bg-blue-50 flex items-center justify-center shrink-0">
+                      <ShieldCheck className="w-[22px] h-[22px] text-[#0B3A82]" strokeWidth={2.5} />
+                    </div>
                    <div className="flex flex-col text-left mr-1">
                      <span className="text-sm font-bold text-slate-800">{user.name}</span>
-                          <span className="text-xs text-slate-500 font-medium capitalize bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-full mt-1.5 inline-block">{user?.roles[0].replace('-', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</span>
+                          <span className="text-xs text-slate-500 font-medium capitalize bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-md mt-1.5 inline-block">{user?.roles[0].replace('-', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</span>
                         </div>
                  </div>
-                 <div className="relative">
-                   <div className="w-11 h-11 rounded-full bg-[#7a1315] flex items-center justify-center text-white font-bold text-[15px] shadow-sm shrink-0">
-                     {initials}
-                   </div>
+                  <div className="relative">
+                    <div className="w-11 h-11 rounded-full bg-[#0B3A82] flex items-center justify-center text-white font-bold text-[15px] shadow-sm shrink-0">
+                      {initials}
+                    </div>
                    <div className="absolute bottom-0 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full"></div>
                  </div>
                  <ChevronDown className={`w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-transform duration-200 ${profileOpen ? 'rotate-180' : ''}`} />
@@ -745,13 +743,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               {profileOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)}></div>
-                  <div className="absolute right-0 top-full mt-3 w-72 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
+                  <div className="absolute right-0 top-full mt-3 w-72 bg-white rounded-md shadow-xl border border-slate-100 z-50 animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
                     <div className="px-5 py-4 border-b border-slate-50 bg-slate-50/50">
                       <p className="font-bold text-slate-800">Account Options</p>
                     </div>
                     <div className="p-3 flex flex-col gap-1">
-                      <button className="flex items-center gap-3 w-full p-3 hover:bg-slate-50 rounded-xl transition-colors text-left group/btn">
-                        <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 group-hover/btn:bg-blue-100 transition-colors">
+                      <button className="flex items-center gap-3 w-full p-3 hover:bg-slate-50 rounded-md transition-colors text-left group/btn">
+                        <div className="w-10 h-10 rounded-md bg-blue-50 flex items-center justify-center text-blue-600 group-hover/btn:bg-blue-100 transition-colors">
                           <UserSquare className="w-5 h-5" />
                         </div>
                         <div>
@@ -760,8 +758,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         </div>
                       </button>
                       
-                      <button onClick={handleLogout} className="flex items-center gap-3 w-full p-3 hover:bg-red-50 rounded-xl transition-colors text-left group/btn">
-                        <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-600 group-hover/btn:bg-red-100 transition-colors">
+                      <button onClick={handleLogout} className="flex items-center gap-3 w-full p-3 hover:bg-red-50 rounded-md transition-colors text-left group/btn">
+                        <div className="w-10 h-10 rounded-md bg-red-50 flex items-center justify-center text-red-600 group-hover/btn:bg-red-100 transition-colors">
                           <LogOut className="w-5 h-5" />
                         </div>
                         <div>

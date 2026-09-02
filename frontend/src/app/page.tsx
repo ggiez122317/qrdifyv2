@@ -104,10 +104,10 @@ export default function LandingPage() {
             {/* Logo */}
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm p-1 border border-slate-100">
-                <Image src="/school-logo.jpg" alt="Qridify" width={40} height={40} className="w-10 h-10 object-cover rounded-full" style={{ width: 'auto', height: 'auto' }} unoptimized priority />
+                <Image src="/school-logo.jpg" alt="TWCES" width={40} height={40} className="w-10 h-10 object-cover rounded-full" style={{ width: 'auto', height: 'auto' }} unoptimized priority />
               </div>
               <div className="flex flex-col">
-                <span className="font-extrabold text-[16px] leading-none tracking-[0.05em] text-[#0B3A82]">Trento West Central Elementary SPED Center</span>
+                <span className="font-extrabold text-[16px] leading-none tracking-[0.05em] text-[#0B3A82]">TWCES</span>
                 <span className="text-[10px] text-slate-500 font-bold tracking-[0.15em] uppercase mt-1">Smart • Secure • Seamless</span>
               </div>
             </div>
@@ -345,9 +345,9 @@ export default function LandingPage() {
                                  <span className="text-[10px] text-slate-400 font-bold">QR</span>
                               </div>
                            </div>
-                           <div className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
-                              Trento West Central SPED
-                           </div>
+                            <div className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+                               TWCES
+                            </div>
                         </div>
                      </div>
                   </div>
@@ -440,7 +440,7 @@ export default function LandingPage() {
             </h2>
             
             <div className="text-[18px] font-semibold text-slate-900 mb-2">Mrs. Angela D.</div>
-            <div className="text-[16px] text-slate-500 font-medium mb-16">Principal, Trento West Central Elementary SPED Center</div>
+            <div className="text-[16px] text-slate-500 font-medium mb-16">Principal, TWCES</div>
 
             <div className="border-t border-slate-100 pt-16">
                <div className="text-[13px] font-semibold text-slate-400 uppercase tracking-widest mb-8">Trusted by leading educational institutions</div>
@@ -486,10 +486,10 @@ export default function LandingPage() {
         <div className="max-w-[1440px] mx-auto px-6 lg:px-12 grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
            <div className="md:col-span-1">
              <div className="flex items-center gap-3 mb-6">
-               <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center p-1 shrink-0">
-                  <Image src="/school-logo.jpg" alt="Trento West Central Elementary SPED Center" width={32} height={32} className="w-8 h-8 object-cover rounded-full" style={{ width: 'auto', height: 'auto' }} unoptimized />
-               </div>
-               <span className="font-extrabold text-[16px] tracking-wide text-white leading-tight">Trento West Central Elementary SPED Center</span>
+                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center p-1 shrink-0">
+                   <Image src="/school-logo.jpg" alt="TWCES" width={32} height={32} className="w-8 h-8 object-cover rounded-full" style={{ width: 'auto', height: 'auto' }} unoptimized />
+                </div>
+                <span className="font-extrabold text-[16px] tracking-wide text-white leading-tight">TWCES</span>
              </div>
              <p className="text-[14px] text-blue-200/80 font-medium max-w-[240px]">
                Smart attendance platform developed for modern educational institutions.
@@ -525,10 +525,10 @@ export default function LandingPage() {
         
         <div className="max-w-[1440px] mx-auto px-6 lg:px-12 pt-8 border-t border-blue-800/50 flex flex-col md:flex-row justify-between items-center gap-4">
            <div className="text-[13px] font-medium text-blue-200/60">
-             © 2026 Trento West Central Elementary SPED Center. All rights reserved.
+             © 2026 TWCES. All rights reserved.
            </div>
            <div className="text-[13px] font-medium text-blue-200/60">
-             Built for Trento West Central Elementary SPED Center
+             Built for TWCES
            </div>
         </div>
       </footer>

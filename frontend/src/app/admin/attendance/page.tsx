@@ -129,7 +129,7 @@ export default function HistoryPage() {
         {/* Header Section */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 mt-2">
           <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center shrink-0 border border-red-100/50">
+            <div className="w-14 h-14 rounded-none bg-red-50 flex items-center justify-center shrink-0 border border-red-100/50">
               <Calendar className="w-6 h-6 text-maroon-700" />
             </div>
             <div className="pt-1">
@@ -148,7 +148,7 @@ export default function HistoryPage() {
                   setSelectedDate(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-[13px] font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-maroon-500/20 focus:border-maroon-300 shadow-sm cursor-pointer"
+                className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-none text-[13px] font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-maroon-500/20 focus:border-maroon-300 shadow-sm cursor-pointer"
               />
               <Calendar className="absolute left-3.5 w-4 h-4 text-slate-500 pointer-events-none" />
             </div>
@@ -158,7 +158,7 @@ export default function HistoryPage() {
                 <input 
                   type="text"
                   placeholder="Search name, ID, or role..." 
-                  className="pl-11 pr-4 py-3 w-full sm:w-[320px] bg-white border border-slate-200 rounded-xl text-[14px] focus:outline-none focus:ring-2 focus:ring-maroon-500/20 focus:border-maroon-300 transition-all placeholder:text-slate-400 font-medium shadow-sm"
+                  className="pl-11 pr-4 py-3 w-full sm:w-[320px] bg-white border border-slate-200 rounded-none text-[14px] focus:outline-none focus:ring-2 focus:ring-maroon-500/20 focus:border-maroon-300 transition-all placeholder:text-slate-400 font-medium shadow-sm"
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
@@ -170,7 +170,7 @@ export default function HistoryPage() {
               <div className="relative">
                 <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <select 
-                  className="pl-11 pr-10 py-3 bg-white border border-slate-200 rounded-xl text-[14px] text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-maroon-500/20 focus:border-maroon-300 appearance-none cursor-pointer shadow-sm"
+                  className="pl-11 pr-10 py-3 bg-white border border-slate-200 rounded-none text-[14px] text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-maroon-500/20 focus:border-maroon-300 appearance-none cursor-pointer shadow-sm"
                   value={statusFilter}
                   onChange={(e) => {
                     setStatusFilter(e.target.value);
@@ -192,9 +192,9 @@ export default function HistoryPage() {
         {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
           {/* Total Records */}
-          <div className="bg-white border border-slate-100 rounded-[20px] p-5 shadow-sm flex items-start gap-5 hover:shadow-md transition-shadow relative">
+          <div className="bg-white border border-slate-100 rounded-none p-5 shadow-sm flex items-start gap-5 hover:shadow-md transition-shadow relative">
             <div className="flex flex-col items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center shrink-0 text-blue-500">
+              <div className="w-14 h-14 rounded-none bg-blue-50 flex items-center justify-center shrink-0 text-blue-500">
                 <Users className="w-6 h-6" />
               </div>
               <div className="w-10 h-1 bg-blue-500 rounded-full"></div>
@@ -207,9 +207,9 @@ export default function HistoryPage() {
           </div>
           
           {/* Present */}
-          <div className="bg-white border border-slate-100 rounded-[20px] p-5 shadow-sm flex items-start gap-5 hover:shadow-md transition-shadow relative">
+          <div className="bg-white border border-slate-100 rounded-none p-5 shadow-sm flex items-start gap-5 hover:shadow-md transition-shadow relative">
             <div className="flex flex-col items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center shrink-0 text-emerald-500">
+              <div className="w-14 h-14 rounded-none bg-emerald-50 flex items-center justify-center shrink-0 text-emerald-500">
                 <CheckCircle2 className="w-6 h-6" />
               </div>
               <div className="w-10 h-1 bg-emerald-500 rounded-full"></div>
@@ -224,9 +224,9 @@ export default function HistoryPage() {
           </div>
           
           {/* Late */}
-          <div className="bg-white border border-slate-100 rounded-[20px] p-5 shadow-sm flex items-start gap-5 hover:shadow-md transition-shadow relative">
+          <div className="bg-white border border-slate-100 rounded-none p-5 shadow-sm flex items-start gap-5 hover:shadow-md transition-shadow relative">
             <div className="flex flex-col items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center shrink-0 text-amber-500">
+              <div className="w-14 h-14 rounded-none bg-amber-50 flex items-center justify-center shrink-0 text-amber-500">
                 <Clock className="w-6 h-6" />
               </div>
               <div className="w-10 h-1 bg-amber-500 rounded-full"></div>
@@ -241,9 +241,9 @@ export default function HistoryPage() {
           </div>
           
           {/* Absent */}
-          <div className="bg-white border border-slate-100 rounded-[20px] p-5 shadow-sm flex items-start gap-5 hover:shadow-md transition-shadow relative">
+          <div className="bg-white border border-slate-100 rounded-none p-5 shadow-sm flex items-start gap-5 hover:shadow-md transition-shadow relative">
             <div className="flex flex-col items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center shrink-0 text-red-500">
+              <div className="w-14 h-14 rounded-none bg-red-50 flex items-center justify-center shrink-0 text-red-500">
                 <UserX className="w-6 h-6" />
               </div>
               <div className="w-10 h-1 bg-red-500 rounded-full"></div>
@@ -259,7 +259,7 @@ export default function HistoryPage() {
         </div>
 
         {/* Data Table */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <div className="bg-white rounded-none shadow-sm border border-slate-100 overflow-hidden">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader className="bg-transparent border-b border-slate-100">
@@ -319,7 +319,7 @@ export default function HistoryPage() {
                             setStatusFilter('all');
                             queryClient.invalidateQueries({ queryKey: ['attendanceToday'] });
                           }}
-                          className="flex items-center gap-2 px-6 py-3 bg-maroon-600 hover:bg-maroon-700 text-white font-bold text-sm rounded-xl transition-all shadow-lg shadow-maroon-600/20 active:scale-[0.98]"
+                          className="flex items-center gap-2 px-6 py-3 bg-maroon-600 hover:bg-maroon-700 text-white font-bold text-sm rounded-none transition-all shadow-lg shadow-maroon-600/20 active:scale-[0.98]"
                         >
                           <RefreshCw className="w-4 h-4" />
                           Refresh Records
@@ -372,7 +372,7 @@ export default function HistoryPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
-                        <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-[11px] font-bold bg-blue-50 text-blue-600 uppercase tracking-wide">
+                        <span className="inline-flex items-center px-3 py-1.5 rounded-none text-[11px] font-bold bg-blue-50 text-blue-600 uppercase tracking-wide">
                           {record.user?.roles?.[0]?.name || 'Unknown'}
                         </span>
                       </TableCell>
@@ -380,7 +380,7 @@ export default function HistoryPage() {
                       <TableCell className="text-center font-bold text-slate-400">{record.time_out || '--:--'}</TableCell>
                       <TableCell className="text-right pr-6">
                          <div className="flex items-center justify-end gap-3">
-                           <span className={`inline-flex items-center font-bold px-3 py-1.5 rounded-lg text-[11px] uppercase tracking-wide ${getStatusBadge(record.status).bg}`}>
+                           <span className={`inline-flex items-center font-bold px-3 py-1.5 rounded-none text-[11px] uppercase tracking-wide ${getStatusBadge(record.status).bg}`}>
                              {getStatusBadge(record.status).icon}
                              {record.status}
                            </span>
@@ -389,13 +389,13 @@ export default function HistoryPage() {
                                <button
                                  onClick={() => deleteMutation.mutate(record.id)}
                                  disabled={deleteMutation.isPending}
-                                 className="px-2.5 py-1.5 text-[11px] font-bold bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50"
+                                 className="px-2.5 py-1.5 text-[11px] font-bold bg-red-500 hover:bg-red-600 text-white rounded-none transition-colors disabled:opacity-50"
                                >
                                  {deleteMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Yes'}
                                </button>
                                <button
                                  onClick={() => setDeletingId(null)}
-                                 className="px-2.5 py-1.5 text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors"
+                                 className="px-2.5 py-1.5 text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-none transition-colors"
                                >
                                  No
                                </button>
@@ -429,7 +429,7 @@ export default function HistoryPage() {
                 size="sm" 
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="h-8 w-8 p-0 rounded-lg border-slate-200 text-slate-500 hover:text-slate-900"
+                className="h-8 w-8 p-0 rounded-none border-slate-200 text-slate-500 hover:text-slate-900"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -441,7 +441,7 @@ export default function HistoryPage() {
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages || totalPages === 0}
-                className="h-8 w-8 p-0 rounded-lg border-slate-200 text-slate-500 hover:text-slate-900"
+                className="h-8 w-8 p-0 rounded-none border-slate-200 text-slate-500 hover:text-slate-900"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>

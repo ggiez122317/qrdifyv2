@@ -62,6 +62,12 @@ class GradeLevelController extends Controller
         ], 201);
     }
 
+    public function show($id)
+    {
+        $gradeLevel = GradeLevel::findOrFail($id);
+        return response()->json($gradeLevel);
+    }
+
     public function update(Request $request, $id)
     {
         $gradeLevel = GradeLevel::findOrFail($id);

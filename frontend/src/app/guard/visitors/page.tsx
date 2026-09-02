@@ -112,14 +112,14 @@ export default function VisitorsPage() {
         </div>
         <button 
           onClick={openNewVisitor}
-          className="flex items-center gap-2 bg-[#7a1315] hover:bg-[#5a0d0f] text-white px-5 py-2.5 rounded-xl font-bold shadow-md transition-all"
+          className="flex items-center gap-2 bg-[#0B3A82] hover:bg-[#092558] text-white px-5 py-2.5 rounded-none font-bold shadow-md transition-all"
         >
           <Plus className="w-5 h-5" />
           New Visitor
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="bg-white rounded-none shadow-sm border border-slate-100 overflow-hidden">
         <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row gap-4 justify-between items-center bg-slate-50/50">
           <div className="relative w-full md:w-80">
             <input 
@@ -127,7 +127,7 @@ export default function VisitorsPage() {
               placeholder="Search visitors..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-maroon-500/20 focus:border-maroon-400 transition-all"
+              className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-maroon-500/20 focus:border-maroon-400 transition-all"
             />
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
           </div>
@@ -137,7 +137,7 @@ export default function VisitorsPage() {
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="pl-10 pr-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-sm focus:outline-none focus:ring-2 focus:ring-maroon-500/20 focus:border-maroon-300 cursor-pointer w-full"
+              className="pl-10 pr-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-none font-bold text-sm focus:outline-none focus:ring-2 focus:ring-maroon-500/20 focus:border-maroon-300 cursor-pointer w-full"
             />
             <CalendarIcon className="absolute left-3.5 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
