@@ -1,1 +1,1 @@
-# qridify
+# qrdifyv2
