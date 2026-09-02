@@ -200,8 +200,7 @@ $registerAuthenticatedRoutes = function () {
             // Settings
             Route::get('/settings', [SettingsController::class, 'index']);
             Route::post('/settings', [SettingsController::class, 'update']);
-            Route::post('/settings/test-sms', [SettingsController::class, 'testSms'])
-                ->middleware('throttle:3,1');
+            Route::post('/settings/test-sms', [SettingsController::class, 'testSms']);
         });
     });
 };
