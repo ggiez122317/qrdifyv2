@@ -41,8 +41,9 @@ class AttendanceService
         $time = now()->toTimeString();
         $timeStr = now()->format('H:i');
 
-        $startTime = $this->settings->get('school_start_time', '08:00');
-        $pmTimeOutStr = $this->settings->get('school_end_time', '16:00');
+        $systemSettings = $this->settings->all();
+        $startTime = $systemSettings['school_start_time'] ?? '08:00';
+        $pmTimeOutStr = $systemSettings['school_end_time'] ?? '16:00';
 
         $attendance = Attendance::forDate($date)->forUser($userId)->first();
 
@@ -107,7 +108,16 @@ class AttendanceService
             'scanned_at' => now(),
         ]);
 
-        if ($role === 'student' && $teacherId) {
+        $isTimeIn = str_starts_with($type, 'Time In');
+        $eventNotificationsEnabled = $isTimeIn
+            ? (bool) ($systemSettings['notify_check_in'] ?? true)
+            : (bool) ($systemSettings['notify_check_out'] ?? true);
+        $lateNotificationsEnabled = $status !== 'late' || (bool) ($systemSettings['notify_late'] ?? true);
+
+        if ($role === 'student' && $teacherId
+            && $eventNotificationsEnabled
+            && $lateNotificationsEnabled
+            && (bool) ($systemSettings['enable_push_notifications'] ?? true)) {
             $teacher = User::find($teacherId);
             if ($teacher) {
                 $teacher->notify(new StudentScannedNotification(
@@ -126,7 +136,10 @@ class AttendanceService
             'time' => now()->format('h:i A'),
         ]));
 
-        if ($role === 'student' && !empty($parentPhone)) {
+        if ($role === 'student' && !empty($parentPhone)
+            && $eventNotificationsEnabled
+            && $lateNotificationsEnabled
+            && (bool) ($systemSettings['enable_sms_notifications'] ?? false)) {
             // TEMPORARY: Cooldown disabled for testing
             // $cooldownKey = "sms_cooldown_{$userId}";
             // if (\Illuminate\Support\Facades\Cache::add($cooldownKey, true, now()->addMinutes(15))) {

@@ -25,18 +25,15 @@ export default function EditStudentPage() {
     section: '',
     parent_name: '',
     parent_phone: '',
-    photo_base64: '',
-    subjects: [] as number[]
+    photo_base64: ''
   });
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [gradeLevels, setGradeLevels] = useState<{ id: number; name: string }[]>([]);
   const [sections, setSections] = useState<{ id: number; name: string }[]>([]);
-  const [subjects, setSubjects] = useState<{ id: number; name: string }[]>([]);
 
   useEffect(() => {
     api.get('/api/grade-levels').then(r => setGradeLevels(r.data));
     api.get('/api/sections/list-all').then(r => setSections(r.data));
-    api.get('/api/subjects').then(r => setSubjects(r.data));
   }, []);
 
   useEffect(() => {
@@ -52,19 +49,18 @@ export default function EditStudentPage() {
             last_name: parts.slice(1).join(' ') || '',
             email: data.email || '',
             lrn: data.lrn || '',
-            grade_level: data.student_profile?.grade || '',
+            grade_level: data.student_profile?.grade || data.student_profile?.section?.grade_level || '',
             section: (typeof data.student_profile?.section === 'object' && data.student_profile?.section !== null) 
               ? data.student_profile?.section?.name 
               : (data.student_profile?.section || ''),
             parent_name: data.student_profile?.parent_name || '',
             parent_phone: data.student_profile?.parent_phone || '',
-            photo_base64: '',
-            subjects: data.subjects?.map((s: any) => s.id ?? s) || []
+            photo_base64: ''
           });
           setPhotoUrl(data.photo_url || null);
         }
-      } catch (err: any) {
-        console.error('Failed to fetch student:', err?.response?.data || err?.message || err);
+      } catch (err: unknown) {
+        console.error('Failed to fetch student:', err instanceof Error ? err.message : err);
       }
     };
     fetchStudent();
@@ -72,6 +68,13 @@ export default function EditStudentPage() {
 
   const [activeSide, setActiveSide] = useState<'front' | 'back'>('front');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const gradeLevelValue = gradeLevels.find(
+    grade => grade.name.toLowerCase() === formData.grade_level.toLowerCase()
+  )?.name || formData.grade_level;
+  const sectionValue = sections.find(
+    section => section.name.toLowerCase() === formData.section.toLowerCase()
+  )?.name || formData.section;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData(prev => ({
@@ -86,7 +89,7 @@ export default function EditStudentPage() {
     lrn: formData.lrn,
     photo_url: photoUrl,
     student_profile: {
-      grade_level: formData.grade_level,
+      grade: formData.grade_level,
       section: formData.section,
       parent_name: formData.parent_name,
       parent_phone: formData.parent_phone
@@ -160,7 +163,7 @@ export default function EditStudentPage() {
                     <select
                       id="grade_level"
                       name="grade_level"
-                      value={formData.grade_level}
+                      value={gradeLevelValue}
                       onChange={handleChange}
                       onFocus={() => setActiveSide('front')}
                       required
@@ -178,7 +181,7 @@ export default function EditStudentPage() {
                     <select
                       id="section"
                       name="section"
-                      value={formData.section}
+                      value={sectionValue}
                       onChange={handleChange}
                       onFocus={() => setActiveSide('front')}
                       required
@@ -191,36 +194,6 @@ export default function EditStudentPage() {
                     </select>
                   </div>
 
-                  <div className="space-y-3 md:col-span-2 mt-2">
-                    <Label className="text-sm font-semibold dark:text-slate-300">Assign Subjects</Label>
-                    <p className="text-xs text-slate-500 mb-2">Select the subjects for this student.</p>
-                    <div className="flex flex-wrap gap-2">
-                      {subjects.map((subject) => {
-                        const isSelected = formData.subjects.includes(subject.id);
-                        return (
-                          <button
-                            key={subject.id}
-                            type="button"
-                            onClick={() => {
-                              setFormData(prev => ({
-                                ...prev,
-                                subjects: isSelected 
-                                  ? prev.subjects.filter(id => id !== subject.id)
-                                  : [...prev.subjects, subject.id]
-                              }));
-                            }}
-                            className={`px-3 py-1.5 rounded-none text-xs font-semibold transition-all border ${
-                              isSelected 
-                                ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm' 
-                                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 dark:bg-[#161920] dark:border-white/10 dark:text-slate-300'
-                            }`}
-                          >
-                            {subject.name}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
                 </div>
               </div>
               
@@ -253,7 +226,7 @@ export default function EditStudentPage() {
                     Cancel
                   </Button>
                 </Link>
-                <Button type="submit" disabled={isSubmitting} className="bg-maroon-600 hover:bg-maroon-700 text-white shadow-sm font-bold text-base h-12 px-10 min-w-[240px]">
+                <Button type="submit" disabled={isSubmitting} className="bg-[#0B3A82] hover:bg-[#092f69] text-white shadow-sm font-bold text-base h-12 px-10 min-w-[240px]">
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-5 h-5 mr-2 animate-spin" />

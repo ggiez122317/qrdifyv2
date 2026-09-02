@@ -18,19 +18,19 @@ const nextConfig: NextConfig = {
       {
         protocol: 'http',
         hostname: 'localhost',
-        port: '8000',
+        port: '8001',
         pathname: '/**',
       },
       {
         protocol: 'http',
         hostname: '192.168.100.160',
-        port: '8000',
+        port: '8001',
         pathname: '/**',
       },
       {
         protocol: 'http',
         hostname: '127.0.0.1',
-        port: '8000',
+        port: '8001',
         pathname: '/**',
       }
     ],

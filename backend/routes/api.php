@@ -33,6 +33,10 @@ $registerPublicRoutes();
 Route::prefix('v1')->group($registerPublicRoutes);
 
 $registerAuthenticatedRoutes = function () {
+    Route::get('/system/preferences', [SettingsController::class, 'index']);
+    Route::post('/system/preferences', [SettingsController::class, 'update'])
+        ->middleware('role:super-admin,admin,principal');
+
     // Auth info
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/change-password', [AuthController::class, 'changePassword']);
@@ -204,5 +208,5 @@ $registerAuthenticatedRoutes = function () {
     });
 };
 
-Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckBlockedUser::class, \App\Http\Middleware\CheckMaintenanceMode::class, 'throttle:60,1'])->group($registerAuthenticatedRoutes);
-Route::prefix('v1')->middleware(['auth:sanctum', \App\Http\Middleware\CheckBlockedUser::class, \App\Http\Middleware\CheckMaintenanceMode::class, 'throttle:60,1'])->group($registerAuthenticatedRoutes);
+Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckMaintenanceMode::class, 'throttle:60,1'])->group($registerAuthenticatedRoutes);
+Route::prefix('v1')->middleware(['auth:sanctum', \App\Http\Middleware\CheckMaintenanceMode::class, 'throttle:60,1'])->group($registerAuthenticatedRoutes);

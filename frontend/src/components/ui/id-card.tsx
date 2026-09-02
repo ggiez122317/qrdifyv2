@@ -1,9 +1,11 @@
 /* eslint-disable @next/next/no-img-element */
 import React, { useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogTrigger, DialogClose, DialogTitle } from '@/components/ui/dialog';
 import { Printer, IdCard } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 import { getImageUrl } from '@/lib/utils';
+import api from '@/lib/axios';
 
 export interface IdCardUser {
   id?: number | string;
@@ -29,6 +31,22 @@ interface IdCardProps {
 }
 
 export function IdCardPreview({ user, type, printRef, activeSide = 'both', photoPreview }: { user: IdCardUser, type: 'student' | 'teacher', printRef?: React.Ref<HTMLDivElement>, activeSide?: 'front' | 'back' | 'both', photoPreview?: string | null }) {
+  const currentYear = new Date().getFullYear();
+  const defaultIdPreferences = {
+    principal_name: 'MERLE B. ALSONADO',
+    principal_position: 'PRINCIPAL I',
+    principal_signature: '',
+    school_year: `${currentYear}-${currentYear + 1}`,
+  };
+  const { data: idPreferences = defaultIdPreferences } = useQuery({
+    queryKey: ['system-preferences'],
+    queryFn: async () => {
+      const response = await api.get('/api/system/preferences');
+      return { ...defaultIdPreferences, ...response.data };
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   const name = user?.name?.toUpperCase() || 'UNKNOWN NAME';
   const roleLabel = type === 'teacher' ? (user?.teacher_profile?.position || 'TEACHER') : 'STUDENT';
   const idNumber = type === 'teacher'
@@ -176,10 +194,10 @@ export function IdCardPreview({ user, type, printRef, activeSide = 'both', photo
             */}
             <div style={{ position: 'relative', zIndex: 20 }}>
               <div style={{ fontSize: '13px', fontWeight: 500, color: '#fff', letterSpacing: '0.5px' }}>
-                MERLE B. ALSONADO
+                {idPreferences.principal_name.toUpperCase()}
               </div>
               <div style={{ fontSize: '10px', fontWeight: 800, color: '#fff', marginTop: '2px' }}>
-                PRINCIPAL I
+                {idPreferences.principal_position.toUpperCase()}
               </div>
             </div>
           </div>
@@ -251,9 +269,8 @@ export function IdCardPreview({ user, type, printRef, activeSide = 'both', photo
     const guardianPhone = user?.student_profile?.parent_phone || 'NOT PROVIDED';
 
     // Dynamically calculate the school year and format the grade level
-    const currentYear = new Date().getFullYear();
-    const schoolYearStr = `${currentYear}-${currentYear + 1}`;
-    const gradeLevel = user?.student_profile?.grade || 'KINDERGARTEN';
+    const schoolYearStr = String(idPreferences.school_year || `${currentYear}-${currentYear + 1}`);
+    const gradeLevel = String(user?.student_profile?.grade || 'KINDERGARTEN');
     const sectionName = user?.student_profile?.section?.trim() || '';
     const gradeAndSection = sectionName ? `${gradeLevel} - ${sectionName}` : gradeLevel;
 
@@ -265,27 +282,24 @@ export function IdCardPreview({ user, type, printRef, activeSide = 'both', photo
           <img src="/id-assets/school-logo.png" style={{ width: '280px', height: '280px', objectFit: 'contain' }} alt="" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
         </div>
 
-        {/* Table - Only Current Grade */}
-        <div style={{ position: 'relative', zIndex: 10, width: '100%', border: '2px solid #000', borderRadius: '4px', overflow: 'hidden', marginBottom: '5px' }}>
-          <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', textAlign: 'center', fontSize: '9px', fontWeight: 'bold', color: '#000' }}>
-            <thead>
-              <tr>
-                <th style={{ width: '30%', borderBottom: '2px solid #000', borderRight: '1px solid #000', padding: '6px 2px' }}>School Year</th>
-                <th style={{ width: '45%', borderBottom: '2px solid #000', borderRight: '1px solid #000', padding: '6px 2px' }}>Grade & Section</th>
-                <th style={{ width: '25%', borderBottom: '2px solid #000', padding: '6px 2px' }}>Signature</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td style={{ borderRight: '1px solid #000', padding: '8px 2px', whiteSpace: 'nowrap', overflow: 'hidden' }}>{schoolYearStr}</td>
-                <td style={{ borderRight: '1px solid #000', padding: '8px 2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{gradeAndSection}</td>
-                <td style={{ padding: '8px 2px' }}>
-                  {/* Signature image removed temporarily as requested */}
-                  {/* <img src="/id-assets/signature.png" style={{ height: '14px', margin: '0 auto' }} alt="" onError={(e) => { e.currentTarget.style.display = 'none'; }} /> */}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        {/* Current school-year authorization record */}
+        <div style={{ position: 'relative', zIndex: 10, width: '100%', border: '2px solid #000', borderRadius: '4px', overflow: 'hidden', marginBottom: '5px', color: '#000', background: '#fff', flexShrink: 0, fontFamily: 'Arial, sans-serif' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '27% 28% 45%', height: '30px', borderBottom: '2px solid #000', textAlign: 'center', fontWeight: 900, color: '#000', background: '#fff' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #000', padding: '3px 2px', fontSize: '8px', color: '#000' }}>School Year</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #000', padding: '3px 2px', fontSize: '8px', color: '#000' }}>Grade</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '3px 2px', fontSize: '7.5px', lineHeight: 1.05, color: '#000' }}>Principal&apos;s Signature</div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '27% 28% 45%', height: '60px', textAlign: 'center', color: '#000', background: '#fff' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #000', padding: '3px 2px', fontSize: '10px', lineHeight: 1, fontWeight: 900, whiteSpace: 'nowrap', color: '#000', opacity: 1 }}>{schoolYearStr}</div>
+            <div title={gradeAndSection} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #000', padding: '3px 2px', fontSize: '10px', lineHeight: 1, fontWeight: 900, textTransform: 'uppercase', overflow: 'hidden', color: '#000', opacity: 1 }}>{gradeLevel}</div>
+            <div style={{ display: 'flex', minWidth: 0, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2px 3px', overflow: 'hidden', color: '#000' }}>
+              {idPreferences.principal_signature && (
+                <img src={getImageUrl(idPreferences.principal_signature)} style={{ width: '86px', height: '30px', objectFit: 'contain', display: 'block', flexShrink: 0 }} alt="Principal e-signature" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              )}
+              <div style={{ width: '100%', fontSize: '7.5px', fontWeight: 900, lineHeight: 1.05, color: '#000', textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', opacity: 1 }}>{idPreferences.principal_name || 'NOT SET'}</div>
+              <div style={{ width: '100%', fontSize: '7px', fontWeight: 800, lineHeight: 1.05, color: '#000', textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', opacity: 1 }}>{idPreferences.principal_position || 'NOT SET'}</div>
+            </div>
+          </div>
         </div>
 
         {/* Emergency Box */}

@@ -61,13 +61,35 @@ class SettingsService
             'late_threshold'           => ['value' => '07:45', 'type' => 'time', 'desc' => 'Time after which a student is marked Late'],
             'school_end_time'          => ['value' => '16:00', 'type' => 'time', 'desc' => 'Time school officially ends'],
             'enable_sms_notifications' => ['value' => 'false', 'type' => 'boolean', 'desc' => 'Send SMS to parents on scan'],
+            'enable_push_notifications' => ['value' => 'true', 'type' => 'boolean', 'desc' => 'Enable in-app and push notifications'],
+            'enable_email_notifications' => ['value' => 'true', 'type' => 'boolean', 'desc' => 'Enable email notifications'],
+            'notify_check_in'            => ['value' => 'true', 'type' => 'boolean', 'desc' => 'Send notifications for student time-in events'],
+            'notify_check_out'           => ['value' => 'true', 'type' => 'boolean', 'desc' => 'Send notifications for student time-out events'],
+            'notify_late'                => ['value' => 'true', 'type' => 'boolean', 'desc' => 'Send notifications for late arrivals'],
+            'notify_early'               => ['value' => 'true', 'type' => 'boolean', 'desc' => 'Send notifications for early dismissal'],
+            'principal_name'            => ['value' => 'MERLE B. ALSONADO', 'type' => 'string', 'desc' => 'Principal name printed on school IDs'],
+            'principal_position'        => ['value' => 'PRINCIPAL I', 'type' => 'string', 'desc' => 'Principal position printed on school IDs'],
+            'principal_signature'       => ['value' => '', 'type' => 'image', 'desc' => 'Principal electronic signature printed on school IDs'],
+            'school_year'               => ['value' => now()->format('Y').'-'.now()->addYear()->format('Y'), 'type' => 'string', 'desc' => 'School year printed on school IDs'],
+            'timezone'                  => ['value' => 'Asia/Manila', 'type' => 'string', 'desc' => 'System display timezone'],
+            'date_format'               => ['value' => 'MM/DD/YYYY', 'type' => 'string', 'desc' => 'System date display format'],
+            'default_theme'             => ['value' => 'light', 'type' => 'string', 'desc' => 'Default system color theme'],
+            'compact_tables'            => ['value' => 'false', 'type' => 'boolean', 'desc' => 'Use compact table spacing'],
         ];
 
+        $timestamp = now();
+        $rows = [];
         foreach ($defaults as $key => $data) {
-            Setting::firstOrCreate(
-                ['key' => $key],
-                ['value' => $data['value'], 'type' => $data['type'], 'description' => $data['desc']]
-            );
+            $rows[] = [
+                'key' => $key,
+                'value' => $data['value'],
+                'type' => $data['type'],
+                'description' => $data['desc'],
+                'created_at' => $timestamp,
+                'updated_at' => $timestamp,
+            ];
         }
+
+        Setting::query()->insertOrIgnore($rows);
     }
 }

@@ -42,11 +42,25 @@ export interface StudentRecord {
   photo_url?: string | null;
   student_profile?: {
     grade?: string;
-    section?: string;
+    section?: string | {
+      name?: string;
+      grade_level?: string;
+    };
     parent_name?: string;
     parent_phone?: string;
   };
 }
+
+const formatGrade = (grade?: string) => {
+  if (!grade?.trim()) return 'N/A';
+  return grade.replace(/^grade\s*/i, '').trim() || 'N/A';
+};
+
+const getSectionGrade = (section?: string | { grade_level?: string }) =>
+  typeof section === 'object' ? section.grade_level : undefined;
+
+const getSectionName = (section?: string | { name?: string }) =>
+  typeof section === 'object' ? section.name : section;
 
 export default function StudentsManagementPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -380,8 +394,8 @@ export default function StudentsManagementPage() {
                       <TableCell className="text-center text-[13px] font-extrabold text-slate-900">{record.lrn}</TableCell>
                       <TableCell className="text-center">
                         <div className="flex flex-col items-center">
-                           <span className="font-bold text-slate-900 text-[13px] mb-1">Grade {record.student_profile?.grade || 'N/A'}</span>
-                           <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-[10px] font-bold">Grade {record.student_profile?.grade || 'N/A'} - {record.student_profile?.section || 'A'}</span>
+                           <span className="font-bold text-slate-900 text-[13px] mb-1">Grade {formatGrade(record.student_profile?.grade || getSectionGrade(record.student_profile?.section))}</span>
+                           <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-[10px] font-bold">Grade {formatGrade(record.student_profile?.grade || getSectionGrade(record.student_profile?.section))} - {getSectionName(record.student_profile?.section) || 'N/A'}</span>
                         </div>
                       </TableCell>
                       <TableCell className="text-center">

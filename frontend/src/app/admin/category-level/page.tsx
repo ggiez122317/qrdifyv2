@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '@/lib/axios';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,6 @@ import {
   Edit2,
   Trash2,
   Layers,
-  BookOpen,
   GraduationCap,
   Archive,
   Filter,
@@ -35,7 +34,7 @@ export interface CategoryRecord {
 }
 
 export default function CategoryLevelPage() {
-  const [activeTab, setActiveTab] = useState<'grade_levels' | 'subjects' | 'sections'>('grade_levels');
+  const [activeTab, setActiveTab] = useState<'grade_levels' | 'sections'>('grade_levels');
   const [records, setRecords] = useState<CategoryRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -48,7 +47,7 @@ export default function CategoryLevelPage() {
   const [itemsPerPage] = useState(10);
 
   // Stats state
-  const [stats, setStats] = useState({ gradeLevels: 0, subjects: 0, active: 0, inactive: 0 });
+  const [stats, setStats] = useState({ gradeLevels: 0, active: 0, inactive: 0 });
   const [gradeLevelsList, setGradeLevelsList] = useState<{id: number, name: string}[]>([]);
 
   // Modals state
@@ -59,6 +58,7 @@ export default function CategoryLevelPage() {
   // Form state
   const [formData, setFormData] = useState({ name: '', description: '', code: '', grade_level: '', status: 'active' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const statsLoadedRef = useRef(false);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -66,7 +66,6 @@ export default function CategoryLevelPage() {
     // 1. Fetch the main table data for the active tab
     try {
       let endpoint = '/api/admin/grade-levels';
-      if (activeTab === 'subjects') endpoint = '/api/admin/subjects';
       if (activeTab === 'sections') endpoint = '/api/admin/sections';
 
       const res = await api.get(endpoint, {
@@ -91,49 +90,37 @@ export default function CategoryLevelPage() {
       setIsLoading(false);
     }
 
+    if (statsLoadedRef.current) return;
+    statsLoadedRef.current = true;
+
     // 2. Fetch stats independently — failure here won't affect the table
     try {
-      const [gradesRes, subsRes, secsRes] = await Promise.allSettled([
-        api.get('/api/admin/grade-levels'),
-        api.get('/api/admin/subjects'),
-        api.get('/api/admin/sections')
+      const [gradesRes, secsRes] = await Promise.allSettled([
+        api.get('/api/admin/grade-levels', { params: { per_page: 100 } }),
+        api.get('/api/admin/sections', { params: { per_page: 100 } })
       ]);
       const g = gradesRes.status === 'fulfilled' ? (gradesRes.value.data.data || []) : [];
-      const s = subsRes.status === 'fulfilled' ? (subsRes.value.data.data || []) : [];
       const c = secsRes.status === 'fulfilled' ? (secsRes.value.data.data || []) : [];
-      const all = [...g, ...s, ...c];
+      const all = [...g, ...c];
+      setGradeLevelsList(g.map((grade: CategoryRecord) => ({ id: Number(grade.id), name: grade.name })));
       
       setStats({
         gradeLevels: g.length,
-        subjects: s.length,
         active: all.filter((x: { status?: string }) => x.status === 'active' || !x.status).length,
         inactive: all.filter((x: { status?: string }) => x.status === 'inactive').length
       });
     } catch {
       // Stats fail silently — keep whatever was there or default to zeros
-      setStats({ gradeLevels: 0, subjects: 0, active: 0, inactive: 0 });
+      statsLoadedRef.current = false;
+      setStats({ gradeLevels: 0, active: 0, inactive: 0 });
     }
   }, [activeTab, searchTerm, sortField, sortDirection, currentPage, itemsPerPage]);
 
-  useEffect(() => {
-    // eslint-disable-next-line
-    fetchData();
-    api.get('/api/grade-levels')
-      .then(res => setGradeLevelsList(res.data))
-      .catch(err => console.error('Failed to fetch grade levels list', err));
-  }, [fetchData]);
-
   // Debounced search
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (currentPage !== 1) {
-        setCurrentPage(1);
-      } else {
-        fetchData();
-      }
-    }, 300);
+    const timer = setTimeout(fetchData, 300);
     return () => clearTimeout(timer);
-  }, [searchTerm, currentPage, fetchData]);
+  }, [fetchData]);
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -165,7 +152,6 @@ export default function CategoryLevelPage() {
     setIsSubmitting(true);
     try {
       let endpoint = '/api/admin/grade-levels';
-      if (activeTab === 'subjects') endpoint = '/api/admin/subjects';
       if (activeTab === 'sections') endpoint = '/api/admin/sections';
 
       let payload: Record<string, string> = { name: formData.name, code: formData.code, status: formData.status };
@@ -181,9 +167,10 @@ export default function CategoryLevelPage() {
         await api.post(endpoint, payload);
       }
       setIsModalOpen(false);
+      statsLoadedRef.current = false;
       fetchData();
       
-      const itemName = activeTab === 'grade_levels' ? 'Grade level' : (activeTab === 'sections' ? 'Section' : 'Subject');
+      const itemName = activeTab === 'grade_levels' ? 'Grade level' : 'Section';
       localStorage.setItem('toast_message', `${itemName} saved successfully!`);
       window.dispatchEvent(new Event('toast-trigger'));
     } catch (err) {
@@ -200,11 +187,11 @@ export default function CategoryLevelPage() {
     setIsSubmitting(true);
     try {
       let endpoint = '/api/admin/grade-levels';
-      if (activeTab === 'subjects') endpoint = '/api/admin/subjects';
       if (activeTab === 'sections') endpoint = '/api/admin/sections';
 
       await api.delete(`${endpoint}/${selectedRecord.id}`);
       setIsDeleteModalOpen(false);
+      statsLoadedRef.current = false;
       fetchData();
     } catch (err) {
       console.error('Error deleting record:', (err as Error)?.message || err);
@@ -228,7 +215,7 @@ export default function CategoryLevelPage() {
                 Category Level Management
               </h1>
               <p className="text-[14.5px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-                Manage grade levels and subjects seamlessly.
+                Manage grade levels and sections seamlessly.
               </p>
             </div>
           </div>
@@ -237,12 +224,12 @@ export default function CategoryLevelPage() {
             className="bg-[#0B3A82] hover:bg-[#092558] text-white shadow-sm font-semibold h-[42px] px-6 rounded-none transition-all"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Add {activeTab === 'grade_levels' ? 'Grade Level' : (activeTab === 'sections' ? 'Section' : 'Subject')}
+            Add {activeTab === 'grade_levels' ? 'Grade Level' : 'Section'}
           </Button>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white dark:bg-[#161920] p-5 rounded-none border border-slate-200 dark:border-white/5 shadow-sm flex items-center gap-4">
             <div className="w-12 h-12 rounded-none bg-red-50 dark:bg-red-500/10 flex items-center justify-center">
               <Layers className="w-6 h-6 text-red-500" />
@@ -251,16 +238,6 @@ export default function CategoryLevelPage() {
               <div className="text-2xl font-bold text-slate-900 dark:text-white leading-tight">{stats.gradeLevels}</div>
               <div className="text-[13px] font-bold text-slate-700 dark:text-slate-300">Grade Levels</div>
               <div className="text-[11px] text-slate-400 font-medium">Total grade levels</div>
-            </div>
-          </div>
-          <div className="bg-white dark:bg-[#161920] p-5 rounded-none border border-slate-200 dark:border-white/5 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-none bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center">
-              <BookOpen className="w-6 h-6 text-blue-500" />
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-slate-900 dark:text-white leading-tight">{stats.subjects}</div>
-              <div className="text-[13px] font-bold text-slate-700 dark:text-slate-300">Subjects</div>
-              <div className="text-[11px] text-slate-400 font-medium">Total subjects</div>
             </div>
           </div>
           <div className="bg-white dark:bg-[#161920] p-5 rounded-none border border-slate-200 dark:border-white/5 shadow-sm flex items-center gap-4">
@@ -308,20 +285,6 @@ export default function CategoryLevelPage() {
                 )}
               </button>
               <button
-                onClick={() => { setActiveTab('subjects'); setCurrentPage(1); setSearchTerm(''); }}
-                className={`flex items-center gap-2 pb-4 pt-1 text-[14.5px] font-bold transition-all relative ${
-                  activeTab === 'subjects' 
-                    ? 'text-[#0B3A82] dark:text-red-400' 
-                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
-                }`}
-              >
-                <BookOpen className="w-4 h-4" />
-                Subjects
-                {activeTab === 'subjects' && (
-                  <div className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-[#0B3A82] dark:bg-red-400"></div>
-                )}
-              </button>
-              <button
                 onClick={() => { setActiveTab('sections'); setCurrentPage(1); setSearchTerm(''); }}
                 className={`flex items-center gap-2 pb-4 pt-1 text-[14.5px] font-bold transition-all relative ${
                   activeTab === 'sections' 
@@ -344,7 +307,7 @@ export default function CategoryLevelPage() {
                 <Input 
                   placeholder="Search records by name or code..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
                   className="pl-10 h-10 bg-white dark:bg-[#0f1115] border-slate-200 dark:border-white/10 rounded-none text-sm focus-visible:ring-1 focus-visible:ring-[#0B3A82] focus-visible:border-[#0B3A82] transition-all"
                 />
               </div>
@@ -369,17 +332,6 @@ export default function CategoryLevelPage() {
                     </TableHead>
                     <TableHead className="font-bold text-slate-900 dark:text-white py-4 cursor-pointer text-[13px]" onClick={() => handleSort('description')}>
                       Description {sortField === 'description' && (sortDirection === 'asc' ? '↑' : '↓')}
-                    </TableHead>
-                    <TableHead className="font-bold text-slate-900 dark:text-white py-4 w-[120px] text-[13px]">Status</TableHead>
-                    <TableHead className="font-bold text-slate-900 dark:text-white py-4 pr-6 w-[120px] text-[13px]">Actions</TableHead>
-                  </TableRow>
-                )}
-                {activeTab === 'subjects' && (
-                  <TableRow className="hover:bg-transparent border-b border-slate-200 dark:border-white/5">
-                    <TableHead className="font-bold text-slate-900 dark:text-white py-4 pl-6 w-[80px] text-[13px]">#</TableHead>
-                    <TableHead className="font-bold text-slate-900 dark:text-white py-4 w-[140px] text-[13px]">Subject Code</TableHead>
-                    <TableHead className="font-bold text-slate-900 dark:text-white py-4 cursor-pointer text-[13px]" onClick={() => handleSort('name')}>
-                      Subject Name {sortField === 'name' && (sortDirection === 'asc' ? '↑' : '↓')}
                     </TableHead>
                     <TableHead className="font-bold text-slate-900 dark:text-white py-4 w-[120px] text-[13px]">Status</TableHead>
                     <TableHead className="font-bold text-slate-900 dark:text-white py-4 pr-6 w-[120px] text-[13px]">Actions</TableHead>
@@ -423,7 +375,7 @@ export default function CategoryLevelPage() {
                            </div>
                         </div>
                         <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">No records found</h3>
-                        <p className="text-slate-500 text-sm font-medium">We couldn&apos;t find any {activeTab === 'grade_levels' ? 'grade levels' : activeTab === 'subjects' ? 'subjects' : 'sections'}.</p>
+                        <p className="text-slate-500 text-sm font-medium">We couldn&apos;t find any {activeTab === 'grade_levels' ? 'grade levels' : 'sections'}.</p>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -436,13 +388,6 @@ export default function CategoryLevelPage() {
                             <TableCell className="font-medium text-slate-500 py-3 pl-6 text-[14px]">#{record.id}</TableCell>
                             <TableCell className="font-bold text-slate-900 dark:text-white py-3 text-[14px]">{record.name}</TableCell>
                             <TableCell className="text-slate-500 dark:text-slate-400 py-3 text-[14px]">{record.description || '-'}</TableCell>
-                          </>
-                        )}
-                        {activeTab === 'subjects' && (
-                          <>
-                            <TableCell className="font-medium text-slate-500 py-3 pl-6 text-[14px]">#{record.id}</TableCell>
-                            <TableCell className="font-semibold text-blue-600 dark:text-blue-400 py-3 text-[14px]">{record.code || '-'}</TableCell>
-                            <TableCell className="font-bold text-slate-900 dark:text-white py-3 text-[14px]">{record.name}</TableCell>
                           </>
                         )}
                         {activeTab === 'sections' && (
@@ -551,12 +496,12 @@ export default function CategoryLevelPage() {
         <DialogContent className="sm:max-w-[425px] p-6 rounded-none bg-white dark:bg-[#161920] border-slate-200 dark:border-white/10 shadow-xl overflow-hidden">
           <DialogHeader className="mb-2">
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-              {selectedRecord ? 'Edit' : 'Add'} {activeTab === 'grade_levels' ? 'Grade Level' : (activeTab === 'sections' ? 'Section' : 'Subject')}
+              {selectedRecord ? 'Edit' : 'Add'} {activeTab === 'grade_levels' ? 'Grade Level' : 'Section'}
             </h2>
             <p className="text-sm text-slate-500">
               {selectedRecord 
-                ? `Update the details of this ${activeTab === 'grade_levels' ? 'grade level' : (activeTab === 'sections' ? 'section' : 'subject')}.` 
-                : `Create a new ${activeTab === 'grade_levels' ? 'grade level' : (activeTab === 'sections' ? 'section' : 'subject')} record.`}
+                ? `Update the details of this ${activeTab === 'grade_levels' ? 'grade level' : 'section'}.`
+                : `Create a new ${activeTab === 'grade_levels' ? 'grade level' : 'section'} record.`}
             </p>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -565,7 +510,7 @@ export default function CategoryLevelPage() {
               <Input 
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder={activeTab === 'grade_levels' ? 'e.g., Grade 1' : (activeTab === 'sections' ? 'e.g., Section A' : 'e.g., Mathematics')}
+                placeholder={activeTab === 'grade_levels' ? 'e.g., Grade 1' : 'e.g., Section A'}
                 className="h-11 bg-slate-50 dark:bg-white/5 border-slate-200"
               />
             </div>
@@ -576,7 +521,7 @@ export default function CategoryLevelPage() {
                 <Input 
                   value={formData.code}
                   onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                  placeholder={activeTab === 'grade_levels' ? 'e.g., G1' : 'e.g., MATH'}
+                  placeholder="e.g., G1"
                   className="h-11 bg-slate-50 dark:bg-white/5 border-slate-200"
                 />
               </div>

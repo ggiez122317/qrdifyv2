@@ -243,7 +243,7 @@ export default function EditStudentPage() {
                     Cancel
                   </Button>
                 </Link>
-                <Button type="submit" disabled={isSubmitting} className="bg-maroon-600 hover:bg-maroon-700 text-white shadow-sm font-bold text-base h-12 px-10 min-w-[240px]">
+                <Button type="submit" disabled={isSubmitting} className="bg-[#0B3A82] hover:bg-[#092f69] text-white shadow-sm font-bold text-base h-12 px-10 min-w-[240px]">
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-5 h-5 mr-2 animate-spin" />

@@ -8,6 +8,8 @@ use App\Services\SettingsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class SettingsController extends Controller
 {
@@ -29,28 +31,174 @@ class SettingsController extends Controller
      */
     public function update(Request $request): JsonResponse
     {
-        $request->validate([
-            'settings' => 'required|array'
+        $validated = $request->validate([
+            'settings' => 'required|array',
+            'settings.school_start_time' => 'sometimes|date_format:H:i',
+            'settings.late_threshold' => 'sometimes|date_format:H:i',
+            'settings.school_end_time' => 'sometimes|date_format:H:i',
+            'settings.enable_sms_notifications' => 'sometimes|boolean',
+            'settings.enable_push_notifications' => 'sometimes|boolean',
+            'settings.enable_email_notifications' => 'sometimes|boolean',
+            'settings.notify_check_in' => 'sometimes|boolean',
+            'settings.notify_check_out' => 'sometimes|boolean',
+            'settings.notify_late' => 'sometimes|boolean',
+            'settings.notify_early' => 'sometimes|boolean',
+            'settings.compact_tables' => 'sometimes|boolean',
+            'settings.principal_name' => 'sometimes|string|max:120',
+            'settings.principal_position' => 'sometimes|string|max:120',
+            'settings.principal_signature' => 'sometimes|nullable|string|max:3000000',
+            'settings.school_year' => ['sometimes', 'string', 'max:20', 'regex:/^\d{4}-\d{4}$/'],
+            'settings.timezone' => 'sometimes|timezone:all',
+            'settings.date_format' => 'sometimes|in:MM/DD/YYYY,DD/MM/YYYY,YYYY-MM-DD',
+            'settings.default_theme' => 'sometimes|in:light,dark,system',
+            'settings.phone_number' => 'sometimes|nullable|string|max:30',
         ]);
+
+        $allowedSettings = $validated['settings'];
 
         DB::beginTransaction();
         try {
-            foreach ($request->settings as $key => $value) {
+            if (array_key_exists('principal_signature', $allowedSettings)) {
+                $allowedSettings['principal_signature'] = $this->storePrincipalSignature(
+                    $allowedSettings['principal_signature']
+                );
+            }
+
+            foreach ($allowedSettings as $key => $value) {
                 if (is_bool($value)) {
                     $value = $value ? 'true' : 'false';
                 }
-                
-                Setting::where('key', $key)->update(['value' => $value]);
+
+                Setting::updateOrCreate(
+                    ['key' => $key],
+                    ['value' => $value, 'type' => $this->settingType($value)]
+                );
             }
             DB::commit();
 
             // Clear cache so the next read fetches fresh settings
             $this->settings->clearCache();
 
-            return response()->json(['message' => 'Settings updated successfully']);
+            return response()->json([
+                'message' => 'Settings updated successfully',
+                'settings' => $this->settings->all(),
+            ]);
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            throw $e;
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['message' => 'Failed to update settings', 'error' => $e->getMessage()], 500);
         }
+    }
+
+    private function storePrincipalSignature(?string $signature): string
+    {
+        if (!$signature) {
+            return '';
+        }
+
+        if (str_starts_with($signature, '/storage/settings/')) {
+            $existingPath = str_replace('/storage/', '', $signature);
+            if (Storage::disk('public')->exists($existingPath)) {
+                $extension = strtolower(pathinfo($existingPath, PATHINFO_EXTENSION));
+                $cropped = $this->cropSignatureWhitespace(
+                    Storage::disk('public')->get($existingPath),
+                    $extension
+                );
+                $croppedPath = 'settings/principal-signature-cropped-'.now()->timestamp.'.'.$extension;
+                Storage::disk('public')->put($croppedPath, $cropped);
+                return '/storage/'.$croppedPath;
+            }
+            return $signature;
+        }
+
+        if (!str_starts_with($signature, 'data:image/')) {
+            return $signature;
+        }
+
+        if (!preg_match('/^data:image\/(png|jpeg|jpg|webp);base64,(.+)$/s', $signature, $matches)) {
+            throw ValidationException::withMessages([
+                'settings.principal_signature' => 'The principal signature must be a PNG, JPG, or WEBP image.',
+            ]);
+        }
+
+        $contents = base64_decode($matches[2], true);
+        if ($contents === false || strlen($contents) > 2 * 1024 * 1024) {
+            throw ValidationException::withMessages([
+                'settings.principal_signature' => 'The principal signature image must not exceed 2 MB.',
+            ]);
+        }
+
+        $extension = $matches[1] === 'jpeg' ? 'jpg' : $matches[1];
+        $path = 'settings/principal-signature-'.now()->timestamp.'.'.$extension;
+        Storage::disk('public')->put($path, $this->cropSignatureWhitespace($contents, $extension));
+
+        return '/storage/'.$path;
+    }
+
+    private function cropSignatureWhitespace(string $contents, string $extension): string
+    {
+        $image = @imagecreatefromstring($contents);
+        if (!$image) return $contents;
+
+        $width = imagesx($image);
+        $height = imagesy($image);
+        $left = $width;
+        $right = 0;
+        $top = $height;
+        $bottom = 0;
+
+        for ($y = 0; $y < $height; $y++) {
+            for ($x = 0; $x < $width; $x++) {
+                $color = imagecolorat($image, $x, $y);
+                $alpha = ($color >> 24) & 0x7F;
+                $red = ($color >> 16) & 0xFF;
+                $green = ($color >> 8) & 0xFF;
+                $blue = $color & 0xFF;
+                $isVisibleInk = $alpha < 120 && min($red, $green, $blue) < 235;
+                if ($isVisibleInk) {
+                    $left = min($left, $x);
+                    $right = max($right, $x);
+                    $top = min($top, $y);
+                    $bottom = max($bottom, $y);
+                }
+            }
+        }
+
+        if ($right <= $left || $bottom <= $top) {
+            imagedestroy($image);
+            return $contents;
+        }
+
+        $padding = 10;
+        $sourceX = max(0, $left - $padding);
+        $sourceY = max(0, $top - $padding);
+        $cropWidth = min($width - $sourceX, $right - $left + ($padding * 2));
+        $cropHeight = min($height - $sourceY, $bottom - $top + ($padding * 2));
+        $cropped = imagecreatetruecolor($cropWidth, $cropHeight);
+        imagealphablending($cropped, false);
+        imagesavealpha($cropped, true);
+        $transparent = imagecolorallocatealpha($cropped, 255, 255, 255, 127);
+        imagefill($cropped, 0, 0, $transparent);
+        imagecopy($cropped, $image, 0, 0, $sourceX, $sourceY, $cropWidth, $cropHeight);
+
+        ob_start();
+        match ($extension) {
+            'jpg', 'jpeg' => imagejpeg($cropped, null, 92),
+            'webp' => imagewebp($cropped, null, 92),
+            default => imagepng($cropped),
+        };
+        $result = ob_get_clean();
+        imagedestroy($image);
+        imagedestroy($cropped);
+
+        return is_string($result) ? $result : $contents;
+    }
+
+    private function settingType(mixed $value): string
+    {
+        if ($value === 'true' || $value === 'false') return 'boolean';
+        return 'string';
     }
 }

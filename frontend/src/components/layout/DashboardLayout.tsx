@@ -51,6 +51,17 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
+interface NotificationRecord {
+  id: string;
+  read_at: string | null;
+  created_at: string;
+  data?: {
+    type?: string;
+    title?: string;
+    message?: string;
+  };
+}
+
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -58,7 +69,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifFilter, setNotifFilter] = useState<'all' | 'time_in' | 'time_out' | 'system'>('all');
-  const [selectedNotif, setSelectedNotif] = useState<any>(null);
+  const [selectedNotif, setSelectedNotif] = useState<NotificationRecord | null>(null);
   const { theme, setTheme } = useTheme();
   const queryClient = useQueryClient();
 
@@ -72,6 +83,34 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     },
     retry: false,
   });
+
+  const { data: systemPreferences } = useQuery({
+    queryKey: ['system-preferences'],
+    queryFn: async () => {
+      const response = await api.get('/api/system/preferences');
+      return response.data as { default_theme?: string; compact_tables?: boolean };
+    },
+    enabled: !!user,
+  });
+
+  useEffect(() => {
+    if (!systemPreferences) return;
+    document.documentElement.dataset.compactTables = String(!!systemPreferences.compact_tables);
+    if (!localStorage.getItem('theme') && systemPreferences.default_theme) {
+      setTheme(systemPreferences.default_theme);
+    }
+  }, [systemPreferences, setTheme]);
+
+  useEffect(() => {
+    const applyPreferences = (event: Event) => {
+      const preferences = (event as CustomEvent<{ default_theme?: string; compact_tables?: boolean }>).detail;
+      document.documentElement.dataset.compactTables = String(!!preferences.compact_tables);
+      if (preferences.default_theme) setTheme(preferences.default_theme);
+      queryClient.setQueryData(['system-preferences'], preferences);
+    };
+    window.addEventListener('system-preferences-updated', applyPreferences);
+    return () => window.removeEventListener('system-preferences-updated', applyPreferences);
+  }, [queryClient, setTheme]);
 
   const handleLogout = async () => {
     try {
@@ -100,7 +139,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       return res.data.maintenance_mode;
     },
     enabled: !!user,
-    refetchInterval: 3000 // Poll every 3 seconds for instant response
+    refetchInterval: 15000,
+    refetchIntervalInBackground: false,
   });
 
   const toggleMaintenance = async () => {
@@ -152,7 +192,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       return res.data.data ?? [];
     },
     enabled: !!user,
-    refetchInterval: 15000,
+    refetchInterval: 30000,
+    refetchIntervalInBackground: false,
   });
 
   const unreadCount = notifications.filter((n: { read_at: string | null }) => n.read_at === null).length;
@@ -264,9 +305,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const isTeacher = user.roles[0] === 'teacher';
   const isStudent = user.roles[0] === 'student';
   
-  const roleDisplay = user.roles[0]
-    ? user.roles[0].split('-').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
-    : 'User';
   const notifBasePath = `/${user.roles[0] === 'super-admin' ? 'admin' : user.roles[0]}/notifications`;
 
   // Navigation structure based on image

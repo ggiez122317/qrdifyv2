@@ -5,6 +5,7 @@ import { LifeBuoy, User, ChevronDown, Paperclip, Send, Settings2 } from "lucide-
 import { SecuritySettings } from '@/components/settings/security-settings';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { SystemPreferencesForm } from '@/components/settings/system-preferences';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('support');
@@ -148,12 +149,8 @@ export default function SettingsPage() {
           )}
 
           {activeTab === 'preferences' && (
-            <div className="bg-white rounded-none border border-slate-100 shadow-[0_8px_30px_rgba(0,0,0,0.04)] overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 p-8 sm:p-10 flex flex-col items-center justify-center min-h-[400px] text-center">
-              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
-                <Settings2 className="w-10 h-10 text-slate-300" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-800 mb-2">System Preferences</h3>
-              <p className="text-[15px] font-medium text-slate-500 max-w-sm">Adjust global notification rules, timezones, and display settings here in the next update.</p>
+            <div className="bg-white rounded-none border border-slate-100 shadow-[0_8px_30px_rgba(0,0,0,0.04)] overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 p-6 sm:p-8">
+              <SystemPreferencesForm />
             </div>
           )}
 

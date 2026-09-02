@@ -1,6 +1,6 @@
 'use client';
 /* eslint-disable @next/next/no-img-element */
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '@/lib/axios';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -37,6 +37,8 @@ export default function UserLogsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   
   // Modal states
   const [selectedLog, setSelectedLog] = useState<ActivityLog | null>(null);
@@ -44,24 +46,25 @@ export default function UserLogsPage() {
   const itemsPerPage = 15;
 
   const fetchLogs = React.useCallback(async () => {
+    setIsLoading(true);
     try {
-      const res = await api.get('/api/system/logs?per_page=1000');
+      const res = await api.get('/api/system/logs', {
+        params: { page: currentPage, per_page: itemsPerPage, search: searchTerm },
+      });
       const data = Array.isArray(res.data) ? res.data : (res.data.data || []);
       setLogs(data);
+      setTotalRecords(res.data.total ?? data.length);
+      setTotalPages(res.data.last_page ?? 1);
     } catch (err) {
       console.error('Network error fetching logs', err);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [currentPage, searchTerm]);
 
   useEffect(() => {
-    let isMounted = true;
-    if (isMounted) {
-      // eslint-disable-next-line
-      fetchLogs();
-    }
-    return () => { isMounted = false; };
+    const timer = setTimeout(fetchLogs, 300);
+    return () => clearTimeout(timer);
   }, [fetchLogs]);
 
   const handleBlockUser = async (userId: number, currentName: string) => {
@@ -75,22 +78,6 @@ export default function UserLogsPage() {
       }
     }
   };
-
-  const filteredLogs = useMemo(() => {
-    return logs.filter((log) => {
-      const matchesSearch = 
-        log.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        log.action?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        log.ip_address?.includes(searchTerm);
-      return matchesSearch;
-    });
-  }, [logs, searchTerm]);
-
-  const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
-  const paginatedLogs = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredLogs.slice(start, start + itemsPerPage);
-  }, [filteredLogs, currentPage]);
 
   return (
     <>
@@ -113,7 +100,7 @@ export default function UserLogsPage() {
               type="text"
               placeholder="Search user, action, or IP..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
               className="pl-10 h-11 w-full bg-[#f8f9fa] border-none text-[13px] font-medium placeholder:text-slate-400 rounded-none focus:ring-2 focus:ring-[#0B3A82]/20 transition-all"
             />
           </div>
@@ -135,7 +122,7 @@ export default function UserLogsPage() {
               <TableBody>
                 {isLoading ? (
                   <TableLoadingState colSpan={5} />
-                ) : paginatedLogs.length === 0 ? (
+                ) : logs.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="h-64 text-center">
                       <div className="flex flex-col items-center justify-center text-slate-400">
@@ -146,7 +133,7 @@ export default function UserLogsPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedLogs.map((log) => (
+                  logs.map((log) => (
                     <TableRow key={log.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors group">
                       <TableCell className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -224,7 +211,7 @@ export default function UserLogsPage() {
           {/* Pagination */}
           <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-[#fafafa]/50">
             <div className="text-[13px] font-bold text-slate-500">
-              Showing {filteredLogs.length === 0 ? 0 : ((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredLogs.length)} of {filteredLogs.length} entries
+              Showing {totalRecords === 0 ? 0 : ((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalRecords)} of {totalRecords} entries
             </div>
             
             <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-none p-1 shadow-sm">
@@ -232,7 +219,7 @@ export default function UserLogsPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1 || filteredLogs.length === 0}
+                disabled={currentPage === 1 || logs.length === 0}
                 className="h-8 w-8 p-0 rounded-none text-slate-500 hover:text-slate-900"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -267,7 +254,7 @@ export default function UserLogsPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages || filteredLogs.length === 0}
+                disabled={currentPage === totalPages || logs.length === 0}
                 className="h-8 w-8 p-0 rounded-none text-slate-500 hover:text-slate-900"
               >
                 <ChevronRight className="h-4 w-4" />

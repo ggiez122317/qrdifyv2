@@ -11,5 +11,9 @@ export function getImageUrl(path: string | null | undefined): string | undefined
     return path;
   }
   const cleaned = path.replace(/^\/?(storage\/)?/, '');
-  return `/storage/${cleaned}`;
+  const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '').replace(/\/$/, '');
+  const backendOrigin = configuredApiUrl || (typeof window !== 'undefined'
+    ? `http://${window.location.hostname}:8001`
+    : 'http://localhost:8001');
+  return `${backendOrigin}/storage/${cleaned}`;
 }
