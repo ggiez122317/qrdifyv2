@@ -69,6 +69,11 @@ class SettingsService
             'school_end_time' => ['value' => '16:00', 'type' => 'time', 'desc' => 'Time school officially ends'],
             'enable_sms_notifications' => ['value' => 'false', 'type' => 'boolean', 'desc' => 'Send SMS to parents on scan'],
             'scan_deduplication_seconds' => ['value' => '10', 'type' => 'integer', 'desc' => 'Ignore repeated scans within this many seconds'],
+            'notify_check_in' => ['value' => 'true', 'type' => 'boolean', 'desc' => 'Notify parents when students enter'],
+            'notify_check_out' => ['value' => 'true', 'type' => 'boolean', 'desc' => 'Notify parents when students leave'],
+            'notify_late' => ['value' => 'true', 'type' => 'boolean', 'desc' => 'Notify parents about late arrivals'],
+            'notify_early' => ['value' => 'true', 'type' => 'boolean', 'desc' => 'Notify parents about early dismissals'],
+            'phone_number' => ['value' => '', 'type' => 'string', 'desc' => 'Recipient used for SMS connection tests'],
         ];
 
         foreach ($defaults as $key => $data) {

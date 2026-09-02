@@ -9,13 +9,15 @@ use App\Models\AttendanceLog;
 use App\Models\SmsDelivery;
 use App\Models\User;
 use App\Notifications\StudentScannedNotification;
+use App\Services\Sms\PhoneNumberNormalizer;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class AttendanceService
 {
     public function __construct(
-        private readonly SettingsService $settings
+        private readonly SettingsService $settings,
+        private readonly PhoneNumberNormalizer $phoneNumbers,
     ) {}
 
     public function processScan(
@@ -54,7 +56,7 @@ class AttendanceService
             (int) $this->settings->get('scan_deduplication_seconds', 10),
         );
         $smsEnabled = (bool) $this->settings->get('enable_sms_notifications', false);
-        $recipient = $this->normalizePhilippinePhoneNumber($parentPhone);
+        $recipient = $this->phoneNumbers->normalizePhilippineMobile($parentPhone);
         $storedIdempotencyKey = $idempotencyKey
             ? hash('sha256', $userId.'|'.trim($idempotencyKey))
             : null;
@@ -241,29 +243,6 @@ class AttendanceService
             'log_type' => $log->type,
             'delivery_id' => null,
         ];
-    }
-
-    private function normalizePhilippinePhoneNumber(?string $phoneNumber): ?string
-    {
-        if ($phoneNumber === null || trim($phoneNumber) === '') {
-            return null;
-        }
-
-        $digits = preg_replace('/\D+/', '', $phoneNumber);
-
-        if ($digits === null) {
-            return null;
-        }
-
-        if (strlen($digits) === 11 && str_starts_with($digits, '09')) {
-            return '+63'.substr($digits, 1);
-        }
-
-        if (strlen($digits) === 12 && str_starts_with($digits, '639')) {
-            return '+'.$digits;
-        }
-
-        return null;
     }
 
     public function getTodayStats(?string $date = null): array

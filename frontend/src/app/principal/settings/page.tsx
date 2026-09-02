@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import api from '@/lib/axios';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Settings as SettingsIcon, Clock, Bell, Save, CheckCircle2, Info, ChevronDown, Sun, Sunrise, LogOut, Send, ShieldCheck } from 'lucide-react';
@@ -12,15 +13,21 @@ export default function SettingsPage() {
     school_start_time: '07:30',
     late_threshold: '07:45',
     school_end_time: '16:00',
+    enable_sms_notifications: false,
     notify_check_in: true,
     notify_check_out: true,
     notify_late: true,
     notify_early: true,
-    phone_number: '+63 912 345 6789',
+    phone_number: '',
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isTestingSms, setIsTestingSms] = useState(false);
+  const [testSmsResult, setTestSmsResult] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -40,6 +47,28 @@ export default function SettingsPage() {
   const handleChange = (key: string, value: string | boolean) => {
     setSettings(prev => ({ ...prev, [key]: value }));
     setSaveSuccess(false);
+    setTestSmsResult(null);
+  };
+
+  const handleTestSms = async () => {
+    setIsTestingSms(true);
+    setTestSmsResult(null);
+
+    try {
+      const response = await api.post('/api/principal/settings/test-sms', {
+        phone_number: settings.phone_number,
+      });
+      setTestSmsResult({ type: 'success', message: response.data.message });
+    } catch (error) {
+      const message = axios.isAxiosError(error)
+        ? error.response?.data?.errors?.phone_number?.[0]
+          ?? error.response?.data?.message
+          ?? 'Unable to queue the test SMS.'
+        : 'Unable to queue the test SMS.';
+      setTestSmsResult({ type: 'error', message });
+    } finally {
+      setIsTestingSms(false);
+    }
   };
 
   const handleSave = async () => {
@@ -208,6 +237,22 @@ export default function SettingsPage() {
         <CardContent className="p-8">
           
           <div className="space-y-6">
+            <div className="border border-slate-200 rounded-xl p-5 flex items-center justify-between gap-4 bg-slate-50/60">
+              <div>
+                <p className="text-[15px] font-bold text-slate-800">Automated SMS Notifications</p>
+                <p className="text-[13px] font-medium text-slate-500 mt-1">Enable parent messages for accepted attendance scans.</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={settings.enable_sms_notifications}
+                onClick={() => handleChange('enable_sms_notifications', !settings.enable_sms_notifications)}
+                className={`w-11 h-6 rounded-full relative transition-colors shrink-0 ${settings.enable_sms_notifications ? 'bg-[#a81616]' : 'bg-slate-200'}`}
+              >
+                <span className={`absolute top-[2px] w-5 h-5 bg-white rounded-full transition-all ${settings.enable_sms_notifications ? 'left-[22px]' : 'left-[2px]'}`}></span>
+              </button>
+            </div>
+
             <label className="text-[15px] font-bold text-slate-800">Notify Parents When</label>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -259,20 +304,32 @@ export default function SettingsPage() {
             </div>
 
             <div className="pt-6">
-              <label className="text-[15px] font-bold text-slate-800 mb-3 block">Phone Number (Sender ID)</label>
+              <label className="text-[15px] font-bold text-slate-800 mb-3 block">Test Recipient Number</label>
               <div className="flex flex-col sm:flex-row gap-4 items-center">
                 <input 
                   type="text" 
                   value={settings.phone_number}
                   onChange={(e) => handleChange('phone_number', e.target.value)}
+                  placeholder="09XX XXX XXXX"
                   className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 h-[46px] text-[15px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-300 font-medium w-full"
                 />
-                <Button variant="outline" className="h-[46px] rounded-xl px-6 font-bold text-slate-700 border-slate-200 bg-slate-50 hover:bg-slate-100 flex items-center gap-2 shrink-0 w-full sm:w-auto">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleTestSms}
+                  disabled={isTestingSms || !settings.phone_number.trim()}
+                  className="h-[46px] rounded-xl px-6 font-bold text-slate-700 border-slate-200 bg-slate-50 hover:bg-slate-100 flex items-center gap-2 shrink-0 w-full sm:w-auto"
+                >
                   <Send className="w-4 h-4" />
-                  Test SMS Alert
+                  {isTestingSms ? 'Queuing...' : 'Test SMS Alert'}
                 </Button>
               </div>
-              <p className="text-[13px] font-medium text-slate-500 mt-3">SMS alerts will be sent from this number to the parents.</p>
+              {testSmsResult && (
+                <p className={`text-[13px] font-semibold mt-3 ${testSmsResult.type === 'success' ? 'text-emerald-600' : 'text-red-600'}`}>
+                  {testSmsResult.message}
+                </p>
+              )}
+              <p className="text-[13px] font-medium text-slate-500 mt-3">The modem will send a test message to this number. The modem SIM remains the sender.</p>
             </div>
             
           </div>
