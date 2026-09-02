@@ -5,19 +5,19 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use Spatie\Permission\Traits\HasRoles;
 use NotificationChannels\WebPush\HasPushSubscriptions;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, HasRoles, HasApiTokens, HasPushSubscriptions;
+    use HasApiTokens, HasFactory, HasPushSubscriptions, HasRoles, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -84,6 +84,16 @@ class User extends Authenticatable
         return $this->hasMany(Attendance::class, 'user_id');
     }
 
+    public function attendanceLogs(): HasMany
+    {
+        return $this->hasMany(AttendanceLog::class);
+    }
+
+    public function smsDeliveries(): HasMany
+    {
+        return $this->hasMany(SmsDelivery::class);
+    }
+
     public function leaves()
     {
         return $this->hasMany(TeacherLeave::class, 'teacher_id');
@@ -106,7 +116,7 @@ class User extends Authenticatable
      */
     public function scopeStudents(Builder $query): Builder
     {
-        return $query->whereHas('roles', fn($q) => $q->where('name', 'student'));
+        return $query->whereHas('roles', fn ($q) => $q->where('name', 'student'));
     }
 
     /**
@@ -114,7 +124,7 @@ class User extends Authenticatable
      */
     public function scopeEmployees(Builder $query): Builder
     {
-        return $query->whereHas('roles', fn($q) => $q->whereIn('name', ['teacher', 'guard', 'principal']));
+        return $query->whereHas('roles', fn ($q) => $q->whereIn('name', ['teacher', 'guard', 'principal']));
     }
 
     /**
@@ -122,7 +132,7 @@ class User extends Authenticatable
      */
     public function scopeTeachers(Builder $query): Builder
     {
-        return $query->whereHas('roles', fn($q) => $q->where('name', 'teacher'));
+        return $query->whereHas('roles', fn ($q) => $q->where('name', 'teacher'));
     }
 
     /**
@@ -140,8 +150,8 @@ class User extends Authenticatable
     public function taughtSubjects(): BelongsToMany
     {
         return $this->belongsToMany(Subject::class, 'student_subject', 'teacher_id', 'subject_id')
-                    ->withPivot('student_id')
-                    ->distinct();
+            ->withPivot('student_id')
+            ->distinct();
     }
 
     /**
@@ -150,8 +160,8 @@ class User extends Authenticatable
     public function studentsTaught(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'student_subject', 'teacher_id', 'student_id')
-                    ->withPivot('subject_id')
-                    ->distinct();
+            ->withPivot('subject_id')
+            ->distinct();
     }
 
     /**
@@ -160,7 +170,7 @@ class User extends Authenticatable
     public function subjects(): BelongsToMany
     {
         return $this->belongsToMany(Subject::class, 'student_subject', 'student_id', 'subject_id')
-                    ->withPivot('teacher_id')
-                    ->withTimestamps();
+            ->withPivot('teacher_id')
+            ->withTimestamps();
     }
 }

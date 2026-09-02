@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
 import { ScanFace, XCircle, GraduationCap, Users, Maximize2, Minimize2 } from 'lucide-react';
@@ -79,48 +79,12 @@ export default function GuardScanner() {
     return `/storage/${cleanPath}`;
   };
 
-  // Global wedge reader listener (robust, doesn't require focus)
-  useEffect(() => {
-    let buffer = '';
-    let timeoutId: NodeJS.Timeout;
-
-    const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      // Ignore modifier keys and ignore if they are typing in a normal input (though scanner page only has one)
-      if (['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) return;
-      
-      // If Enter is pressed, process buffer
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        const value = buffer.trim();
-        if (value) {
-          doScan(value);
-        }
-        buffer = '';
-        if (inputRef.current) inputRef.current.value = '';
-        return;
-      }
-      
-      // Append printable characters
-      if (e.key.length === 1) {
-        buffer += e.key;
-      }
-      
-      // Clear buffer if typing is too slow (differentiates scanner from human typing)
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        buffer = '';
-      }, 150); // Scanners type very fast
+  const doScan = useCallback((idNumber: string) => {
+    const scanPayload = {
+      id_number: idNumber,
+      idempotency_key: window.crypto.randomUUID(),
+      scan_source: 'guard-scanner-web',
     };
-
-    window.addEventListener('keydown', handleGlobalKeyDown);
-    
-    return () => {
-      window.removeEventListener('keydown', handleGlobalKeyDown);
-      clearTimeout(timeoutId);
-    };
-  }, []);
-
-  const doScan = (idNumber: string) => {
     const cached = userCacheRef.current.get(idNumber);
     if (cached) {
       setRecentScan({
@@ -146,7 +110,7 @@ export default function GuardScanner() {
 
       queryClient.invalidateQueries({ queryKey: ['attendanceStats'] });
 
-      api.post('/api/scan', { id_number: idNumber }).catch(() => {});
+      api.post('/api/scan', scanPayload).catch(() => {});
     } else {
       api.post('/api/scan/lookup', { id_number: idNumber }).then((res) => {
         setRecentScan(res.data as ScanResponse);
@@ -157,7 +121,7 @@ export default function GuardScanner() {
           setError(null);
         }, 3000);
         queryClient.invalidateQueries({ queryKey: ['attendanceStats'] });
-        api.post('/api/scan', { id_number: idNumber }).catch(() => {});
+        api.post('/api/scan', scanPayload).catch(() => {});
       }).catch((err) => {
         setRecentScan(null);
         setError(err.response?.data?.message || 'Scan failed');
@@ -168,7 +132,48 @@ export default function GuardScanner() {
         }, 3000);
       });
     }
-  };
+  }, [queryClient]);
+
+  // Global wedge reader listener (robust, doesn't require focus)
+  useEffect(() => {
+    let buffer = '';
+    let timeoutId: NodeJS.Timeout;
+
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Ignore modifier keys and ignore if they are typing in a normal input (though scanner page only has one)
+      if (['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) return;
+
+      // If Enter is pressed, process buffer
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const value = buffer.trim();
+        if (value) {
+          doScan(value);
+        }
+        buffer = '';
+        if (inputRef.current) inputRef.current.value = '';
+        return;
+      }
+
+      // Append printable characters
+      if (e.key.length === 1) {
+        buffer += e.key;
+      }
+
+      // Clear buffer if typing is too slow (differentiates scanner from human typing)
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        buffer = '';
+      }, 150); // Scanners type very fast
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleGlobalKeyDown);
+      clearTimeout(timeoutId);
+    };
+  }, [doScan]);
 
   // Note: Local handleKeyDown is removed since global listener captures everything
 

@@ -2,10 +2,15 @@
 
 namespace App\Services;
 
+use App\Events\AttendanceLogged;
+use App\Jobs\SendSmsDelivery;
 use App\Models\Attendance;
 use App\Models\AttendanceLog;
+use App\Models\SmsDelivery;
 use App\Models\User;
 use App\Notifications\StudentScannedNotification;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class AttendanceService
 {
@@ -13,142 +18,252 @@ class AttendanceService
         private readonly SettingsService $settings
     ) {}
 
-    public function processScan(string $idNumber, ?array $cachedUser = null): array
-    {
+    public function processScan(
+        string $idNumber,
+        ?array $cachedUser = null,
+        ?string $idempotencyKey = null,
+        ?string $scanSource = null,
+    ): array {
         if ($cachedUser) {
-            $userId      = $cachedUser['id'];
-            $userName    = $cachedUser['name'];
-            $role        = $cachedUser['role'];
-            $teacherId   = $cachedUser['teacher_id'] ?? null;
+            $userId = $cachedUser['id'];
+            $userName = $cachedUser['name'];
+            $role = $cachedUser['role'];
+            $teacherId = $cachedUser['teacher_id'] ?? null;
             $parentPhone = $cachedUser['parent_phone'] ?? null;
-            $photoUrl    = $cachedUser['photo_url'] ?? null;
+            $photoUrl = $cachedUser['photo_url'] ?? null;
         } else {
             $user = User::with(['roles', 'studentProfile'])->where('id_number', $idNumber)->first();
 
-            if (!$user) {
+            if (! $user) {
                 return ['error' => 'User not found', 'code' => 404];
             }
 
-            $userId      = $user->id;
-            $userName    = $user->name;
-            $role        = $user->getRoleNames()->first();
-            $teacherId   = ($role === 'student' && $user->studentProfile) ? $user->studentProfile->teacher_id : null;
+            $userId = $user->id;
+            $userName = $user->name;
+            $role = $user->getRoleNames()->first();
+            $teacherId = ($role === 'student' && $user->studentProfile) ? $user->studentProfile->teacher_id : null;
             $parentPhone = ($role === 'student' && $user->studentProfile) ? $user->studentProfile->parent_phone : null;
-            $photoUrl    = $user->photo_url;
+            $photoUrl = $user->photo_url;
         }
 
-        $date = now()->toDateString();
-        $time = now()->toTimeString();
-        $timeStr = now()->format('H:i');
+        $scannedAt = now();
+        $startTime = (string) $this->settings->get('school_start_time', '08:00');
+        $schoolEndTime = (string) $this->settings->get('school_end_time', '16:00');
+        $deduplicationSeconds = max(
+            0,
+            (int) $this->settings->get('scan_deduplication_seconds', 10),
+        );
+        $smsEnabled = (bool) $this->settings->get('enable_sms_notifications', false);
+        $recipient = $this->normalizePhilippinePhoneNumber($parentPhone);
+        $storedIdempotencyKey = $idempotencyKey
+            ? hash('sha256', $userId.'|'.trim($idempotencyKey))
+            : null;
 
-        $startTime = $this->settings->get('school_start_time', '08:00');
-        $pmTimeOutStr = $this->settings->get('school_end_time', '16:00');
+        $scanResult = DB::transaction(function () use (
+            $userId,
+            $userName,
+            $role,
+            $scannedAt,
+            $startTime,
+            $schoolEndTime,
+            $deduplicationSeconds,
+            $smsEnabled,
+            $recipient,
+            $storedIdempotencyKey,
+            $scanSource,
+        ): array {
+            if (User::whereKey($userId)->lockForUpdate()->first(['id']) === null) {
+                return ['error' => 'User not found', 'code' => 404];
+            }
 
-        $attendance = Attendance::forDate($date)->forUser($userId)->first();
+            if ($storedIdempotencyKey !== null) {
+                $idempotentLog = AttendanceLog::where('idempotency_key', $storedIdempotencyKey)->first();
 
-        $type = 'Time In';
-        $status = 'present';
-        $logType = 'in';
+                if ($idempotentLog !== null) {
+                    return $this->duplicateScanResult($idempotentLog);
+                }
+            }
 
-        if ($attendance) {
-            if ($timeStr >= $pmTimeOutStr) {
-                if (!$attendance->time_out) {
-                    $attendance->time_out = $time;
-                    $attendance->pm_status = 'present';
-                    $attendance->save();
-                    $type = 'Time Out';
-                    $logType = 'out';
-                    $status = 'present';
+            $lastLog = AttendanceLog::where('user_id', $userId)
+                ->latest('scanned_at')
+                ->first();
+
+            if (
+                $deduplicationSeconds > 0
+                && $lastLog !== null
+                && $lastLog->scanned_at->diffInSeconds($scannedAt) <= $deduplicationSeconds
+            ) {
+                return $this->duplicateScanResult($lastLog);
+            }
+
+            $date = $scannedAt->toDateString();
+            $time = $scannedAt->toTimeString();
+            $timeString = $scannedAt->format('H:i');
+            $attendance = Attendance::forDate($date)
+                ->forUser($userId)
+                ->lockForUpdate()
+                ->first();
+
+            $type = 'Time In';
+            $status = 'present';
+            $logType = 'in';
+
+            if ($attendance) {
+                if ($timeString >= $schoolEndTime) {
+                    if (! $attendance->time_out) {
+                        $attendance->forceFill([
+                            'time_out' => $time,
+                            'pm_status' => 'present',
+                        ])->save();
+                        $type = 'Time Out';
+                        $logType = 'out';
+                    } else {
+                        $type = 'Time Out (Re-entry)';
+                        $logType = 'out';
+                        $status = $attendance->pm_status ?? 'present';
+                    }
                 } else {
-                    $type = 'Time Out (Re-entry)';
-                    $logType = 'out';
-                    $status = $attendance->pm_status ?? 'present';
+                    $logType = ($lastLog && $lastLog->type === 'in') ? 'out' : 'in';
+                    $type = $logType === 'in' ? 'Time In (Log)' : 'Time Out (Log)';
                 }
             } else {
-                $lastLog = AttendanceLog::where('user_id', $userId)
-                    ->whereDate('scanned_at', now()->toDateString())
-                    ->orderBy('scanned_at', 'desc')
-                    ->first();
-
-                $logType = ($lastLog && $lastLog->type === 'in') ? 'out' : 'in';
-                $type = $logType === 'in' ? 'Time In (Log)' : 'Time Out (Log)';
-                $status = 'present';
+                if ($timeString < '12:00') {
+                    $amStatus = ($timeString < $startTime) ? 'present' : 'late';
+                    Attendance::create([
+                        'user_id' => $userId,
+                        'date' => $date,
+                        'time_in' => $time,
+                        'am_status' => $amStatus,
+                        'status' => $amStatus,
+                    ]);
+                    $status = $amStatus;
+                } else {
+                    Attendance::create([
+                        'user_id' => $userId,
+                        'date' => $date,
+                        'time_in' => $time,
+                        'am_status' => 'absent',
+                        'pm_status' => 'present',
+                        'status' => 'late',
+                    ]);
+                    $status = 'late';
+                }
             }
-        } else {
-            $logType = 'in';
-            $type = 'Time In';
 
-            if ($timeStr < '12:00') {
-                $amStatus = ($timeStr < $startTime) ? 'present' : 'late';
-                Attendance::create([
+            $attendanceLog = AttendanceLog::create([
+                'user_id' => $userId,
+                'type' => $logType,
+                'status' => $status,
+                'scanned_at' => $scannedAt,
+                'idempotency_key' => $storedIdempotencyKey,
+                'scan_source' => $scanSource ? trim($scanSource) : null,
+            ]);
+
+            $delivery = null;
+
+            if ($role === 'student' && $smsEnabled && $recipient !== null) {
+                $eventText = $logType === 'in' ? 'entered' : 'left';
+                $schoolName = (string) config('sms.school_name', 'School');
+                $message = "[{$schoolName}] Your child {$userName} {$eventText} the school at {$scannedAt->format('h:i A')}.";
+                $deduplicationKey = hash(
+                    'sha256',
+                    $attendanceLog->id.'|'.$recipient.'|'.$logType,
+                );
+
+                $delivery = SmsDelivery::create([
                     'user_id' => $userId,
-                    'date'    => $date,
-                    'time_in' => $time,
-                    'am_status' => $amStatus,
-                    'status'  => $amStatus,
+                    'attendance_log_id' => $attendanceLog->id,
+                    'deduplication_key' => $deduplicationKey,
+                    'recipient' => $recipient,
+                    'event_type' => $logType,
+                    'message' => $message,
+                    'provider' => (string) config('sms.provider', 'huawei_router'),
+                    'status' => 'queued',
                 ]);
-                $status = $amStatus;
-            } else {
-                Attendance::create([
-                    'user_id' => $userId,
-                    'date'    => $date,
-                    'time_in' => $time,
-                    'am_status' => 'absent',
-                    'pm_status' => 'present',
-                    'status'  => 'late',
-                ]);
-                $status = 'late';
             }
+
+            return [
+                'success' => true,
+                'duplicate' => false,
+                'type' => $type,
+                'status' => $status,
+                'log_type' => $logType,
+                'delivery_id' => $delivery?->id,
+            ];
+        }, 3);
+
+        if (isset($scanResult['error'])) {
+            return $scanResult;
         }
 
-        AttendanceLog::create([
+        $result = array_merge($scanResult, [
             'user_id' => $userId,
-            'type' => $logType,
-            'scanned_at' => now(),
+            'name' => $userName,
+            'photo_url' => $photoUrl,
+            'role' => $role,
         ]);
+
+        if ($result['duplicate']) {
+            return $result;
+        }
 
         if ($role === 'student' && $teacherId) {
             $teacher = User::find($teacherId);
-            if ($teacher) {
-                $teacher->notify(new StudentScannedNotification(
-                    $userName,
-                    $type,
-                    now()->format('h:i A'),
-                    $status
-                ));
-            }
+            $teacher?->notify(new StudentScannedNotification(
+                $userName,
+                $result['type'],
+                $scannedAt->format('h:i A'),
+                $result['status'],
+            ));
         }
 
-        event(new \App\Events\AttendanceLogged([
+        event(new AttendanceLogged([
             'user_name' => $userName,
-            'type' => $type,
-            'status' => $status,
-            'time' => now()->format('h:i A'),
+            'type' => $result['type'],
+            'status' => $result['status'],
+            'time' => $scannedAt->format('h:i A'),
         ]));
 
-        if ($role === 'student' && !empty($parentPhone)) {
-            // TEMPORARY: Cooldown disabled for testing
-            // $cooldownKey = "sms_cooldown_{$userId}";
-            // if (\Illuminate\Support\Facades\Cache::add($cooldownKey, true, now()->addMinutes(15))) {
-                $timeStrFormatted = now()->format('h:i A');
-                
-                $message = str_starts_with($type, 'Time In')
-                    ? "Good day! Your child {$userName} has entered the school premises at {$timeStrFormatted}."
-                    : "Good day! Your child {$userName} has left the school premises at {$timeStrFormatted}.";
-                    
-                \App\Jobs\SendParentSmsNotification::dispatch($parentPhone, $message);
-            // }
+        if ($result['delivery_id'] !== null) {
+            SendSmsDelivery::dispatch($result['delivery_id'])->afterCommit();
         }
 
+        return $result;
+    }
+
+    private function duplicateScanResult(AttendanceLog $log): array
+    {
         return [
             'success' => true,
-            'user_id'  => $userId,
-            'name'     => $userName,
-            'photo_url' => $photoUrl,
-            'type'     => $type,
-            'status'   => $status,
-            'role'     => $role,
+            'duplicate' => true,
+            'type' => $log->type === 'in' ? 'Time In' : 'Time Out',
+            'status' => $log->status ?? 'present',
+            'log_type' => $log->type,
+            'delivery_id' => null,
         ];
+    }
+
+    private function normalizePhilippinePhoneNumber(?string $phoneNumber): ?string
+    {
+        if ($phoneNumber === null || trim($phoneNumber) === '') {
+            return null;
+        }
+
+        $digits = preg_replace('/\D+/', '', $phoneNumber);
+
+        if ($digits === null) {
+            return null;
+        }
+
+        if (strlen($digits) === 11 && str_starts_with($digits, '09')) {
+            return '+63'.substr($digits, 1);
+        }
+
+        if (strlen($digits) === 12 && str_starts_with($digits, '639')) {
+            return '+'.$digits;
+        }
+
+        return null;
     }
 
     public function getTodayStats(?string $date = null): array
@@ -163,16 +278,16 @@ class AttendanceService
         $present = (int) $statusCounts->get('present', 0);
         $late = (int) $statusCounts->get('late', 0);
 
-        $totalUsers = User::whereHas('roles', fn($q) => $q->whereIn('name', ['student', 'teacher']))->count();
+        $totalUsers = User::whereHas('roles', fn ($q) => $q->whereIn('name', ['student', 'teacher']))->count();
         $totalPresent = $present + $late;
         $absent = max(0, $totalUsers - $totalPresent);
 
-        $roleCounts = \DB::table('attendances')
+        $roleCounts = DB::table('attendances')
             ->join('model_has_roles', 'attendances.user_id', '=', 'model_has_roles.model_id')
             ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
             ->where('attendances.date', $date)
             ->where('model_has_roles.model_type', User::class)
-            ->select('roles.name', \DB::raw('COUNT(DISTINCT attendances.user_id) as count'))
+            ->select('roles.name', DB::raw('COUNT(DISTINCT attendances.user_id) as count'))
             ->groupBy('roles.name')
             ->pluck('count', 'name');
 
@@ -183,8 +298,8 @@ class AttendanceService
             ->groupBy('date')
             ->orderBy('date')
             ->get()
-            ->map(fn($row) => [
-                'name' => \Carbon\Carbon::parse($row->date)->format('D'),
+            ->map(fn ($row) => [
+                'name' => Carbon::parse($row->date)->format('D'),
                 'value' => (int) $row->value,
             ]);
 

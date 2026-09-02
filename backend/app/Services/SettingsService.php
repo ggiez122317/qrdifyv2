@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Cache;
 class SettingsService
 {
     private const CACHE_KEY = 'system_settings';
+
     private const CACHE_TTL = 3600; // 1 hour
 
     /**
@@ -26,8 +27,13 @@ class SettingsService
             return Setting::all()
                 ->pluck('value', 'key')
                 ->map(function ($val) {
-                    if ($val === 'true') return true;
-                    if ($val === 'false') return false;
+                    if ($val === 'true') {
+                        return true;
+                    }
+                    if ($val === 'false') {
+                        return false;
+                    }
+
                     return $val;
                 })
                 ->toArray();
@@ -40,6 +46,7 @@ class SettingsService
     public function get(string $key, mixed $default = null): mixed
     {
         $settings = $this->all();
+
         return $settings[$key] ?? $default;
     }
 
@@ -57,10 +64,11 @@ class SettingsService
     private function seedDefaults(): void
     {
         $defaults = [
-            'school_start_time'        => ['value' => '07:30', 'type' => 'time', 'desc' => 'Time school officially starts'],
-            'late_threshold'           => ['value' => '07:45', 'type' => 'time', 'desc' => 'Time after which a student is marked Late'],
-            'school_end_time'          => ['value' => '16:00', 'type' => 'time', 'desc' => 'Time school officially ends'],
+            'school_start_time' => ['value' => '07:30', 'type' => 'time', 'desc' => 'Time school officially starts'],
+            'late_threshold' => ['value' => '07:45', 'type' => 'time', 'desc' => 'Time after which a student is marked Late'],
+            'school_end_time' => ['value' => '16:00', 'type' => 'time', 'desc' => 'Time school officially ends'],
             'enable_sms_notifications' => ['value' => 'false', 'type' => 'boolean', 'desc' => 'Send SMS to parents on scan'],
+            'scan_deduplication_seconds' => ['value' => '10', 'type' => 'integer', 'desc' => 'Ignore repeated scans within this many seconds'],
         ];
 
         foreach ($defaults as $key => $data) {
