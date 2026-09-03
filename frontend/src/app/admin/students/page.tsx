@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '@/lib/axios';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,8 @@ const DynamicDeleteConfirmModal = dynamic(() => import('@/components/admin/Delet
   ssr: false,
 });
 
+const ITEMS_PER_PAGE = 10;
+
 export interface StudentRecord {
   id: number | string;
   name: string;
@@ -42,13 +44,13 @@ export interface StudentRecord {
   photo_url?: string | null;
   student_profile?: {
     grade?: string;
-    section?: string | {
+    section?: string | null | {
       name?: string;
       grade_level?: string;
     };
     parent_name?: string;
     parent_phone?: string;
-  };
+  } | null;
 }
 
 const formatGrade = (grade?: string) => {
@@ -56,11 +58,11 @@ const formatGrade = (grade?: string) => {
   return grade.replace(/^grade\s*/i, '').trim() || 'N/A';
 };
 
-const getSectionGrade = (section?: string | { grade_level?: string }) =>
-  typeof section === 'object' ? section.grade_level : undefined;
+const getSectionGrade = (section?: string | null | { grade_level?: string }) =>
+  section && typeof section === 'object' ? section.grade_level : undefined;
 
-const getSectionName = (section?: string | { name?: string }) =>
-  typeof section === 'object' ? section.name : section;
+const getSectionName = (section?: string | null | { name?: string }) =>
+  section && typeof section === 'object' ? section.name : section;
 
 export default function StudentsManagementPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -84,8 +86,6 @@ export default function StudentsManagementPage() {
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
-  const itemsPerPage = 10;
-
   const toggleSelectAll = () => {
     if (selectedIds.length === paginatedRecords.length) {
       setSelectedIds([]);
@@ -149,19 +149,15 @@ export default function StudentsManagementPage() {
     fetchStudents();
   }, []);
 
-  const filteredRecords = useMemo(() => {
-    return records.filter((record) => {
-      const matchesSearch = record.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || record.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
-  }, [records, searchTerm, statusFilter]);
+  const filteredRecords = records.filter((record) => {
+    const matchesSearch = record.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || record.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
-  const totalPages = Math.ceil(filteredRecords.length / itemsPerPage);
-  const paginatedRecords = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredRecords.slice(start, start + itemsPerPage);
-  }, [filteredRecords, currentPage]);
+  const totalPages = Math.ceil(filteredRecords.length / ITEMS_PER_PAGE);
+  const start = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedRecords = filteredRecords.slice(start, start + ITEMS_PER_PAGE);
 
   const getStatusElement = (status: string) => {
     const s = status.toLowerCase();

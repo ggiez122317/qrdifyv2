@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SendSmsDelivery;
 use App\Models\Setting;
+use App\Models\SmsDelivery;
 use App\Services\SettingsService;
+use App\Services\Sms\PhoneNumberNormalizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,8 +17,15 @@ use Illuminate\Validation\ValidationException;
 
 class SettingsController extends Controller
 {
+    private const PRINCIPAL_SETTING_KEYS = [
+        'school_start_time',
+        'late_threshold',
+        'school_end_time',
+    ];
+
     public function __construct(
-        private readonly SettingsService $settings
+        private readonly SettingsService $settings,
+        private readonly PhoneNumberNormalizer $phoneNumbers,
     ) {}
 
     /**
@@ -27,17 +37,23 @@ class SettingsController extends Controller
         return response()->json($this->settings->all());
     }
 
+    public function indexPrincipal(): JsonResponse
+    {
+        return response()->json($this->onlySettings(self::PRINCIPAL_SETTING_KEYS));
+    }
+
     /**
      * Update settings and invalidate the cache.
      */
     public function update(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'settings' => 'required|array',
+            'settings' => 'required|array:school_start_time,late_threshold,school_end_time,enable_sms_notifications,scan_deduplication_seconds,enable_push_notifications,enable_email_notifications,notify_check_in,notify_check_out,notify_late,notify_early,compact_tables,principal_name,principal_position,principal_signature,school_year,timezone,date_format,default_theme,phone_number',
             'settings.school_start_time' => 'sometimes|date_format:H:i',
             'settings.late_threshold' => 'sometimes|date_format:H:i',
             'settings.school_end_time' => 'sometimes|date_format:H:i',
             'settings.enable_sms_notifications' => 'sometimes|boolean',
+            'settings.scan_deduplication_seconds' => 'sometimes|integer|min:0|max:3600',
             'settings.enable_push_notifications' => 'sometimes|boolean',
             'settings.enable_email_notifications' => 'sometimes|boolean',
             'settings.notify_check_in' => 'sometimes|boolean',
@@ -55,8 +71,59 @@ class SettingsController extends Controller
             'settings.phone_number' => 'sometimes|nullable|string|max:30',
         ]);
 
-        $allowedSettings = $validated['settings'];
+        return $this->persistSettings($validated['settings']);
+    }
 
+    public function updatePrincipal(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'settings' => 'required|array:school_start_time,late_threshold,school_end_time',
+            'settings.school_start_time' => 'sometimes|date_format:H:i',
+            'settings.late_threshold' => 'sometimes|date_format:H:i',
+            'settings.school_end_time' => 'sometimes|date_format:H:i',
+        ]);
+
+        return $this->persistSettings($validated['settings'], self::PRINCIPAL_SETTING_KEYS);
+    }
+
+    public function testSms(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'phone_number' => ['required', 'string', 'max:32'],
+        ]);
+        $recipient = $this->phoneNumbers->normalizePhilippineMobile($validated['phone_number']);
+
+        if ($recipient === null) {
+            throw ValidationException::withMessages([
+                'phone_number' => 'Enter a valid Philippine mobile number.',
+            ]);
+        }
+
+        $user = $request->user();
+        $schoolName = (string) config('sms.school_name', 'School');
+        $message = "[{$schoolName}] Test SMS requested by {$user->name} at ".now()->format('h:i A').'. The SMS integration is working.';
+        $delivery = SmsDelivery::create([
+            'user_id' => $user->id,
+            'attendance_log_id' => null,
+            'deduplication_key' => hash('sha256', $user->id.'|test|'.Str::uuid()),
+            'recipient' => $recipient,
+            'event_type' => 'test',
+            'message' => $message,
+            'provider' => (string) config('sms.provider', 'huawei_router'),
+            'status' => 'queued',
+        ]);
+
+        SendSmsDelivery::dispatch($delivery->id)->afterCommit();
+
+        return response()->json([
+            'message' => "Test SMS queued for {$recipient}.",
+            'delivery_id' => $delivery->id,
+            'recipient' => $recipient,
+        ], 202);
+    }
+
+    private function persistSettings(array $allowedSettings, ?array $responseKeys = null): JsonResponse
+    {
         DB::beginTransaction();
         try {
             if (array_key_exists('principal_signature', $allowedSettings)) {
@@ -80,9 +147,13 @@ class SettingsController extends Controller
             // Clear cache so the next read fetches fresh settings
             $this->settings->clearCache();
 
+            $savedSettings = $responseKeys === null
+                ? $this->settings->all()
+                : $this->onlySettings($responseKeys);
+
             return response()->json([
                 'message' => 'Settings updated successfully',
-                'settings' => $this->settings->all(),
+                'settings' => $savedSettings,
             ]);
         } catch (ValidationException $e) {
             DB::rollBack();
@@ -248,6 +319,11 @@ class SettingsController extends Controller
         }
 
         Storage::disk('public')->delete(str_replace('/storage/', '', $path));
+    }
+
+    private function onlySettings(array $keys): array
+    {
+        return array_intersect_key($this->settings->all(), array_flip($keys));
     }
 
     private function storePrincipalSignature(?string $signature): string

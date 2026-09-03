@@ -33,9 +33,11 @@ $registerPublicRoutes();
 Route::prefix('v1')->group($registerPublicRoutes);
 
 $registerAuthenticatedRoutes = function () {
-    Route::get('/system/preferences', [SettingsController::class, 'index']);
-    Route::post('/system/preferences', [SettingsController::class, 'update'])
-        ->middleware('role:super-admin,admin,principal');
+    Route::middleware('role:super-admin,admin')->group(function () {
+        Route::get('/system/preferences', [SettingsController::class, 'index']);
+        Route::post('/system/preferences', [SettingsController::class, 'update']);
+        Route::post('/system/preferences/test-sms', [SettingsController::class, 'testSms']);
+    });
 
     // Auth info
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -207,8 +209,8 @@ $registerAuthenticatedRoutes = function () {
             Route::get('/announcement-templates', [PrincipalController::class, 'getAnnouncementTemplates']);
             
             // Settings
-            Route::get('/settings', [SettingsController::class, 'index']);
-            Route::post('/settings', [SettingsController::class, 'update']);
+            Route::get('/settings', [SettingsController::class, 'indexPrincipal']);
+            Route::post('/settings', [SettingsController::class, 'updatePrincipal']);
         });
     });
 };

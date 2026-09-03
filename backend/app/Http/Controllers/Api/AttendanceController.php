@@ -6,9 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ScanRequest;
 use App\Http\Resources\AttendanceResource;
 use App\Models\Attendance;
+use App\Models\User;
 use App\Services\AttendanceService;
-use App\Services\SettingsService;
 use App\Services\ScanCacheService;
+use App\Services\SettingsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -26,28 +27,28 @@ class AttendanceController extends Controller
         $cachedUser = $this->scanCache->find($idNumber);
 
         // Fallback: Check if it's an NFC/RFID card and resolve the actual user ID
-        if (!$cachedUser) {
-            $user = \App\Models\User::where('id_number', $idNumber)->first();
+        if (! $cachedUser) {
+            $user = User::where('id_number', $idNumber)->first();
             if ($user && $user->id_number !== $idNumber) {
                 $idNumber = $user->id_number;
                 $cachedUser = $this->scanCache->find($idNumber);
             }
         }
 
-        if (!$cachedUser) {
+        if (! $cachedUser) {
             return response()->json(['message' => 'User not found'], 404);
         }
 
         return response()->json([
             'message' => 'Scan registered',
 
-            'type'    => 'Scan',
-            'status'  => 'Processing...',
-            'user'    => [
-                'name'      => $cachedUser['name'],
+            'type' => 'Scan',
+            'status' => 'Processing...',
+            'user' => [
+                'name' => $cachedUser['name'],
                 'photo_url' => $cachedUser['photo_url'],
-                'role'      => $cachedUser['role'],
-                'profile'   => $cachedUser['role'] === 'student'
+                'role' => $cachedUser['role'],
+                'profile' => $cachedUser['role'] === 'student'
                     ? ['grade' => $cachedUser['grade'], 'section' => $cachedUser['section']]
                     : ['subject' => $cachedUser['subject'], 'contact_number' => $cachedUser['contact_number']],
             ],
@@ -67,33 +68,43 @@ class AttendanceController extends Controller
         $cachedUser = $this->scanCache->find($idNumber);
 
         // Fallback: Check if it's an NFC/RFID card and resolve the actual user ID
-        if (!$cachedUser) {
-            $user = \App\Models\User::where('id_number', $idNumber)->first();
+        if (! $cachedUser) {
+            $user = User::where('id_number', $idNumber)->first();
             if ($user && $user->id_number !== $idNumber) {
                 $idNumber = $user->id_number;
                 $cachedUser = $this->scanCache->find($idNumber);
             }
         }
 
-        if (!$cachedUser) {
+        if (! $cachedUser) {
             return response()->json(['message' => 'User not found'], 404);
         }
 
-        $result = $this->attendanceService->processScan($idNumber, $cachedUser);
+        $result = $this->attendanceService->processScan(
+            $idNumber,
+            $cachedUser,
+            $request->validated('idempotency_key'),
+            $request->validated('scan_source'),
+        );
 
         if (isset($result['error'])) {
             return response()->json(['message' => $result['error']], $result['code']);
         }
 
+        $message = $result['duplicate']
+            ? 'Duplicate scan ignored'
+            : "{$result['type']} — {$result['status']}";
+
         return response()->json([
-            'message' => "{$result['type']} — {$result['status']}",
-            'type'    => $result['type'],
-            'status'  => $result['status'],
-            'user'    => [
-                'name'      => $result['name'],
+            'duplicate' => $result['duplicate'],
+            'message' => $message,
+            'type' => $result['type'],
+            'status' => $result['status'],
+            'user' => [
+                'name' => $result['name'],
                 'photo_url' => $result['photo_url'],
-                'role'      => $result['role'],
-                'profile'   => $result['role'] === 'student'
+                'role' => $result['role'],
+                'profile' => $result['role'] === 'student'
                     ? ['grade' => $cachedUser['grade'], 'section' => $cachedUser['section']]
                     : ['subject' => $cachedUser['subject'], 'contact_number' => $cachedUser['contact_number']],
             ],
@@ -117,7 +128,7 @@ class AttendanceController extends Controller
         if ($search) {
             $query->whereHas('user', function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('id_number', 'like', "%{$search}%");
+                    ->orWhere('id_number', 'like', "%{$search}%");
             });
         }
 

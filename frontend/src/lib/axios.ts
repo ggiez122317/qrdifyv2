@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { ApiError } from './types';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `http://${window.location.hostname}:8001` : 'http://localhost:8001'),
+  baseURL: process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000'),
   timeout: 15000,
   headers: {
     'X-Requested-With': 'XMLHttpRequest',

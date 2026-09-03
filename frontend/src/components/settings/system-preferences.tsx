@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 import { ChangeEvent, PointerEvent, useEffect, useRef, useState } from 'react';
-import { Bell, CheckCircle2, Clock3, Eraser, Loader2, Monitor, PenTool, Save, Upload } from 'lucide-react';
+import { Bell, CheckCircle2, Clock3, Eraser, Loader2, LogOut, Monitor, PenTool, Save, Send, Sun, Sunrise, Upload } from 'lucide-react';
 import api from '@/lib/axios';
 import { getImageUrl } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,16 @@ interface SystemPreferences {
   compact_tables: boolean;
   enable_push_notifications: boolean;
   enable_sms_notifications: boolean;
+  notify_check_in: boolean;
+  notify_check_out: boolean;
+  notify_late: boolean;
+  notify_early: boolean;
+  phone_number: string;
 }
+
+type SystemPreferencesResponse = Omit<Partial<SystemPreferences>, 'phone_number'> & {
+  phone_number?: string | null;
+};
 
 const defaults: SystemPreferences = {
   principal_name: 'MERLE B. ALSONADO',
@@ -34,7 +43,35 @@ const defaults: SystemPreferences = {
   compact_tables: false,
   enable_push_notifications: true,
   enable_sms_notifications: false,
+  notify_check_in: true,
+  notify_check_out: true,
+  notify_late: true,
+  notify_early: true,
+  phone_number: '',
 };
+
+function mergePreferences(
+  previous: SystemPreferences,
+  incoming: SystemPreferencesResponse,
+): SystemPreferences {
+  return {
+    principal_name: incoming.principal_name ?? previous.principal_name,
+    principal_position: incoming.principal_position ?? previous.principal_position,
+    principal_signature: incoming.principal_signature ?? previous.principal_signature,
+    school_year: incoming.school_year ?? previous.school_year,
+    timezone: incoming.timezone ?? previous.timezone,
+    date_format: incoming.date_format ?? previous.date_format,
+    default_theme: incoming.default_theme ?? previous.default_theme,
+    compact_tables: incoming.compact_tables ?? previous.compact_tables,
+    enable_push_notifications: incoming.enable_push_notifications ?? previous.enable_push_notifications,
+    enable_sms_notifications: incoming.enable_sms_notifications ?? previous.enable_sms_notifications,
+    notify_check_in: incoming.notify_check_in ?? previous.notify_check_in,
+    notify_check_out: incoming.notify_check_out ?? previous.notify_check_out,
+    notify_late: incoming.notify_late ?? previous.notify_late,
+    notify_early: incoming.notify_early ?? previous.notify_early,
+    phone_number: incoming.phone_number ?? previous.phone_number,
+  };
+}
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (value: boolean) => void }) {
   return (
@@ -175,14 +212,19 @@ export function SystemPreferencesForm() {
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isTestingSms, setIsTestingSms] = useState(false);
+  const [testSmsResult, setTestSmsResult] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
 
   useEffect(() => {
     queryClient.fetchQuery({
       queryKey: ['system-preferences'],
-      queryFn: async () => (await api.get('/api/system/preferences')).data,
+      queryFn: async () => (await api.get<SystemPreferencesResponse>('/api/system/preferences')).data,
       staleTime: 5 * 60 * 1000,
     })
-      .then(data => setPreferences(previous => ({ ...previous, ...data })))
+      .then(data => setPreferences(previous => mergePreferences(previous, data)))
       .catch(() => setError('Unable to load system preferences.'))
       .finally(() => setIsLoading(false));
   }, [queryClient]);
@@ -191,6 +233,7 @@ export function SystemPreferencesForm() {
     setPreferences(previous => ({ ...previous, [key]: value }));
     setMessage(null);
     setError(null);
+    setTestSmsResult(null);
   };
 
   const handleSignature = (event: ChangeEvent<HTMLInputElement>) => {
@@ -211,11 +254,12 @@ export function SystemPreferencesForm() {
     setError(null);
     setMessage(null);
     try {
-      const response = await api.post('/api/system/preferences', { settings: preferences });
-      setPreferences(previous => ({ ...previous, ...response.data.settings }));
-      queryClient.setQueryData(['system-preferences'], response.data.settings);
+      const response = await api.post<{ settings: SystemPreferencesResponse }>('/api/system/preferences', { settings: preferences });
+      const savedPreferences = mergePreferences(preferences, response.data.settings);
+      setPreferences(savedPreferences);
+      queryClient.setQueryData(['system-preferences'], savedPreferences);
       setMessage('System preferences saved and connected to the ID card.');
-      window.dispatchEvent(new CustomEvent('system-preferences-updated', { detail: response.data.settings }));
+      window.dispatchEvent(new CustomEvent('system-preferences-updated', { detail: savedPreferences }));
     } catch (requestError: unknown) {
       const responseData = typeof requestError === 'object' && requestError !== null && 'response' in requestError
         ? (requestError as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } }).response?.data
@@ -226,6 +270,28 @@ export function SystemPreferencesForm() {
       setError(validationMessage || 'Unable to save system preferences.');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const testSms = async () => {
+    setIsTestingSms(true);
+    setTestSmsResult(null);
+
+    try {
+      const response = await api.post('/api/system/preferences/test-sms', {
+        phone_number: preferences.phone_number,
+      });
+      setTestSmsResult({ type: 'success', message: response.data.message });
+    } catch (requestError: unknown) {
+      const responseData = typeof requestError === 'object' && requestError !== null && 'response' in requestError
+        ? (requestError as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } }).response?.data
+        : undefined;
+      const validationMessage = responseData?.errors
+        ? Object.values(responseData.errors).flat().join(' ')
+        : responseData?.message;
+      setTestSmsResult({ type: 'error', message: validationMessage || 'Unable to queue the test SMS.' });
+    } finally {
+      setIsTestingSms(false);
     }
   };
 
@@ -282,7 +348,7 @@ export function SystemPreferencesForm() {
         </div>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid gap-6">
         <section className="border border-slate-200 bg-white">
           <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50/70 px-6 py-4"><Clock3 className="h-5 w-5 text-[#0B3A82]" /><h4 className="font-bold text-slate-900">Localization</h4></div>
           <div className="grid gap-5 p-6 sm:grid-cols-2">
@@ -292,10 +358,72 @@ export function SystemPreferencesForm() {
         </section>
 
         <section className="border border-slate-200 bg-white">
-          <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50/70 px-6 py-4"><Bell className="h-5 w-5 text-[#0B3A82]" /><h4 className="font-bold text-slate-900">Notification Rules</h4></div>
-          <div className="space-y-5 p-6">
-            <div className="flex items-center justify-between gap-4"><div><p className="text-sm font-bold text-slate-800">Push notifications</p><p className="text-xs text-slate-500">Attendance alerts for assigned teachers.</p></div><Toggle checked={preferences.enable_push_notifications} onChange={value => updatePreference('enable_push_notifications', value)} /></div>
-            <div className="flex items-center justify-between gap-4"><div><p className="text-sm font-bold text-slate-800">Parent SMS notifications</p><p className="text-xs text-slate-500">Send time-in and time-out alerts to guardian phones.</p></div><Toggle checked={preferences.enable_sms_notifications} onChange={value => updatePreference('enable_sms_notifications', value)} /></div>
+          <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50/70 px-6 py-4">
+            <Bell className="h-5 w-5 text-[#0B3A82]" />
+            <div>
+              <h4 className="font-bold text-slate-900">Attendance Notifications</h4>
+              <p className="text-xs text-slate-500">Admin-only controls for teacher push alerts and parent SMS delivery.</p>
+            </div>
+          </div>
+          <div className="space-y-6 p-6">
+            <div className="flex items-center justify-between gap-4">
+              <div><p className="text-sm font-bold text-slate-800">Push notifications</p><p className="text-xs text-slate-500">Attendance alerts for assigned teachers.</p></div>
+              <Toggle checked={preferences.enable_push_notifications} onChange={value => updatePreference('enable_push_notifications', value)} />
+            </div>
+            <div className="flex items-center justify-between gap-4 border-t border-slate-100 pt-5">
+              <div><p className="text-sm font-bold text-slate-800">Automated parent SMS notifications</p><p className="text-xs text-slate-500">Master switch for attendance messages sent through the modem SIM.</p></div>
+              <Toggle checked={preferences.enable_sms_notifications} onChange={value => updatePreference('enable_sms_notifications', value)} />
+            </div>
+
+            <div className="border-t border-slate-100 pt-5">
+              <p className="mb-4 text-sm font-bold text-slate-800">Notify Parents When</p>
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="flex items-center justify-between gap-3 border border-slate-200 p-4">
+                  <div className="flex items-center gap-2"><Sun className="h-4 w-4 text-orange-400" /><span className="text-sm font-semibold text-slate-700">Check In</span></div>
+                  <Toggle checked={preferences.notify_check_in} onChange={value => updatePreference('notify_check_in', value)} />
+                </div>
+                <div className="flex items-center justify-between gap-3 border border-slate-200 p-4">
+                  <div className="flex items-center gap-2"><Sunrise className="h-4 w-4 text-orange-400" /><span className="text-sm font-semibold text-slate-700">Check Out</span></div>
+                  <Toggle checked={preferences.notify_check_out} onChange={value => updatePreference('notify_check_out', value)} />
+                </div>
+                <div className="flex items-center justify-between gap-3 border border-slate-200 p-4">
+                  <div className="flex items-center gap-2"><Clock3 className="h-4 w-4 text-slate-500" /><span className="text-sm font-semibold text-slate-700">Late Arrival</span></div>
+                  <Toggle checked={preferences.notify_late} onChange={value => updatePreference('notify_late', value)} />
+                </div>
+                <div className="flex items-center justify-between gap-3 border border-slate-200 p-4">
+                  <div className="flex items-center gap-2"><LogOut className="h-4 w-4 text-red-500" /><span className="text-sm font-semibold text-slate-700">Early Dismissal</span></div>
+                  <Toggle checked={preferences.notify_early} onChange={value => updatePreference('notify_early', value)} />
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-100 pt-5">
+              <Label htmlFor="sms-test-recipient">Test Recipient Number</Label>
+              <div className="mt-2 flex flex-col gap-3 sm:flex-row">
+                <Input
+                  id="sms-test-recipient"
+                  value={preferences.phone_number}
+                  onChange={event => updatePreference('phone_number', event.target.value)}
+                  placeholder="09XX XXX XXXX"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={testSms}
+                  disabled={isTestingSms || !preferences.phone_number.trim()}
+                  className="shrink-0 font-bold"
+                >
+                  {isTestingSms ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                  {isTestingSms ? 'Queuing...' : 'Test SMS Alert'}
+                </Button>
+              </div>
+              {testSmsResult && (
+                <p className={`mt-3 text-sm font-semibold ${testSmsResult.type === 'success' ? 'text-emerald-600' : 'text-red-600'}`}>
+                  {testSmsResult.message}
+                </p>
+              )}
+              <p className="mt-2 text-xs text-slate-500">The modem SIM remains the sender for this test and all attendance alerts.</p>
+            </div>
           </div>
         </section>
       </div>

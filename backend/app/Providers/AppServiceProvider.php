@@ -2,10 +2,12 @@
 
 namespace App\Providers;
 
+use App\Contracts\SmsGateway;
 use App\Models\StudentProfile;
 use App\Models\TeacherProfile;
 use App\Models\User;
 use App\Services\ScanCacheService;
+use App\Services\Sms\HuaweiRouterSmsGateway;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Permission\Events\RoleAttached;
 use Spatie\Permission\Events\RoleDetached;
@@ -15,11 +17,19 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(ScanCacheService::class);
+        $this->app->singleton(SmsGateway::class, function () {
+            return match (config('sms.provider')) {
+                'huawei_router' => new HuaweiRouterSmsGateway,
+                default => throw new \InvalidArgumentException(
+                    'Unsupported SMS provider: '.config('sms.provider')
+                ),
+            };
+        });
     }
 
     public function boot(): void
     {
-        $invalidate = fn() => app(ScanCacheService::class)->invalidate();
+        $invalidate = fn () => app(ScanCacheService::class)->invalidate();
 
         User::saved($invalidate);
         User::deleted($invalidate);

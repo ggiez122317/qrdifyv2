@@ -15,6 +15,8 @@ class ScanRequest extends FormRequest
     {
         return [
             'id_number' => 'required|string|max:50',
+            'idempotency_key' => 'nullable|string|max:128',
+            'scan_source' => 'nullable|string|max:64',
         ];
     }
 
