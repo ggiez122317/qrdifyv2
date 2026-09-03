@@ -30,7 +30,7 @@ export default function CreateStudentPage() {
     first_name: '',
     last_name: '',
     email: '',
-    lrn: '132019240057',
+    lrn: '',
     grade_level: '',
     section: '',
     parent_name: '',
@@ -152,7 +152,17 @@ export default function CreateStudentPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-3">
                     <Label htmlFor="lrn" className="text-sm font-semibold dark:text-slate-300">Learner Reference Number (LRN) <span className="text-red-500">*</span></Label>
-                    <Input id="lrn" name="lrn" value={formData.lrn} readOnly className="bg-slate-100 text-slate-500 cursor-not-allowed dark:bg-[#0f1115] dark:border-white/10 dark:text-white h-12 text-base font-medium" />
+                    <Input
+                      id="lrn"
+                      name="lrn"
+                      value={formData.lrn}
+                      onChange={handleChange}
+                      onFocus={() => setActiveSide('front')}
+                      required
+                      maxLength={50}
+                      placeholder="Enter a unique LRN"
+                      className="bg-slate-50 dark:bg-[#0f1115] dark:border-white/10 dark:text-white h-12 text-base font-medium"
+                    />
                   </div>
                   
                   <div className="space-y-3">
