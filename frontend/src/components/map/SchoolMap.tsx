@@ -8,10 +8,7 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css';
 import 'leaflet-defaulticon-compatibility';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Save, RefreshCw, Trash2, Maximize2, X, MapPin, Map, Users, Building2, Search, Crosshair, Diamond, Plus, Eye, Edit2, Layers, Map as MapIcon, Minus, CheckSquare } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Save, RefreshCw, Trash2, Maximize2, X, MapPin, Map, Users, Search, Crosshair, Diamond, Plus, Edit2, Layers, Map as MapIcon, Minus, CheckSquare, Bell, Smartphone, Mail, Clock3, ShieldAlert } from 'lucide-react';
 import api from '@/lib/axios';
 
 interface StudentLocation {
@@ -25,26 +22,63 @@ interface StudentLocation {
   photo_url: string;
 }
 
-interface School {
-  id: number;
-  name: string;
-  type: string;
-  latitude: number;
-  longitude: number;
-  student_count: number;
-  status: string;
-  geofence_area: number;
-  boundary: { lat: number; lng: number }[] | null;
-  created_at?: string;
-  updated_at?: string;
-}
+// Permanent school perimeter supplied in DMS coordinates, converted to decimal degrees.
+const SCHOOL_BOUNDARY = [
+  { lat: 8.04355833, lng: 126.05994722 },
+  { lat: 8.04406389, lng: 126.06130000 },
+  { lat: 8.04565556, lng: 126.06057778 },
+  { lat: 8.04552778, lng: 126.06028889 },
+  { lat: 8.04519444, lng: 126.06035833 },
+  { lat: 8.04492222, lng: 126.05943333 },
+] as const;
 
-interface MapStats {
-  total_schools: number;
-  active_geofences: number;
-  total_students: number;
-  total_area: number;
-}
+const SCHOOL_BOUNDARY_POSITIONS: L.LatLngTuple[] = SCHOOL_BOUNDARY.map(
+  point => [point.lat, point.lng]
+);
+const SCHOOL_BOUNDARY_BOUNDS = L.latLngBounds(SCHOOL_BOUNDARY_POSITIONS);
+const SCHOOL_BOUNDARY_CENTER: L.LatLngExpression = [8.04482037, 126.06031759];
+
+// Preview-only records for the planned parent notification workflow.
+const MOCK_BOUNDARY_ALERTS = [
+  {
+    id: 1,
+    name: 'Angela Reyes',
+    className: 'Grade 6 - Rizal',
+    detectedAt: '10:42 AM',
+    distance: '42 m outside',
+    schedule: '8:00 AM - 3:30 PM',
+    latitude: 8.0442,
+    longitude: 126.0615,
+    notificationStatus: 'Parent notified',
+    channels: ['App vibration', 'Push', 'Email'],
+  },
+  {
+    id: 2,
+    name: 'Mark Dela Cruz',
+    className: 'Grade 5 - Mabini',
+    detectedAt: '10:37 AM',
+    distance: '28 m outside',
+    schedule: '8:00 AM - 3:30 PM',
+    latitude: 8.0458,
+    longitude: 126.06045,
+    notificationStatus: 'Alert queued',
+    channels: ['App vibration', 'Push'],
+  },
+  {
+    id: 3,
+    name: 'Joshua Santos',
+    className: 'Grade 4 - Bonifacio',
+    detectedAt: '10:31 AM',
+    distance: '61 m outside',
+    schedule: '7:30 AM - 3:00 PM',
+    latitude: 8.04335,
+    longitude: 126.0597,
+    notificationStatus: 'Parent notified',
+    channels: ['App vibration', 'Push', 'Email'],
+  },
+] as const;
+
+const MOCK_MONITORED_STUDENTS = 428;
 
 function MapEvents({ onMapClick }: { onMapClick: (latlng: L.LatLng) => void }) {
   useMapEvents({
@@ -59,7 +93,7 @@ function MapReadyHandler({ onMapReady }: { onMapReady: (map: L.Map) => void }) {
   return null;
 }
 
-function isPointInPolygon(point: {lat: number, lng: number}, polygon: {lat: number, lng: number}[]) {
+function isPointInPolygon(point: {lat: number, lng: number}, polygon: readonly {lat: number, lng: number}[]) {
   if (!polygon || polygon.length === 0) return true; // Default inside if no geofence
   let isInside = false;
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
@@ -75,35 +109,23 @@ function isPointInPolygon(point: {lat: number, lng: number}, polygon: {lat: numb
 export default function SchoolMap({ mode = 'admin' }: { mode?: 'admin' | 'principal' }) {
   const [geofence, setGeofence] = useState<{lat: number, lng: number}[]>([]);
   const [students, setStudents] = useState<StudentLocation[]>([]);
-  const [schools, setSchools] = useState<School[]>([]);
-  const [stats, setStats] = useState<MapStats | null>(null);
-  const [selectedSchoolId, setSelectedSchoolId] = useState<number | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [schoolSearchTerm, setSchoolSearchTerm] = useState('');
-  const [layers, setLayers] = useState({ schools: true, geofences: true, roads: true, rivers: true, landmarks: true });
+  const [layers, setLayers] = useState({ students: true, geofences: true, roads: true, rivers: true, landmarks: true });
   const [mapType, setMapType] = useState<'street' | 'satellite'>('street');
-  const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [formData, setFormData] = useState({ name: '', type: 'Elementary', latitude: '', longitude: '', student_count: '0', status: 'Active', geofence_area: '' });
-  const [editingSchoolId, setEditingSchoolId] = useState<number | null>(null);
 
   const zoomRef = useRef<L.Map | null>(null);
 
   const fetchMapData = useCallback(async () => {
     try {
-      const [geoRes, studentRes, schoolsRes, statsRes] = await Promise.all([
+      const [geoRes, studentRes] = await Promise.all([
         api.get('/api/admin/map/geofence'),
         api.get('/api/admin/map/student-locations'),
-        api.get('/api/admin/map/schools'),
-        api.get('/api/admin/map/stats'),
       ]);
       if (geoRes.data.geofence) setGeofence(geoRes.data.geofence);
       setStudents(studentRes.data.data || []);
-      setSchools(schoolsRes.data.data || []);
-      setStats(statsRes.data.data || null);
-      if (schoolsRes.data.data?.length > 0) setSelectedSchoolId(schoolsRes.data.data[0].id);
     } catch {
       // Silently handle — backend may be offline. Data will show empty state.
     } finally {
@@ -161,13 +183,6 @@ export default function SchoolMap({ mode = 'admin' }: { mode?: 'admin' | 'princi
     }
   };
 
-  const flyToSchool = (school: School) => {
-    setSelectedSchoolId(school.id);
-    if (zoomRef.current) {
-      zoomRef.current.flyTo([school.latitude, school.longitude], 17);
-    }
-  };
-
   const locateUser = () => {
     if (typeof navigator !== 'undefined' && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -182,83 +197,18 @@ export default function SchoolMap({ mode = 'admin' }: { mode?: 'admin' | 'princi
     }
   };
 
-  const addSchool = async () => {
-    try {
-      const payload = {
-        name: formData.name,
-        type: formData.type,
-        latitude: formData.latitude ? parseFloat(formData.latitude) : null,
-        longitude: formData.longitude ? parseFloat(formData.longitude) : null,
-        student_count: parseInt(formData.student_count) || 0,
-        status: formData.status,
-        geofence_area: formData.geofence_area ? parseFloat(formData.geofence_area) : null,
-      };
-      if (editingSchoolId) {
-        await api.put(`/api/admin/map/schools/${editingSchoolId}`, payload);
-        localStorage.setItem('toast_message', 'School updated successfully');
-      } else {
-        await api.post('/api/admin/map/schools', payload);
-        localStorage.setItem('toast_message', 'School added successfully');
-      }
-      window.dispatchEvent(new Event('toast-trigger'));
-      setAddDialogOpen(false);
-      setEditingSchoolId(null);
-      setFormData({ name: '', type: 'Elementary', latitude: '', longitude: '', student_count: '0', status: 'Active', geofence_area: '' });
-      fetchMapData();
-    } catch (error) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const err = error as any;
-      const msg = err?.response?.data?.message || 'Failed to save school';
-      localStorage.setItem('toast_message', msg);
-      window.dispatchEvent(new Event('toast-trigger'));
-    }
-  };
-
-  const deleteSchool = async (id: number) => {
-    if (confirm('Delete this school?')) {
-      try {
-        await api.delete(`/api/admin/map/schools/${id}`);
-        localStorage.setItem('toast_message', 'School deleted');
-        window.dispatchEvent(new Event('toast-trigger'));
-        fetchMapData();
-      } catch {
-        localStorage.setItem('toast_message', 'Failed to delete school');
-        window.dispatchEvent(new Event('toast-trigger'));
-      }
-    }
-  };
-
-  const openEditSchool = (school: School) => {
-    setEditingSchoolId(school.id);
-    setFormData({
-      name: school.name,
-      type: school.type,
-      latitude: school.latitude?.toString() || '',
-      longitude: school.longitude?.toString() || '',
-      student_count: school.student_count?.toString() || '0',
-      status: school.status,
-      geofence_area: school.geofence_area?.toString() || '',
+  const handleMapReady = useCallback((map: L.Map) => {
+    zoomRef.current = map;
+    map.fitBounds(SCHOOL_BOUNDARY_BOUNDS, {
+      padding: [40, 40],
+      maxZoom: 18,
+      animate: false,
     });
-    setAddDialogOpen(true);
-  };
-
-  const selectedSchool = schools.find(s => s.id === selectedSchoolId);
-  const filteredSchools = schools.filter(s =>
-    s.name.toLowerCase().includes(schoolSearchTerm.toLowerCase())
-  );
-
-  const handleMapReady = useCallback((map: L.Map) => { zoomRef.current = map; }, []);
+  }, []);
 
   if (isLoading) {
     return <div className="h-full w-full flex items-center justify-center">Loading Map...</div>;
   }
-
-  const defaultCenter: L.LatLngExpression = [8.0468, 126.0617];
-  const center = selectedSchool
-    ? [selectedSchool.latitude, selectedSchool.longitude]
-    : geofence.length > 0
-      ? [geofence[0].lat, geofence[0].lng]
-      : defaultCenter;
 
   const mapElement = (
     <>
@@ -305,12 +255,12 @@ export default function SchoolMap({ mode = 'admin' }: { mode?: 'admin' | 'princi
           <div className="bg-white rounded-none shadow-sm border border-slate-200 p-4">
             <h3 className="font-bold text-slate-800 text-[12px] mb-3">Map Layers</h3>
             <div className="flex flex-col gap-2.5">
-              {(['schools', 'geofences', 'roads', 'rivers', 'landmarks'] as const).map((key) => (
+              {(['students', 'geofences', 'roads', 'rivers', 'landmarks'] as const).map((key) => (
                 <label key={key} className="flex items-center gap-3 cursor-pointer group" onClick={() => setLayers(prev => ({ ...prev, [key]: !prev[key] }))}>
                   <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${layers[key] ? 'border-[#0B3A82] bg-[#0B3A82]' : 'border-slate-300 bg-white'}`}>
                     {layers[key] && <CheckSquare className="w-3 h-3 text-white" />}
                   </div>
-                  {key === 'schools' && <Building2 className="w-[14px] h-[14px] text-slate-400" />}
+                  {key === 'students' && <Users className="w-[14px] h-[14px] text-slate-400" />}
                   {key === 'geofences' && <Diamond className="w-[14px] h-[14px] text-slate-400" />}
                   {key === 'roads' && <MapIcon className="w-[14px] h-[14px] text-slate-400" />}
                   {key === 'rivers' && <Layers className="w-[14px] h-[14px] text-slate-400" />}
@@ -326,15 +276,15 @@ export default function SchoolMap({ mode = 'admin' }: { mode?: 'admin' | 'princi
             <div className="flex flex-col gap-2.5">
               <div className="flex items-center gap-3">
                 <MapPin className="w-[14px] h-[14px] text-red-500 shrink-0 fill-red-500" />
-                <span className="text-[12px] font-medium text-slate-600">Selected School</span>
+                <span className="text-[12px] font-medium text-slate-600">Student Outside</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 border-[1.5px] border-dashed border-emerald-500 shrink-0" />
-                <span className="text-[12px] font-medium text-slate-600">Active Geofence</span>
+                <span className="text-[12px] font-medium text-slate-600">School Boundary</span>
               </div>
               <div className="flex items-center gap-3">
                 <MapPin className="w-[14px] h-[14px] text-blue-500 shrink-0 fill-blue-500" />
-                <span className="text-[12px] font-medium text-slate-600">Other School</span>
+                <span className="text-[12px] font-medium text-slate-600">Student Inside</span>
               </div>
               <div className="flex items-center gap-3">
                 <MapPin className="w-[14px] h-[14px] text-slate-400 shrink-0 fill-slate-400" />
@@ -357,9 +307,11 @@ export default function SchoolMap({ mode = 'admin' }: { mode?: 'admin' | 'princi
       >
         <MapContainer
           key={isFullscreen ? 'fullscreen' : 'normal'}
-          center={center as L.LatLngExpression}
+          center={SCHOOL_BOUNDARY_CENTER}
           zoom={17}
           zoomControl={false}
+          maxBounds={SCHOOL_BOUNDARY_BOUNDS.pad(0.5)}
+          maxBoundsViscosity={1}
           style={{ height: '100%', width: '100%' }}
         >
         {mapType === 'street' ? (
@@ -377,22 +329,41 @@ export default function SchoolMap({ mode = 'admin' }: { mode?: 'admin' | 'princi
         <MapEvents onMapClick={handleMapClick} />
         <MapReadyHandler onMapReady={handleMapReady} />
 
-        {layers.schools && schools.map(school => (
+        {layers.geofences && (
+          <Polygon
+            positions={SCHOOL_BOUNDARY_POSITIONS}
+            pathOptions={{
+              color: '#059669',
+              fill: true,
+              fillColor: '#34d399',
+              fillOpacity: 0.16,
+              weight: 3,
+              dashArray: '8 6',
+            }}
+          >
+            <Popup>
+              <p className="m-0 text-sm font-bold text-slate-900">School boundary</p>
+            </Popup>
+          </Polygon>
+        )}
+
+        {layers.students && mode === 'admin' && MOCK_BOUNDARY_ALERTS.map(alert => (
           <Marker
-            key={school.id}
-            position={[school.latitude, school.longitude]}
+            key={alert.id}
+            position={[alert.latitude, alert.longitude]}
             icon={L.divIcon({
               className: '',
-              html: `<div style="background:${school.id === selectedSchoolId ? '#ef4444' : '#3b82f6'};width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);cursor:pointer;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>`,
-              iconSize: [28, 28],
-              iconAnchor: [14, 28],
+              html: '<div style="background:#dc2626;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 8px rgba(15,23,42,0.35);cursor:pointer;color:white;font-size:16px;font-weight:800;">!</div>',
+              iconSize: [30, 30],
+              iconAnchor: [15, 15],
             })}
           >
             <Popup>
-              <div className="flex flex-col gap-1 min-w-[180px] p-1">
-                <p className="font-bold text-sm text-slate-900">{school.name}</p>
-                <p className="text-xs text-slate-500">{school.type} · {school.student_count} students</p>
-                <button onClick={() => flyToSchool(school)} className="text-xs text-blue-600 font-medium mt-1 hover:underline">Focus on map</button>
+              <div className="flex min-w-[210px] flex-col gap-1 p-1">
+                <p className="text-sm font-bold text-slate-900">{alert.name}</p>
+                <p className="text-xs text-slate-500">{alert.className}</p>
+                <p className="mt-1 text-xs font-semibold text-red-600">{alert.distance} · {alert.detectedAt}</p>
+                <p className="text-xs font-medium text-emerald-700">{alert.notificationStatus}</p>
               </div>
             </Popup>
           </Marker>
@@ -405,14 +376,7 @@ export default function SchoolMap({ mode = 'admin' }: { mode?: 'admin' | 'princi
           />
         )}
 
-        {layers.geofences && selectedSchool?.boundary && selectedSchool.boundary.length > 0 && (
-          <Polygon
-            positions={selectedSchool.boundary.map(p => [p.lat, p.lng])}
-            pathOptions={{ color: '#ef4444', fill: true, fillColor: '#fca5a5', fillOpacity: 0.2, weight: 2 }}
-          />
-        )}
-
-        {mode === 'principal' && students.map(student => (
+        {layers.students && mode === 'principal' && students.map(student => (
           <Marker key={student.id} position={[student.latitude, student.longitude]}>
             <Popup>
               <div className="flex flex-col gap-2 p-1 min-w-[150px]">
@@ -435,7 +399,7 @@ export default function SchoolMap({ mode = 'admin' }: { mode?: 'admin' | 'princi
 
   if (isFullscreen) {
     const studentsOutside = mode === 'principal' 
-      ? students.filter(student => !isPointInPolygon({ lat: student.latitude, lng: student.longitude }, geofence))
+      ? students.filter(student => !isPointInPolygon({ lat: student.latitude, lng: student.longitude }, SCHOOL_BOUNDARY))
       : [];
 
     const content = (
@@ -524,7 +488,7 @@ export default function SchoolMap({ mode = 'admin' }: { mode?: 'admin' | 'princi
           </div>
           <div>
             <h1 className="text-[22px] font-bold text-slate-900 tracking-tight">School Map</h1>
-            <p className="text-[13px] text-slate-500 mt-0.5">Monitor student locations and set the geofence perimeter.</p>
+            <p className="text-[13px] text-slate-500 mt-0.5">Monitor the campus boundary and preview class-hour guardian alerts.</p>
           </div>
         </div>
         <Button onClick={() => setIsFullscreen(true)} className="bg-[#0B3A82] hover:bg-rose-900 text-white rounded-none h-[42px] px-5 font-bold shadow-sm">
@@ -535,35 +499,35 @@ export default function SchoolMap({ mode = 'admin' }: { mode?: 'admin' | 'princi
       {mode === 'admin' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-none border border-slate-100 shadow-sm p-5 flex items-center gap-4">
-          <div className="w-[52px] h-[52px] rounded-none bg-rose-50 text-rose-600 flex items-center justify-center shrink-0"><Building2 className="w-6 h-6" /></div>
+          <div className="w-[52px] h-[52px] rounded-none bg-blue-50 text-blue-600 flex items-center justify-center shrink-0"><Users className="w-6 h-6" /></div>
           <div>
-            <h3 className="text-[22px] font-black text-slate-900 leading-none mb-1.5">{stats?.total_schools ?? 0}</h3>
-            <p className="text-[12px] font-bold text-slate-700 leading-tight">Total Schools</p>
-            <p className="text-[11px] text-slate-400">Active campuses</p>
+            <h3 className="text-[22px] font-black text-slate-900 leading-none mb-1.5">{MOCK_MONITORED_STUDENTS}</h3>
+            <p className="text-[12px] font-bold text-slate-700 leading-tight">Monitored Students</p>
+            <p className="text-[11px] text-slate-400">Mock class-hour data</p>
           </div>
         </div>
         <div className="bg-white rounded-none border border-slate-100 shadow-sm p-5 flex items-center gap-4">
           <div className="w-[52px] h-[52px] rounded-none bg-emerald-50 text-emerald-500 flex items-center justify-center shrink-0"><MapPin className="w-6 h-6 fill-emerald-500" /></div>
           <div>
-            <h3 className="text-[22px] font-black text-slate-900 leading-none mb-1.5">{stats?.active_geofences ?? 0}</h3>
-            <p className="text-[12px] font-bold text-slate-700 leading-tight">Active Geofences</p>
-            <p className="text-[11px] text-slate-400">Currently monitoring</p>
+            <h3 className="text-[22px] font-black text-slate-900 leading-none mb-1.5">{MOCK_MONITORED_STUDENTS - MOCK_BOUNDARY_ALERTS.length}</h3>
+            <p className="text-[12px] font-bold text-slate-700 leading-tight">Inside Boundary</p>
+            <p className="text-[11px] text-slate-400">Within school perimeter</p>
           </div>
         </div>
         <div className="bg-white rounded-none border border-slate-100 shadow-sm p-5 flex items-center gap-4">
-          <div className="w-[52px] h-[52px] rounded-none bg-blue-50 text-blue-500 flex items-center justify-center shrink-0"><Users className="w-6 h-6" /></div>
+          <div className="w-[52px] h-[52px] rounded-none bg-red-50 text-red-600 flex items-center justify-center shrink-0"><ShieldAlert className="w-6 h-6" /></div>
           <div>
-            <h3 className="text-[22px] font-black text-slate-900 leading-none mb-1.5">{(stats?.total_students ?? 0).toLocaleString()}</h3>
-            <p className="text-[12px] font-bold text-slate-700 leading-tight">Students Located</p>
-            <p className="text-[11px] text-slate-400">Within campus</p>
+            <h3 className="text-[22px] font-black text-slate-900 leading-none mb-1.5">{MOCK_BOUNDARY_ALERTS.length}</h3>
+            <p className="text-[12px] font-bold text-slate-700 leading-tight">Outside Now</p>
+            <p className="text-[11px] text-slate-400">During class hours</p>
           </div>
         </div>
         <div className="bg-white rounded-none border border-slate-100 shadow-sm p-5 flex items-center gap-4">
-          <div className="w-[52px] h-[52px] rounded-none bg-purple-50 text-purple-600 flex items-center justify-center shrink-0"><Map className="w-6 h-6" /></div>
+          <div className="w-[52px] h-[52px] rounded-none bg-amber-50 text-amber-600 flex items-center justify-center shrink-0"><Bell className="w-6 h-6" /></div>
           <div>
-            <h3 className="text-[22px] font-black text-slate-900 leading-none mb-1.5">{stats?.total_area ?? 0} km²</h3>
-            <p className="text-[12px] font-bold text-slate-700 leading-tight">Campus Area</p>
-            <p className="text-[11px] text-slate-400">Total coverage</p>
+            <h3 className="text-[22px] font-black text-slate-900 leading-none mb-1.5">{MOCK_BOUNDARY_ALERTS.filter(alert => alert.notificationStatus === 'Parent notified').length}</h3>
+            <p className="text-[12px] font-bold text-slate-700 leading-tight">Parents Notified</p>
+            <p className="text-[11px] text-slate-400">1 alert queued</p>
           </div>
         </div>
         </div>
@@ -574,127 +538,68 @@ export default function SchoolMap({ mode = 'admin' }: { mode?: 'admin' | 'princi
         {mapElement}
       </div>
 
-      {/* Schools Table Section (Hidden for Principals) */}
+      {/* Preview-only boundary alerts (hidden for principals) */}
       {mode !== 'principal' && (
         <div className="bg-white border border-slate-100 shadow-sm rounded-none overflow-hidden mb-8">
         <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h2 className="text-[15px] font-bold text-slate-900">Schools ({schools.length})</h2>
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search schools..."
-                value={schoolSearchTerm}
-                onChange={e => setSchoolSearchTerm(e.target.value)}
-                className="pl-9 pr-4 py-2 border border-slate-200 rounded-none text-[13px] text-slate-700 w-full sm:w-64 outline-none focus:border-slate-300 transition-colors placeholder:text-slate-400"
-              />
+          <div>
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5 text-red-600" aria-hidden="true" />
+              <h2 id="boundary-alerts-title" className="text-[15px] font-bold text-slate-900">Boundary Alerts</h2>
             </div>
-            <Dialog open={addDialogOpen} onOpenChange={(open) => { setAddDialogOpen(open); if (!open) { setEditingSchoolId(null); setFormData({ name: '', type: 'Elementary', latitude: '', longitude: '', student_count: '0', status: 'Active', geofence_area: '' }); } }}>
-              <DialogTrigger className="flex items-center gap-1.5 px-4 py-2.5 bg-[#0B3A82] hover:bg-rose-900 text-white rounded-none text-[13px] font-bold transition-colors shadow-sm shrink-0">
-                <Plus className="w-4 h-4" /> {editingSchoolId ? 'Edit School' : 'Add School'}
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[480px] rounded-none p-6">
-                <DialogHeader>
-                  <DialogTitle className="text-xl font-bold">{editingSchoolId ? 'Edit School' : 'Add School'}</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 mt-4">
-                  <div>
-                    <Label className="text-sm font-semibold">School Name</Label>
-                    <Input value={formData.name} onChange={e => setFormData(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Trento Central School" className="mt-1" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm font-semibold">Type</Label>
-                      <select value={formData.type} onChange={e => setFormData(p => ({ ...p, type: e.target.value }))} className="flex h-10 w-full rounded-none border border-slate-200 bg-white px-3 py-2 text-sm mt-1">
-                        <option>Elementary</option>
-                        <option>Secondary</option>
-                        <option>Tertiary</option>
-                      </select>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-semibold">Status</Label>
-                      <select value={formData.status} onChange={e => setFormData(p => ({ ...p, status: e.target.value }))} className="flex h-10 w-full rounded-none border border-slate-200 bg-white px-3 py-2 text-sm mt-1">
-                        <option>Active</option>
-                        <option>Inactive</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm font-semibold">Latitude</Label>
-                      <Input value={formData.latitude} onChange={e => setFormData(p => ({ ...p, latitude: e.target.value }))} placeholder="8.0461" className="mt-1" />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-semibold">Longitude</Label>
-                      <Input value={formData.longitude} onChange={e => setFormData(p => ({ ...p, longitude: e.target.value }))} placeholder="126.0617" className="mt-1" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm font-semibold">Student Count</Label>
-                      <Input value={formData.student_count} onChange={e => setFormData(p => ({ ...p, student_count: e.target.value }))} placeholder="0" className="mt-1" />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-semibold">Area (km²)</Label>
-                      <Input value={formData.geofence_area} onChange={e => setFormData(p => ({ ...p, geofence_area: e.target.value }))} placeholder="0.00" className="mt-1" />
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-3 pt-2">
-                    <Button variant="outline" onClick={() => setAddDialogOpen(false)}>Cancel</Button>
-                    <Button onClick={addSchool} className="bg-[#0B3A82] hover:bg-rose-900 text-white">
-                      {editingSchoolId ? 'Save Changes' : 'Add School'}
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <p className="mt-1 text-[12px] text-slate-500">Preview of alerts created when a student leaves campus during class hours.</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-800">Mock data</span>
+            <span className="border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-800">Class-hours rule active</span>
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                <th className="px-6 py-4 font-bold">School Name</th>
-                <th className="px-6 py-4 font-bold">Type</th>
-                <th className="px-6 py-4 font-bold">Students</th>
-                <th className="px-6 py-4 font-bold">Status</th>
-                <th className="px-6 py-4 font-bold">Geofence Area</th>
-                <th className="px-6 py-4 font-bold">Last Updated</th>
-                <th className="px-6 py-4 font-bold text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredSchools.map(school => (
-                <tr key={school.id} className={`hover:bg-slate-50 transition-colors group cursor-pointer ${selectedSchoolId === school.id ? 'bg-rose-50/50' : ''}`} onClick={() => flyToSchool(school)}>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <MapPin className={`w-4 h-4 shrink-0 ${selectedSchoolId === school.id ? 'text-red-500 fill-red-500' : 'text-blue-500 fill-blue-500'}`} />
-                      <span className="text-[13px] font-bold text-slate-800">{school.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-[13px] text-slate-600 font-medium">{school.type}</td>
-                  <td className="px-6 py-4 text-[13px] text-slate-600 font-medium">{school.student_count}</td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-none text-[11px] font-bold ${school.status === 'Active' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>{school.status}</span>
-                  </td>
-                  <td className="px-6 py-4 text-[13px] text-slate-600 font-medium">{school.geofence_area ? `${school.geofence_area} km²` : '—'}</td>
-                  <td className="px-6 py-4 text-[13px] text-slate-600 font-medium">{new Date(school.updated_at || school.created_at || new Date().toISOString()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
-                      <button onClick={() => flyToSchool(school)} className="w-7 h-7 flex items-center justify-center rounded-none text-slate-400 hover:text-slate-600 hover:bg-slate-100 border border-slate-200"><Eye className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => openEditSchool(school)} className="w-7 h-7 flex items-center justify-center rounded-none text-slate-400 hover:text-slate-600 hover:bg-slate-100 border border-slate-200"><Edit2 className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => deleteSchool(school.id)} className="w-7 h-7 flex items-center justify-center rounded-none text-red-400 hover:text-red-600 hover:bg-red-50 border border-slate-200"><Trash2 className="w-3.5 h-3.5" /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filteredSchools.length === 0 && (
-                <tr><td colSpan={7} className="px-6 py-12 text-center text-slate-400 font-medium">No schools found</td></tr>
-              )}
-            </tbody>
-          </table>
+        <div className="divide-y divide-slate-100" aria-labelledby="boundary-alerts-title">
+          {MOCK_BOUNDARY_ALERTS.map(alert => (
+            <article key={alert.id} className="grid gap-4 p-5 md:grid-cols-[minmax(180px,1.2fr)_minmax(150px,0.8fr)_minmax(180px,1fr)_auto] md:items-center">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center bg-red-50 text-sm font-black text-red-700">
+                  {alert.name.split(' ').map(part => part[0]).slice(0, 2).join('')}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-[13px] font-bold text-slate-900">{alert.name}</p>
+                  <p className="truncate text-[12px] text-slate-500">{alert.className}</p>
+                </div>
+              </div>
+
+              <div>
+                <p className="flex items-center gap-1.5 text-[12px] font-bold text-red-700">
+                  <ShieldAlert className="h-4 w-4" aria-hidden="true" />
+                  {alert.distance}
+                </p>
+                <p className="mt-1 text-[11px] text-slate-500">Detected at {alert.detectedAt}</p>
+              </div>
+
+              <div>
+                <p className="flex items-center gap-1.5 text-[12px] font-semibold text-slate-700">
+                  <Clock3 className="h-4 w-4 text-slate-400" aria-hidden="true" />
+                  {alert.schedule}
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {alert.channels.map(channel => (
+                    <span key={channel} className="inline-flex items-center gap-1 border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-600">
+                      {channel === 'Email' ? <Mail className="h-3 w-3" aria-hidden="true" /> : channel === 'App vibration' ? <Smartphone className="h-3 w-3" aria-hidden="true" /> : <Bell className="h-3 w-3" aria-hidden="true" />}
+                      {channel}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <span className={`w-fit whitespace-nowrap px-2.5 py-1.5 text-[11px] font-bold ${alert.notificationStatus === 'Parent notified' ? 'border border-emerald-200 bg-emerald-50 text-emerald-800' : 'border border-amber-200 bg-amber-50 text-amber-800'}`}>
+                {alert.notificationStatus}
+              </span>
+            </article>
+          ))}
+        </div>
+        <div className="flex items-start gap-3 border-t border-blue-100 bg-blue-50/70 p-5 text-[12px] text-blue-900">
+          <Bell className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <p><span className="font-bold">Planned workflow:</span> during configured class hours, leaving the school boundary will trigger the dedicated parent app vibration and push alert, with email available as a fallback. This screen is a visual preview only.</p>
         </div>
         </div>
       )}
