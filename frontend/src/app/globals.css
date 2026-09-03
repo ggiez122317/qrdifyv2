@@ -53,6 +53,12 @@
   --color-brand-success: #22C55E;
 }
 
+html[data-compact-tables="true"] table th,
+html[data-compact-tables="true"] table td {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #111827;

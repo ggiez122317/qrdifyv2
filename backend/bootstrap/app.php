@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->api(append: [
             \App\Http\Middleware\CheckBlockedUser::class,
+            \App\Http\Middleware\ApplySystemPreferences::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

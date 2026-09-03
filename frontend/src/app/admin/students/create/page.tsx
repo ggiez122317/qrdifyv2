@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,8 +9,7 @@ import { PhotoUploader } from '@/components/ui/PhotoUploader';
 import { ChevronLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
-import apiClient from '@/lib/axios';
+import api from '@/lib/axios';
 import { getImageUrl } from '@/lib/utils';
 
 interface Teacher {
@@ -36,7 +34,6 @@ export default function CreateStudentPage() {
     parent_name: '',
     parent_phone: '',
     photo_base64: '',
-    subjects: [] as number[],
     teacher_id: null as number | null
   });
   
@@ -47,9 +44,9 @@ export default function CreateStudentPage() {
   const [isTeacherDropdownOpen, setIsTeacherDropdownOpen] = useState(false);
 
   useEffect(() => {
-    apiClient.get('/api/grade-levels').then(r => setGradeLevels(r.data));
-    apiClient.get('/api/sections/list-all').then(r => setSections(r.data));
-    apiClient.get('/api/teachers').then(r => setTeachers(r.data.data || r.data));
+    api.get('/api/grade-levels').then(r => setGradeLevels(r.data));
+    api.get('/api/sections/list-all').then(r => setSections(r.data));
+    api.get('/api/teachers').then(r => setTeachers(r.data.data || r.data));
   }, []);
 
   const [activeSide, setActiveSide] = useState<'front' | 'back'>('front');
@@ -68,7 +65,7 @@ export default function CreateStudentPage() {
     lrn: formData.lrn,
     photo_url: null as string | null,
     student_profile: {
-      grade_level: formData.grade_level,
+      grade: formData.grade_level,
       section: formData.section,
       parent_name: formData.parent_name,
       parent_phone: formData.parent_phone
@@ -80,15 +77,14 @@ export default function CreateStudentPage() {
     setIsSubmitting(true);
     
     try {
-      await api.students.create(formData as Record<string, unknown>);
+      await api.post('/api/students', formData);
       localStorage.setItem('toast_message', 'Student record created successfully');
       router.push('/admin/students');
     } catch (error: unknown) {
       // Extract specific validation errors from Laravel 422 response
-      const responseData = axios.isAxiosError<{
-        errors?: Record<string, string[]>;
-        message?: string;
-      }>(error) ? error.response?.data : undefined;
+      const responseData = typeof error === 'object' && error !== null && 'response' in error
+        ? (error as { response?: { data?: { errors?: Record<string, string[]>; message?: string } } }).response?.data
+        : undefined;
       let msg = 'Failed to save student.';
       
       if (responseData?.errors) {
@@ -286,7 +282,7 @@ export default function CreateStudentPage() {
                     Cancel
                   </Button>
                 </Link>
-                <Button type="submit" disabled={isSubmitting} className="bg-maroon-600 hover:bg-maroon-700 text-white shadow-sm font-bold text-base h-12 px-10 min-w-[240px]">
+                <Button type="submit" disabled={isSubmitting} className="bg-[#0B3A82] hover:bg-[#092f69] text-white shadow-sm font-bold text-base h-12 px-10 min-w-[240px]">
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-5 h-5 mr-2 animate-spin" />

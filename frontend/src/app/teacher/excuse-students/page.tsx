@@ -160,7 +160,7 @@ export default function TeacherExcuseStudents() {
                                 {letter.student?.photo_url ? (
                                   <img src={getImageUrl(letter.student.photo_url)} alt={letter.student?.name} className="w-full h-full object-cover" />
                                 ) : (
-                                  getInitials(letter.student?.name)
+                                              getInitials(letter.student?.name || 'Unknown')
                                 )}
                               </div>
                             </div>

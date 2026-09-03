@@ -54,9 +54,20 @@ class SystemController extends Controller
     public function getLogs(Request $request): JsonResponse
     {
         $perPage = min((int) $request->get('per_page', 50), 100);
-        $logs = ActivityLog::with('user:id,name,email,photo_url')
-            ->orderBy('created_at', 'desc')
-            ->paginate($perPage);
+        $query = ActivityLog::with('user:id,name,email,photo_url');
+
+        if ($search = trim((string) $request->get('search', ''))) {
+            $query->where(function ($builder) use ($search) {
+                $builder->where('action', 'like', "%{$search}%")
+                    ->orWhere('ip_address', 'like', "%{$search}%")
+                    ->orWhereHas('user', function ($userQuery) use ($search) {
+                        $userQuery->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $logs = $query->orderBy('created_at', 'desc')->paginate($perPage);
 
         return response()->json($logs);
     }
@@ -69,11 +80,12 @@ class SystemController extends Controller
         $perPage = min((int) $request->get('per_page', 50), 100);
         $query = User::with('roles')->orderBy('created_at', 'desc');
 
-        if ($request->has('search') && !empty($request->search)) {
-            $query->where(function($q) use ($request) {
-                $q->where('name', 'like', "%{$request->search}%")
-                  ->orWhere('email', 'like', "%{$request->search}%")
-                  ->orWhere('id_number', 'like', "%{$request->search}%");
+        if ($search = trim((string) $request->get('search', ''))) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('id_number', 'like', "%{$search}%")
+                  ->orWhereHas('roles', fn ($roleQuery) => $roleQuery->where('name', 'like', "%{$search}%"));
             });
         }
 

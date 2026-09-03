@@ -10,6 +10,7 @@ use App\Models\Attendance;
 use App\Models\StudentProfile;
 use App\Models\User;
 use App\Models\Schedule;
+use App\Models\Section;
 use App\Models\ExcuseLetter;
 use App\Notifications\AlarmNotification;
 use App\Notifications\ExcuseLetterNotification;
@@ -43,7 +44,7 @@ class StudentController extends Controller
         $perPage = min((int) $request->get('per_page', 50), 100);
 
         $query = User::students()
-            ->with('studentProfile:id,user_id,grade,section,parent_name,parent_phone,teacher_id')
+            ->with(['studentProfile:id,user_id,grade,section,section_id,parent_name,parent_phone,teacher_id', 'studentProfile.section:id,name,grade_level'])
             ->select('id', 'name', 'email', 'id_number', 'photo_url');
 
         // Search filter
@@ -59,6 +60,9 @@ class StudentController extends Controller
 
         // Transform paginated results while preserving pagination metadata
         $students->getCollection()->transform(function ($user) {
+            $profile = $user->studentProfile;
+            $section = $profile?->getRelation('section');
+
             return [
                 'id'              => $user->id,
                 'name'            => $user->name,
@@ -66,7 +70,13 @@ class StudentController extends Controller
                 'email'           => $user->email,
                 'status'          => 'enrolled',
                 'photo_url'       => $user->photo_url,
-                'student_profile' => $user->student_profile,
+                'student_profile' => $profile ? [
+                    'grade'        => $profile->grade ?: $section?->grade_level,
+                    'section'      => $section?->name ?: $profile->getRawOriginal('section'),
+                    'section_id'   => $profile->section_id,
+                    'parent_name'  => $profile->parent_name,
+                    'parent_phone' => $profile->parent_phone,
+                ] : null,
             ];
         });
 
@@ -125,8 +135,11 @@ class StudentController extends Controller
     {
         try {
             $student = User::students()
-                ->with('studentProfile')
+                ->with('studentProfile.section')
                 ->findOrFail($id);
+
+            $profile = $student->studentProfile;
+            $section = $profile?->getRelation('section');
 
             return response()->json([
                 'id'              => $student->id,
@@ -135,7 +148,13 @@ class StudentController extends Controller
                 'email'           => $student->email,
                 'status'          => 'enrolled',
                 'photo_url'       => $student->photo_url,
-                'student_profile' => $student->studentProfile,
+                'student_profile' => $profile ? [
+                    'grade'        => $profile->grade ?: $section?->grade_level,
+                    'section'      => $section?->name ?: $profile->getRawOriginal('section'),
+                    'section_id'   => $profile->section_id,
+                    'parent_name'  => $profile->parent_name,
+                    'parent_phone' => $profile->parent_phone,
+                ] : null,
             ]);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json(['message' => 'Student not found.'], 404);
@@ -167,10 +186,15 @@ class StudentController extends Controller
                 'id_number' => $lrn,
             ]);
 
-            if ($user->student_profile) {
-                $user->student_profile->update([
+            if ($user->studentProfile) {
+                $section = $request->section
+                    ? Section::where('name', $request->section)->first()
+                    : null;
+
+                $user->studentProfile->update([
                     'grade'        => $request->grade_level,
                     'section'      => $request->section,
+                    'section_id'   => $section?->id,
                     'parent_name'  => $request->parent_name,
                     'parent_phone' => $request->parent_phone,
                 ]);
@@ -180,7 +204,7 @@ class StudentController extends Controller
 
             return response()->json([
                 'message' => 'Student updated successfully',
-                'student' => $user->load('studentProfile'),
+                'student' => $user->load('studentProfile.section'),
             ]);
         } catch (\Exception $e) {
             DB::rollBack();

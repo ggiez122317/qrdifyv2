@@ -1,6 +1,6 @@
 'use client';
 /* eslint-disable @next/next/no-img-element */
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '@/lib/axios';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,8 @@ export default function UserManagementPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -42,24 +44,25 @@ export default function UserManagementPage() {
   const itemsPerPage = 10;
 
   const fetchUsers = React.useCallback(async () => {
+    setIsLoading(true);
     try {
-      const res = await api.get('/api/system/users?per_page=1000');
+      const res = await api.get('/api/system/users', {
+        params: { page: currentPage, per_page: itemsPerPage, search: searchTerm },
+      });
       const data = Array.isArray(res.data) ? res.data : (res.data.data || []);
       setUsers(data);
+      setTotalRecords(res.data.total ?? data.length);
+      setTotalPages(res.data.last_page ?? 1);
     } catch (err) {
       console.error('Network error fetching users', err);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [currentPage, searchTerm]);
 
   useEffect(() => {
-    let isMounted = true;
-    if (isMounted) {
-      // eslint-disable-next-line
-      fetchUsers();
-    }
-    return () => { isMounted = false; };
+    const timer = setTimeout(fetchUsers, 300);
+    return () => clearTimeout(timer);
   }, [fetchUsers]);
 
   const handleBlockUser = async (userId: number, currentName: string, isBlocked: boolean) => {
@@ -103,22 +106,6 @@ export default function UserManagementPage() {
     }
   };
 
-  const filteredUsers = useMemo(() => {
-    return users.filter((user) => {
-      const matchesSearch = 
-        user.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.roles?.[0]?.name?.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesSearch;
-    });
-  }, [users, searchTerm]);
-
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-  const paginatedUsers = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredUsers.slice(start, start + itemsPerPage);
-  }, [filteredUsers, currentPage]);
-
   return (
     <>
       <div className="max-w-[1400px] mx-auto w-full bg-[#f8f9fa] min-h-screen p-6 sm:p-8">
@@ -148,7 +135,7 @@ export default function UserManagementPage() {
               type="text"
               placeholder="Search by name, email, or role..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
               className="pl-10 h-11 w-full bg-[#f8f9fa] border-none text-[13px] font-medium placeholder:text-slate-400 rounded-none focus:ring-2 focus:ring-[#0B3A82]/20 transition-all"
             />
           </div>
@@ -170,7 +157,7 @@ export default function UserManagementPage() {
               <TableBody>
                 {isLoading ? (
                   <TableLoadingState colSpan={5} />
-                ) : paginatedUsers.length === 0 ? (
+                ) : users.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="h-64 text-center">
                       <div className="flex flex-col items-center justify-center text-slate-400">
@@ -181,7 +168,7 @@ export default function UserManagementPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedUsers.map((user) => (
+                  users.map((user) => (
                     <TableRow key={user.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors group">
                       <TableCell className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -258,7 +245,7 @@ export default function UserManagementPage() {
           {/* Pagination */}
           <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-[#fafafa]/50">
             <div className="text-[13px] font-bold text-slate-500">
-              Showing {filteredUsers.length === 0 ? 0 : ((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredUsers.length)} of {filteredUsers.length} entries
+              Showing {totalRecords === 0 ? 0 : ((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalRecords)} of {totalRecords} entries
             </div>
             
             <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-none p-1 shadow-sm">
@@ -266,7 +253,7 @@ export default function UserManagementPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1 || filteredUsers.length === 0}
+                disabled={currentPage === 1 || users.length === 0}
                 className="h-8 w-8 p-0 rounded-none text-slate-500 hover:text-slate-900"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -301,7 +288,7 @@ export default function UserManagementPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages || filteredUsers.length === 0}
+                disabled={currentPage === totalPages || users.length === 0}
                 className="h-8 w-8 p-0 rounded-none text-slate-500 hover:text-slate-900"
               >
                 <ChevronRight className="h-4 w-4" />

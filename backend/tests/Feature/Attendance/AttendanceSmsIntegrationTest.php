@@ -154,6 +154,68 @@ class AttendanceSmsIntegrationTest extends TestCase
         Queue::assertNothingPushed();
     }
 
+    public function test_check_in_sms_is_not_created_when_check_in_notifications_are_disabled(): void
+    {
+        Queue::fake();
+        Event::fake();
+        $this->setSetting('enable_sms_notifications', 'true', 'boolean');
+        $this->setSetting('notify_check_in', 'false', 'boolean');
+        Carbon::setTestNow('2026-09-02 07:28:00');
+        $user = User::factory()->create();
+
+        $result = $this->service()->processScan(
+            'STUDENT-1',
+            $this->cachedStudent($user, '09171234567'),
+        );
+
+        $this->assertFalse($result['duplicate']);
+        $this->assertDatabaseCount('attendance_logs', 1);
+        $this->assertDatabaseCount('sms_deliveries', 0);
+        Queue::assertNothingPushed();
+    }
+
+    public function test_late_sms_is_not_created_when_late_notifications_are_disabled(): void
+    {
+        Queue::fake();
+        Event::fake();
+        $this->setSetting('enable_sms_notifications', 'true', 'boolean');
+        $this->setSetting('notify_late', 'false', 'boolean');
+        Carbon::setTestNow('2026-09-02 07:46:00');
+        $user = User::factory()->create();
+
+        $result = $this->service()->processScan(
+            'STUDENT-1',
+            $this->cachedStudent($user, '09171234567'),
+        );
+
+        $this->assertSame('late', $result['status']);
+        $this->assertDatabaseCount('attendance_logs', 1);
+        $this->assertDatabaseCount('sms_deliveries', 0);
+        Queue::assertNothingPushed();
+    }
+
+    public function test_early_time_out_sms_is_not_created_when_early_notifications_are_disabled(): void
+    {
+        Queue::fake();
+        Event::fake();
+        $this->setSetting('enable_sms_notifications', 'true', 'boolean');
+        $this->setSetting('scan_deduplication_seconds', '10', 'integer');
+        $this->setSetting('notify_early', 'false', 'boolean');
+        $user = User::factory()->create();
+        $cachedUser = $this->cachedStudent($user, '09171234567');
+
+        Carbon::setTestNow('2026-09-02 07:28:00');
+        $this->service()->processScan('STUDENT-1', $cachedUser, 'request-1');
+        Carbon::setTestNow('2026-09-02 07:28:11');
+        $timeOut = $this->service()->processScan('STUDENT-1', $cachedUser, 'request-2');
+
+        $this->assertSame('Time Out (Log)', $timeOut['type']);
+        $this->assertDatabaseCount('attendance_logs', 2);
+        $this->assertDatabaseCount('sms_deliveries', 1);
+        $this->assertSame('in', SmsDelivery::sole()->event_type);
+        Queue::assertPushed(SendSmsDelivery::class, 1);
+    }
+
     private function service(): AttendanceService
     {
         return app(AttendanceService::class);

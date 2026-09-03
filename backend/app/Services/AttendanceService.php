@@ -49,13 +49,15 @@ class AttendanceService
         }
 
         $scannedAt = now();
-        $startTime = (string) $this->settings->get('school_start_time', '08:00');
-        $schoolEndTime = (string) $this->settings->get('school_end_time', '16:00');
+        $systemSettings = $this->settings->all();
+        $startTime = (string) ($systemSettings['school_start_time'] ?? '08:00');
+        $schoolEndTime = (string) ($systemSettings['school_end_time'] ?? '16:00');
         $deduplicationSeconds = max(
             0,
-            (int) $this->settings->get('scan_deduplication_seconds', 10),
+            (int) ($systemSettings['scan_deduplication_seconds'] ?? 10),
         );
-        $smsEnabled = (bool) $this->settings->get('enable_sms_notifications', false);
+        $smsEnabled = (bool) ($systemSettings['enable_sms_notifications'] ?? false);
+        $pushEnabled = (bool) ($systemSettings['enable_push_notifications'] ?? true);
         $recipient = $this->phoneNumbers->normalizePhilippineMobile($parentPhone);
         $storedIdempotencyKey = $idempotencyKey
             ? hash('sha256', $userId.'|'.trim($idempotencyKey))
@@ -69,6 +71,7 @@ class AttendanceService
             $startTime,
             $schoolEndTime,
             $deduplicationSeconds,
+            $systemSettings,
             $smsEnabled,
             $recipient,
             $storedIdempotencyKey,
@@ -162,8 +165,15 @@ class AttendanceService
             ]);
 
             $delivery = null;
+            $notificationsEnabled = $this->notificationsEnabledFor(
+                $logType,
+                $status,
+                $scannedAt,
+                $schoolEndTime,
+                $systemSettings,
+            );
 
-            if ($role === 'student' && $smsEnabled && $recipient !== null) {
+            if ($role === 'student' && $smsEnabled && $notificationsEnabled && $recipient !== null) {
                 $eventText = $logType === 'in' ? 'entered' : 'left';
                 $schoolName = (string) config('sms.school_name', 'School');
                 $message = "[{$schoolName}] Your child {$userName} {$eventText} the school at {$scannedAt->format('h:i A')}.";
@@ -191,6 +201,7 @@ class AttendanceService
                 'status' => $status,
                 'log_type' => $logType,
                 'delivery_id' => $delivery?->id,
+                'notifications_enabled' => $notificationsEnabled,
             ];
         }, 3);
 
@@ -209,7 +220,7 @@ class AttendanceService
             return $result;
         }
 
-        if ($role === 'student' && $teacherId) {
+        if ($role === 'student' && $teacherId && $pushEnabled && $result['notifications_enabled']) {
             $teacher = User::find($teacherId);
             $teacher?->notify(new StudentScannedNotification(
                 $userName,
@@ -233,6 +244,24 @@ class AttendanceService
         return $result;
     }
 
+    private function notificationsEnabledFor(
+        string $logType,
+        string $status,
+        Carbon $scannedAt,
+        string $schoolEndTime,
+        array $settings,
+    ): bool {
+        $eventEnabled = $logType === 'in'
+            ? (bool) ($settings['notify_check_in'] ?? true)
+            : (bool) ($settings['notify_check_out'] ?? true);
+        $lateEnabled = $status !== 'late' || (bool) ($settings['notify_late'] ?? true);
+        $earlyEnabled = $logType !== 'out'
+            || $scannedAt->format('H:i') >= $schoolEndTime
+            || (bool) ($settings['notify_early'] ?? true);
+
+        return $eventEnabled && $lateEnabled && $earlyEnabled;
+    }
+
     private function duplicateScanResult(AttendanceLog $log): array
     {
         return [
@@ -242,6 +271,7 @@ class AttendanceService
             'status' => $log->status ?? 'present',
             'log_type' => $log->type,
             'delivery_id' => null,
+            'notifications_enabled' => false,
         ];
     }
 
