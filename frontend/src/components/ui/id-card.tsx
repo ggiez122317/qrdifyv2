@@ -36,6 +36,9 @@ export function IdCardPreview({ user, type, printRef, activeSide = 'both', photo
     principal_name: 'MERLE B. ALSONADO',
     principal_position: 'PRINCIPAL I',
     principal_signature: '',
+    student_id_template_mode: 'default',
+    student_id_front_template: '',
+    student_id_back_template: '',
     school_year: `${currentYear}-${currentYear + 1}`,
   };
   const { data: idPreferences = defaultIdPreferences } = useQuery({
@@ -52,6 +55,9 @@ export function IdCardPreview({ user, type, printRef, activeSide = 'both', photo
   const idNumber = type === 'teacher'
     ? (user?.employee_id || 'TID-2026-0000')
     : (user?.lrn || '132019240057');
+  const useCustomStudentTemplates = idPreferences.student_id_template_mode === 'custom';
+  const studentFrontTemplate = useCustomStudentTemplates ? getImageUrl(idPreferences.student_id_front_template) : undefined;
+  const studentBackTemplate = useCustomStudentTemplates ? getImageUrl(idPreferences.student_id_back_template) : undefined;
 
   const renderCardFront = () => {
     if (type === 'teacher') {
@@ -110,7 +116,11 @@ export function IdCardPreview({ user, type, printRef, activeSide = 'both', photo
     }
 
     return (
-      <div style={{ width: '260px', height: '414px', borderRadius: '0px', overflow: 'hidden', background: '#dcebfa', position: 'relative', outline: '1px solid #e2e8f0', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', flexShrink: 0, display: (activeSide === 'both' || activeSide === 'front') ? 'block' : 'none' }}>
+      <div style={{ width: '260px', height: '414px', borderRadius: '0px', overflow: 'hidden', background: studentFrontTemplate ? '#fff' : '#dcebfa', position: 'relative', outline: '1px solid #e2e8f0', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', flexShrink: 0, display: (activeSide === 'both' || activeSide === 'front') ? 'block' : 'none' }}>
+
+        {studentFrontTemplate && (
+          <img src={studentFrontTemplate} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'fill', zIndex: 0 }} alt="" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+        )}
 
         {/* Faint Watermark (Center) */}
         <div style={{ position: 'absolute', top: '130px', left: '10px', width: '240px', height: '240px', opacity: 0.08, zIndex: 1, pointerEvents: 'none' }}>
@@ -132,9 +142,11 @@ export function IdCardPreview({ user, type, printRef, activeSide = 'both', photo
 
         {/* Waves SVG */}
         {/* Waves Image */}
-        <div style={{ position: 'absolute', top: '30px', left: '-5%', width: '115%', height: '90px', zIndex: 5 }}>
-          <img src="/id-assets/wave.png" style={{ width: '100%', height: '100%', objectFit: 'fill' }} alt="Waves" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-        </div>
+        {!studentFrontTemplate && (
+          <div style={{ position: 'absolute', top: '30px', left: '-5%', width: '115%', height: '90px', zIndex: 5 }}>
+            <img src="/id-assets/wave.png" style={{ width: '100%', height: '100%', objectFit: 'fill' }} alt="Waves" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+          </div>
+        )}
 
         {/* Middle Section (Text) */}
         <div style={{ position: 'relative', marginTop: '25px', textAlign: 'center', zIndex: 10 }}>
@@ -157,7 +169,7 @@ export function IdCardPreview({ user, type, printRef, activeSide = 'both', photo
         </div>
 
         {/* Name Bar */}
-        <div style={{ position: 'absolute', bottom: '84px', left: 0, width: '100%', height: '38px', background: '#d9f906', zIndex: 15, display: 'flex', alignItems: 'center' }}>
+        <div style={{ position: 'absolute', bottom: '84px', left: 0, width: '100%', height: '38px', background: '#02285F', zIndex: 15, display: 'flex', alignItems: 'center' }}>
           <div style={{ position: 'absolute', left: '8px', right: '0px', top: '3px', bottom: '3px', background: '#fff', clipPath: 'polygon(12px 0, 100% 0, 100% 100%, 0 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', paddingLeft: '15px', paddingRight: '8px' }}>
             <span style={{ display: 'inline-block', fontSize: name.length > 25 ? '16px' : name.length > 20 ? '18px' : name.length > 15 ? '20px' : '24px', fontWeight: 700, color: '#000', fontFamily: '"Arial Narrow", Arial, sans-serif', textTransform: 'uppercase', letterSpacing: '-0.5px', transform: 'scaleY(1.6) scaleX(0.95)', transformOrigin: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'clip', marginTop: '-2px' }}>
               {name}
@@ -177,26 +189,28 @@ export function IdCardPreview({ user, type, printRef, activeSide = 'both', photo
         </div>
 
         {/* Footer Signature */}
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '84px', background: '#0c2340', zIndex: 10, overflow: 'hidden' }}>
-          {/* Medium blue curve overlay */}
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '50px' }}>
-            <svg width="260" height="50" viewBox="0 0 260 50" preserveAspectRatio="none">
-              <path d="M 0,0 C 100,5 180,45 260,45 L 260,0 Z" fill="#3b82f6" />
-            </svg>
-          </div>
-
-          <div style={{ position: 'absolute', bottom: '15px', width: '100%', textAlign: 'center', zIndex: 20 }}>
-            {/* Signature image removed temporarily as requested */}
-            {/* 
-            <div style={{ position: 'absolute', top: '-18px', left: '50%', transform: 'translateX(-65%)', width: '90px', height: '45px', zIndex: 25 }}>
-              <img src="/id-assets/signature.png" style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '84px', background: studentFrontTemplate ? 'transparent' : '#D7ECFA', zIndex: 10, overflow: 'hidden' }}>
+          {/* Mirrored continuation of the wave used on the back of the ID. */}
+          {!studentFrontTemplate && (
+            <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '30px', zIndex: 5, overflow: 'hidden', pointerEvents: 'none' }}>
+              <img src="/id-assets/wave.png" style={{ position: 'absolute', top: '-17px', left: 0, width: '100%', height: '68px', objectFit: 'fill', transform: 'rotate(180deg) scaleX(-1)', transformOrigin: 'center' }} alt="" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
             </div>
-            */}
-            <div style={{ position: 'relative', zIndex: 20 }}>
-              <div style={{ fontSize: '13px', fontWeight: 500, color: '#fff', letterSpacing: '0.5px' }}>
+          )}
+
+          <div style={{ position: 'absolute', inset: 0, width: '100%', textAlign: 'center', zIndex: 20 }}>
+            {idPreferences.principal_signature && (
+              <img
+                src={getImageUrl(idPreferences.principal_signature)}
+                style={{ position: 'absolute', top: '14px', left: '50%', width: '76px', height: '27px', objectFit: 'contain', transform: 'translateX(-50%)', filter: 'brightness(0) drop-shadow(0 0 0.7px #000) drop-shadow(0 0 0.7px #000)' }}
+                alt="Principal e-signature"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
+            )}
+            <div style={{ position: 'absolute', top: '34px', left: '10px', right: '10px', zIndex: 20 }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, lineHeight: 1.15, color: '#000', letterSpacing: '0.4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {idPreferences.principal_name.toUpperCase()}
               </div>
-              <div style={{ fontSize: '10px', fontWeight: 800, color: '#fff', marginTop: '2px' }}>
+              <div style={{ fontSize: '9px', fontWeight: 800, lineHeight: 1.15, color: '#000', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {idPreferences.principal_position.toUpperCase()}
               </div>
             </div>
@@ -277,27 +291,31 @@ export function IdCardPreview({ user, type, printRef, activeSide = 'both', photo
     return (
       <div style={{ width: '260px', height: '414px', borderRadius: '0px', overflow: 'hidden', background: '#fff', position: 'relative', outline: '1px solid #e2e8f0', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', flexShrink: 0, display: (activeSide === 'both' || activeSide === 'back') ? 'flex' : 'none', flexDirection: 'column', padding: '15px' }}>
 
+        {studentBackTemplate && (
+          <img src={studentBackTemplate} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'fill', zIndex: 0 }} alt="" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+        )}
+
         {/* Watermark */}
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.05, pointerEvents: 'none' }}>
           <img src="/id-assets/school-logo.png" style={{ width: '280px', height: '280px', objectFit: 'contain' }} alt="" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
         </div>
 
         {/* Current school-year authorization record */}
-        <div style={{ position: 'relative', zIndex: 10, width: '100%', border: '2px solid #000', borderRadius: '4px', overflow: 'hidden', marginBottom: '5px', color: '#000', background: '#fff', flexShrink: 0, fontFamily: 'Arial, sans-serif' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '27% 28% 45%', height: '30px', borderBottom: '2px solid #000', textAlign: 'center', fontWeight: 900, color: '#000', background: '#fff' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #000', padding: '3px 2px', fontSize: '8px', color: '#000' }}>School Year</div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #000', padding: '3px 2px', fontSize: '8px', color: '#000' }}>Grade</div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '3px 2px', fontSize: '7.5px', lineHeight: 1.05, color: '#000' }}>Principal&apos;s Signature</div>
+        <div style={{ position: 'relative', zIndex: 10, width: '100%', border: '1px solid #111', overflow: 'hidden', marginBottom: '5px', color: '#000', background: '#fff', flexShrink: 0, fontFamily: 'Arial, sans-serif' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', height: '23px', borderBottom: '1px solid #111', textAlign: 'center', fontWeight: 700, color: '#000', background: '#fff' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #111', padding: '2px', fontSize: '7px', lineHeight: 1, color: '#000' }}>School Year</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #111', padding: '2px', fontSize: '7px', lineHeight: 1, color: '#000' }}>Grade</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2px', fontSize: '6.5px', lineHeight: 1, color: '#000' }}>Principal&apos;s Signature</div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '27% 28% 45%', height: '60px', textAlign: 'center', color: '#000', background: '#fff' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #000', padding: '3px 2px', fontSize: '10px', lineHeight: 1, fontWeight: 900, whiteSpace: 'nowrap', color: '#000', opacity: 1 }}>{schoolYearStr}</div>
-            <div title={gradeAndSection} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #000', padding: '3px 2px', fontSize: '10px', lineHeight: 1, fontWeight: 900, textTransform: 'uppercase', overflow: 'hidden', color: '#000', opacity: 1 }}>{gradeLevel}</div>
-            <div style={{ display: 'flex', minWidth: 0, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2px 3px', overflow: 'hidden', color: '#000' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', height: '48px', textAlign: 'center', color: '#000', background: '#fff' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #111', padding: '2px', fontSize: '8.5px', lineHeight: 1, fontWeight: 700, whiteSpace: 'nowrap', color: '#000' }}>{schoolYearStr}</div>
+            <div title={gradeAndSection} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #111', padding: '2px', fontSize: '8.5px', lineHeight: 1, fontWeight: 700, textTransform: 'uppercase', overflow: 'hidden', color: '#000' }}>{gradeLevel}</div>
+            <div style={{ position: 'relative', minWidth: 0, overflow: 'hidden', color: '#000' }}>
               {idPreferences.principal_signature && (
-                <img src={getImageUrl(idPreferences.principal_signature)} style={{ width: '86px', height: '30px', objectFit: 'contain', display: 'block', flexShrink: 0 }} alt="Principal e-signature" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                <img src={getImageUrl(idPreferences.principal_signature)} style={{ position: 'absolute', top: '2px', left: '50%', width: '44px', height: '17px', objectFit: 'contain', display: 'block', transform: 'translateX(-50%)' }} alt="Principal e-signature" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
               )}
-              <div style={{ width: '100%', fontSize: '7.5px', fontWeight: 900, lineHeight: 1.05, color: '#000', textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', opacity: 1 }}>{idPreferences.principal_name || 'NOT SET'}</div>
-              <div style={{ width: '100%', fontSize: '7px', fontWeight: 800, lineHeight: 1.05, color: '#000', textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', opacity: 1 }}>{idPreferences.principal_position || 'NOT SET'}</div>
+              <div style={{ position: 'absolute', top: '20px', left: '2px', right: '2px', height: '9px', fontSize: '5.8px', fontWeight: 700, lineHeight: '9px', color: '#000', textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{idPreferences.principal_name || 'NOT SET'}</div>
+              <div style={{ position: 'absolute', top: '30px', left: '2px', right: '2px', height: '8px', fontSize: '5.5px', fontWeight: 700, lineHeight: '8px', color: '#000', textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{idPreferences.principal_position || 'NOT SET'}</div>
             </div>
           </div>
         </div>
@@ -319,7 +337,7 @@ export function IdCardPreview({ user, type, printRef, activeSide = 'both', photo
         </div>
 
         {/* QR Code */}
-        <div style={{ position: 'relative', zIndex: 10, width: '130px', height: '130px', margin: '0 auto', marginTop: '10px', marginBottom: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <div style={{ position: 'relative', zIndex: 10, width: '105px', height: '105px', margin: '4px auto 5px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <img
             src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${idNumber}`}
             alt="QR Code"
@@ -330,7 +348,7 @@ export function IdCardPreview({ user, type, printRef, activeSide = 'both', photo
         </div>
 
         {/* Bottom Text */}
-        <div style={{ position: 'relative', zIndex: 10, marginTop: 'auto', textAlign: 'center' }}>
+        <div style={{ position: 'absolute', zIndex: 10, left: '15px', right: '15px', bottom: '18px', textAlign: 'center' }}>
           <div style={{ fontSize: '9.5px', fontWeight: 900, color: '#000', lineHeight: 1.2 }}>
             THIS IS TO CERTIFY THAT THE
           </div>
@@ -346,9 +364,11 @@ export function IdCardPreview({ user, type, printRef, activeSide = 'both', photo
         </div>
 
         {/* Bottom Wave Image */}
-        <div style={{ position: 'absolute', bottom: '-18px', left: '-15%', width: '115%', height: '55px', zIndex: 5, pointerEvents: 'none' }}>
-          <img src="/id-assets/wave.png" style={{ width: '100%', height: '100%', objectFit: 'fill', transform: 'rotate(180deg)' }} alt="Waves" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-        </div>
+        {!studentBackTemplate && (
+          <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '48px', zIndex: 5, overflow: 'hidden', pointerEvents: 'none' }}>
+            <img src="/id-assets/wave.png" style={{ position: 'absolute', top: '-25px', left: 0, width: '100%', height: '105px', objectFit: 'fill', transform: 'rotate(180deg)', transformOrigin: 'center' }} alt="Waves" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+          </div>
+        )}
       </div>
     );
   };

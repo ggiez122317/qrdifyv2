@@ -40,7 +40,8 @@ import {
   Info,
   MapPin,
   Presentation,
-  Camera
+  Camera,
+  Badge
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
@@ -351,7 +352,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const systemNav = [
     ...(isAdmin ? [
       { name: 'Users Logs', href: '/admin/system/logs', icon: FileText },
-      { name: 'User Management', href: '/admin/system/users', icon: Users }
+      { name: 'User Management', href: '/admin/system/users', icon: Users },
+      { name: 'ID Management', href: '/admin/system/id-management', icon: Badge }
     ] : []),
     { name: 'Settings', href: `/${isAdmin ? 'admin' : user.roles[0]}/settings`, icon: Settings },
   ];

@@ -165,6 +165,11 @@ $registerAuthenticatedRoutes = function () {
         });
 
         Route::prefix('system')->group(function () {
+            Route::get('/id-templates', [SettingsController::class, 'idTemplates']);
+            Route::post('/id-templates', [SettingsController::class, 'updateIdTemplates']);
+            Route::patch('/id-templates/mode', [SettingsController::class, 'updateIdTemplateMode']);
+            Route::delete('/id-templates/{side}', [SettingsController::class, 'destroyIdTemplate']);
+
             // Maintenance Mode
             Route::post('/maintenance', [\App\Http\Controllers\Api\SystemController::class, 'toggleMaintenance']);
 

@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class SettingsController extends Controller
@@ -90,6 +91,163 @@ class SettingsController extends Controller
             DB::rollBack();
             return response()->json(['message' => 'Failed to update settings', 'error' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Return the student ID base templates used by the ID renderer.
+     */
+    public function idTemplates(): JsonResponse
+    {
+        return response()->json([
+            'mode' => $this->settings->get('student_id_template_mode', 'default'),
+            'front_template' => $this->settings->get('student_id_front_template', ''),
+            'back_template' => $this->settings->get('student_id_back_template', ''),
+        ]);
+    }
+
+    /**
+     * Upload one or both background-only student ID templates.
+     */
+    public function updateIdTemplates(Request $request): JsonResponse
+    {
+        if (!$request->hasFile('front_template') && !$request->hasFile('back_template')) {
+            throw ValidationException::withMessages([
+                'templates' => 'Choose a front or back template to upload.',
+            ]);
+        }
+
+        $validated = $request->validate([
+            'front_template' => 'sometimes|file|image|mimes:png,jpg,jpeg,webp|max:5120|dimensions:min_width=260,min_height=414',
+            'back_template' => 'sometimes|file|image|mimes:png,jpg,jpeg,webp|max:5120|dimensions:min_width=260,min_height=414',
+        ]);
+
+        $updated = [];
+        foreach (['front_template' => 'student_id_front_template', 'back_template' => 'student_id_back_template'] as $field => $key) {
+            if (!isset($validated[$field])) {
+                continue;
+            }
+
+            $updated[$field] = $this->replaceIdTemplate($key, $field, $validated[$field]);
+        }
+
+        $this->settings->clearCache();
+
+        return response()->json([
+            'message' => 'ID templates updated successfully.',
+            'templates' => array_merge([
+                'mode' => $this->settings->get('student_id_template_mode', 'default'),
+                'front_template' => $this->settings->get('student_id_front_template', ''),
+                'back_template' => $this->settings->get('student_id_back_template', ''),
+            ], $updated),
+        ]);
+    }
+
+    /**
+     * Choose whether student IDs use the built-in design or uploaded templates.
+     */
+    public function updateIdTemplateMode(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'mode' => 'required|in:default,custom',
+        ]);
+
+        if ($validated['mode'] === 'custom') {
+            $hasCustomTemplate = $this->settings->get('student_id_front_template', '')
+                || $this->settings->get('student_id_back_template', '');
+
+            if (!$hasCustomTemplate) {
+                throw ValidationException::withMessages([
+                    'mode' => 'Upload at least one custom template before activating custom mode.',
+                ]);
+            }
+        }
+
+        Setting::updateOrCreate(
+            ['key' => 'student_id_template_mode'],
+            ['value' => $validated['mode'], 'type' => 'string']
+        );
+        $this->settings->clearCache();
+
+        return response()->json([
+            'message' => $validated['mode'] === 'custom'
+                ? 'Custom ID templates are now active.'
+                : 'The current built-in ID design is now active.',
+            'templates' => [
+                'mode' => $validated['mode'],
+                'front_template' => $this->settings->get('student_id_front_template', ''),
+                'back_template' => $this->settings->get('student_id_back_template', ''),
+            ],
+        ]);
+    }
+
+    /**
+     * Remove one custom template and restore the built-in design for that side.
+     */
+    public function destroyIdTemplate(string $side): JsonResponse
+    {
+        $key = match ($side) {
+            'front' => 'student_id_front_template',
+            'back' => 'student_id_back_template',
+            default => null,
+        };
+
+        if (!$key) {
+            return response()->json(['message' => 'Template side must be front or back.'], 422);
+        }
+
+        $current = (string) $this->settings->get($key, '');
+        $this->deleteStoredIdTemplate($current);
+        Setting::updateOrCreate(
+            ['key' => $key],
+            ['value' => '', 'type' => 'image']
+        );
+        $this->settings->clearCache();
+
+        $frontTemplate = (string) $this->settings->get('student_id_front_template', '');
+        $backTemplate = (string) $this->settings->get('student_id_back_template', '');
+        if (!$frontTemplate && !$backTemplate) {
+            Setting::updateOrCreate(
+                ['key' => 'student_id_template_mode'],
+                ['value' => 'default', 'type' => 'string']
+            );
+            $this->settings->clearCache();
+        }
+
+        return response()->json([
+            'message' => ucfirst($side).' template removed. The built-in design is active again.',
+            'templates' => [
+                'mode' => $this->settings->get('student_id_template_mode', 'default'),
+                'front_template' => $frontTemplate,
+                'back_template' => $backTemplate,
+            ],
+        ]);
+    }
+
+    private function replaceIdTemplate(string $key, string $side, mixed $file): string
+    {
+        $previous = (string) $this->settings->get($key, '');
+        $extension = strtolower((string) $file->extension());
+        $extension = $extension === 'jpeg' ? 'jpg' : $extension;
+        $filename = 'student-'.str_replace('_template', '', $side).'-'.Str::uuid().'.'.$extension;
+        $path = $file->storeAs('settings/id-templates', $filename, 'public');
+        $storedPath = '/storage/'.$path;
+
+        Setting::updateOrCreate(
+            ['key' => $key],
+            ['value' => $storedPath, 'type' => 'image']
+        );
+        $this->deleteStoredIdTemplate($previous);
+
+        return $storedPath;
+    }
+
+    private function deleteStoredIdTemplate(string $path): void
+    {
+        if (!str_starts_with($path, '/storage/settings/id-templates/')) {
+            return;
+        }
+
+        Storage::disk('public')->delete(str_replace('/storage/', '', $path));
     }
 
     private function storePrincipalSignature(?string $signature): string
