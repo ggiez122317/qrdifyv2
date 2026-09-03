@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class TeacherStudentController extends Controller
 {
@@ -53,6 +54,13 @@ class TeacherStudentController extends Controller
     public function store(Request $request)
     {
         $teacher = $request->user();
+        $teacher->load('teacherProfile');
+
+        if (!$teacher->teacherProfile?->grade_level || !$teacher->teacherProfile?->section_id) {
+            throw ValidationException::withMessages([
+                'academic_assignment' => 'Set your grade level and section in Account Settings before adding a student.',
+            ]);
+        }
         
         $validated = $request->validate([
             'first_name' => 'nullable|string|max:255',
@@ -61,13 +69,8 @@ class TeacherStudentController extends Controller
             'email' => 'required|email|unique:users,email',
             'lrn' => 'nullable|string|unique:users,id_number',
             'id_number' => 'nullable|string|unique:users,id_number', // Legacy
-            'grade_level' => 'nullable|string',
-            'grade' => 'nullable|string', // Legacy
-            'section_id' => 'required|exists:sections,id',
             'parent_name' => 'nullable|string',
             'parent_phone' => 'nullable|string',
-            'subjects' => 'nullable|array',
-            'subjects.*' => 'exists:subjects,id',
             'photo_base64' => 'nullable|string'
         ]);
 
@@ -77,7 +80,7 @@ class TeacherStudentController extends Controller
             
             $name = $validated['name'] ?? trim(($validated['first_name'] ?? '') . ' ' . ($validated['last_name'] ?? ''));
             $lrn = $validated['lrn'] ?? $validated['id_number'] ?? null;
-            $grade = $validated['grade_level'] ?? $validated['grade'] ?? null;
+            $grade = $teacher->teacherProfile->grade_level;
 
             // Create user
             $user = User::create([
@@ -94,18 +97,11 @@ class TeacherStudentController extends Controller
             StudentProfile::create([
                 'user_id' => $user->id,
                 'grade' => $grade,
-                'section_id' => $validated['section_id'],
+                'section_id' => $teacher->teacherProfile->section_id,
                 'parent_name' => $validated['parent_name'] ?? null,
                 'parent_phone' => $validated['parent_phone'] ?? null,
                 'teacher_id' => $teacher->id, // legacy field
             ]);
-
-            // Assign subjects if any (with this teacher as the subject teacher)
-            if (!empty($validated['subjects'])) {
-                foreach ($validated['subjects'] as $subjectId) {
-                    $user->subjects()->attach($subjectId, ['teacher_id' => $teacher->id]);
-                }
-            }
 
             DB::commit();
             return response()->json(['message' => 'Student added successfully', 'student' => $user->load('studentProfile.section')], 201);
@@ -136,8 +132,6 @@ class TeacherStudentController extends Controller
      */
     public function update(Request $request, User $student)
     {
-        $teacher = $request->user();
-        
         // Ensure this user is actually a student
         if (!$student->hasRole('student')) {
             return response()->json(['message' => 'User is not a student'], 400);
@@ -155,8 +149,6 @@ class TeacherStudentController extends Controller
             'section_id' => 'required|exists:sections,id',
             'parent_name' => 'nullable|string',
             'parent_phone' => 'nullable|string',
-            'subjects' => 'nullable|array',
-            'subjects.*' => 'exists:subjects,id',
             'photo_base64' => 'nullable|string'
         ]);
 
@@ -186,17 +178,6 @@ class TeacherStudentController extends Controller
                 'parent_phone' => $validated['parent_phone'] ?? null,
             ]);
 
-            // Sync subjects for this teacher ONLY
-            // First detach all subjects taught by this teacher for this student
-            $student->subjects()->wherePivot('teacher_id', $teacher->id)->detach();
-            
-            // Then attach the new ones
-            if (!empty($validated['subjects'])) {
-                foreach ($validated['subjects'] as $subjectId) {
-                    $student->subjects()->attach($subjectId, ['teacher_id' => $teacher->id]);
-                }
-            }
-
             DB::commit();
             return response()->json(['message' => 'Student updated successfully', 'student' => $student->fresh(['studentProfile.section', 'subjects'])]);
         } catch (\Exception $e) {
@@ -221,6 +202,7 @@ class TeacherStudentController extends Controller
     public function options()
     {
         $teacher = request()->user();
+        $teacher->load('teacherProfile.section');
         
         $sections = Section::where('adviser_id', $teacher->id)
             ->select('id', 'name', 'grade_level')
@@ -234,6 +216,98 @@ class TeacherStudentController extends Controller
             'sections' => $sections,
             'subjects' => $subjects,
             'grade_levels' => $gradeLevels,
+            'teacher_assignment' => [
+                'grade_level' => $teacher->teacherProfile?->grade_level,
+                'section_id' => $teacher->teacherProfile?->section_id,
+                'section_name' => $teacher->teacherProfile?->section?->name,
+            ],
+        ]);
+    }
+
+    /**
+     * Return the signed-in teacher's profile and student assignment defaults.
+     */
+    public function settings(Request $request)
+    {
+        $teacher = $request->user()->load('teacherProfile.section');
+        $profile = $teacher->teacherProfile;
+
+        return response()->json([
+            'settings' => [
+                'display_name' => $teacher->name,
+                'email' => $teacher->email,
+                'phone_number' => $profile?->contact_number ?? '',
+                'grade_level' => $profile?->grade_level ?? '',
+                'section_id' => $profile?->section_id,
+                'email_notifications' => $profile?->email_notifications ?? true,
+                'sms_notifications' => $profile?->sms_notifications ?? false,
+            ],
+            'grade_levels' => \App\Models\GradeLevel::where('status', '!=', 'inactive')
+                ->orWhereNull('status')->select('id', 'name')->orderBy('name')->get(),
+            'sections' => Section::where('status', '!=', 'inactive')
+                ->orWhereNull('status')->select('id', 'name', 'grade_level')->orderBy('name')->get(),
+        ]);
+    }
+
+    /**
+     * Persist account details and the assignment used for newly added students.
+     */
+    public function updateSettings(Request $request)
+    {
+        $teacher = $request->user();
+        $validated = $request->validate([
+            'display_name' => 'required|string|max:255',
+            'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($teacher->id)],
+            'phone_number' => 'nullable|string|max:30',
+            'grade_level' => 'required|exists:grade_levels,name',
+            'section_id' => 'nullable|required_without:new_section_name|exists:sections,id',
+            'new_section_name' => 'nullable|required_without:section_id|string|max:255',
+            'email_notifications' => 'required|boolean',
+            'sms_notifications' => 'required|boolean',
+        ]);
+
+        $section = DB::transaction(function () use ($teacher, $validated) {
+            $section = isset($validated['section_id'])
+                ? Section::findOrFail($validated['section_id'])
+                : Section::firstOrCreate(
+                    [
+                        'name' => trim($validated['new_section_name']),
+                        'grade_level' => $validated['grade_level'],
+                    ],
+                    [
+                        'status' => 'active',
+                        'description' => 'Created from teacher account settings',
+                    ]
+                );
+
+            if ($section->grade_level !== $validated['grade_level']) {
+                throw ValidationException::withMessages([
+                    'section_id' => 'The selected section does not belong to the selected grade level.',
+                ]);
+            }
+
+            $teacher->update([
+                'name' => $validated['display_name'],
+                'email' => $validated['email'],
+            ]);
+
+            $teacher->teacherProfile()->updateOrCreate(
+                ['user_id' => $teacher->id],
+                [
+                    'contact_number' => $validated['phone_number'] ?? null,
+                    'grade_level' => $validated['grade_level'],
+                    'section_id' => $section->id,
+                    'email_notifications' => $validated['email_notifications'],
+                    'sms_notifications' => $validated['sms_notifications'],
+                ]
+            );
+
+            return $section;
+        });
+
+        return response()->json([
+            'message' => 'Account settings saved successfully.',
+            'section' => $section->only(['id', 'name', 'grade_level']),
         ]);
     }
 

@@ -325,11 +325,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       { name: 'School Map', href: '/principal/map', icon: MapPinned }
     ] : isTeacher ? [
       { name: 'Add Students', href: '/teacher/students', icon: UserPlus },
-      { name: 'Assigned Class', href: '/teacher/assigned-class', icon: Users },
-      { name: 'Assigned Students', href: '/teacher/assigned-students', icon: GraduationCap },
       { name: 'Absent Today', href: '/teacher/absent', icon: UserMinus },
       { name: 'Excuse Students', href: '/teacher/excuse-students', icon: ClipboardList },
-      { name: 'Leave Requests', href: '/teacher/leaves', icon: CalendarOff },
       { name: 'Report & Analytics', href: '/teacher/reports', icon: BarChart3 }
     ] : isAdmin ? [
       { name: 'Students', href: '/admin/students', icon: GraduationCap },

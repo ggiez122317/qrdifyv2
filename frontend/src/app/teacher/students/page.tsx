@@ -8,12 +8,7 @@ import {
   Search,
   Edit2,
   Trash2,
-  User,
-  GraduationCap,
-  BookOpen,
-  Phone,
   Hash,
-  AlertCircle,
   ChevronLeft,
   ChevronRight,
   Filter,
@@ -43,24 +38,12 @@ interface Student {
       grade_level: string;
     } | null;
   } | null;
-  subjects: {
-    id: number;
-    name: string;
-  }[];
-}
-
-interface Option {
-  id: number;
-  name: string;
-  grade_level?: string;
-  code?: string;
 }
 
 export default function ManageStudentsPage() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterGrade, setFilterGrade] = useState('');
-  const [filterSubject, setFilterSubject] = useState('');
 
 
   const { data: students = [], isLoading: isLoadingStudents } = useQuery({
@@ -68,14 +51,6 @@ export default function ManageStudentsPage() {
     queryFn: async () => {
       const response = await api.get('/api/teacher/students');
       return response.data as Student[];
-    },
-  });
-
-  const { data: options } = useQuery({
-    queryKey: ['teacher-students-options'],
-    queryFn: async () => {
-      const response = await api.get('/api/teacher/students/options');
-      return response.data as { sections: Option[], subjects: Option[] };
     },
   });
 
@@ -99,7 +74,7 @@ export default function ManageStudentsPage() {
   const itemsPerPage = 10;
 
 
-  // Filter students based on search term, grade, and subject
+  // Filter students based on search term and grade.
   const filteredStudents = students.filter((student) => {
     // Search Term Filter
     const term = searchTerm.toLowerCase();
@@ -112,11 +87,7 @@ export default function ManageStudentsPage() {
     // Grade Filter
     const matchesGrade = filterGrade === '' || student.student_profile?.grade === filterGrade;
 
-    // Subject Filter
-    const matchesSubject = filterSubject === '' || 
-      (student.subjects && student.subjects.some((s) => s.id.toString() === filterSubject));
-
-    return matchesSearch && matchesGrade && matchesSubject;
+    return matchesSearch && matchesGrade;
   });
 
   // Pagination logic
@@ -129,7 +100,7 @@ export default function ManageStudentsPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Manage Students</h1>
-          <p className="text-slate-500">Add, edit, and assign students to sections and subjects.</p>
+          <p className="text-slate-500">Add and manage students using your saved academic assignment.</p>
         </div>
         <Link
           href="/teacher/students/create"
@@ -173,18 +144,6 @@ export default function ManageStudentsPage() {
                   { value: 'Grade 12', label: 'Grade 12' },
                 ]}
               />
-              <CustomSelect
-                value={filterSubject}
-                onChange={(val) => {
-                  setFilterSubject(val === 'all' ? '' : val);
-                  setCurrentPage(1);
-                }}
-                icon={<BookOpen className="w-4 h-4 text-slate-400" />}
-                options={[
-                  { value: 'all', label: 'All Subjects' },
-                  ...(options?.subjects?.map(sub => ({ value: sub.id.toString(), label: sub.name })) || [])
-                ]}
-              />
             </div>
           </div>
 
@@ -195,14 +154,13 @@ export default function ManageStudentsPage() {
                   <th className="px-8 py-5">STUDENT</th>
                   <th className="px-8 py-5">ID NUMBER</th>
                   <th className="px-8 py-5">GRADE & SECTION</th>
-                  <th className="px-8 py-5">SUBJECTS ASSIGNED</th>
                   <th className="px-8 py-5 text-right">ACTIONS</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
               {isLoadingStudents ? (
                 <tr>
-                  <td colSpan={5} className="px-8 py-24 text-center">
+                  <td colSpan={4} className="px-8 py-24 text-center">
                     <div className="flex flex-col items-center justify-center text-slate-400">
                       <Users className="w-12 h-12 mb-4 opacity-20" />
                       <h3 className="text-lg font-bold text-slate-700">No students found</h3>
@@ -251,19 +209,6 @@ export default function ManageStudentsPage() {
                         </div>
                       ) : (
                         <span className="text-slate-400 italic text-[13px]">Not assigned</span>
-                      )}
-                    </td>
-                    <td className="px-8 py-4">
-                      {student.subjects && student.subjects.length > 0 ? (
-                        <div className="flex flex-wrap gap-1.5">
-                          {student.subjects.map((sub) => (
-                            <span key={sub.id} className="bg-red-50 text-red-700 px-2 py-0.5 rounded text-[12px] font-medium border border-red-100">
-                              {sub.name}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-slate-400 italic text-[13px]">None</span>
                       )}
                     </td>
                     <td className="px-8 py-4 text-right">

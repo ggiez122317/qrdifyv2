@@ -5,26 +5,24 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PhotoUploader } from '@/components/ui/PhotoUploader';
-import { ChevronLeft, Loader2 } from 'lucide-react';
+import { ChevronLeft, GraduationCap, Loader2, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 
 export default function CreateStudentPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
     email: '',
     lrn: '',
-    grade_level: '',
-    section_id: '',
     parent_name: '',
     parent_phone: '',
-    photo_base64: '',
-    subjects: [] as number[]
+    photo_base64: ''
   });
   
   const { data: options } = useQuery({
@@ -36,6 +34,12 @@ export default function CreateStudentPage() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const assignment = options?.teacher_assignment as {
+    grade_level?: string | null;
+    section_id?: number | null;
+    section_name?: string | null;
+  } | undefined;
+  const hasAcademicAssignment = Boolean(assignment?.grade_level && assignment?.section_id);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -51,27 +55,22 @@ export default function CreateStudentPage() {
     setIsSubmitting(true);
     
     try {
-      const response = await fetch('http://localhost:8001/api/teacher/students', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(formData)
-      });
+      const response = await api.post('/api/teacher/students', formData);
+      const createdStudent = { ...response.data.student, subjects: response.data.student.subjects ?? [] };
 
-      if (response.ok) {
-        localStorage.setItem('toast_message', 'Student record created successfully');
-        router.push('/teacher/students');
-      } else {
-        const errorData = await response.json();
-        localStorage.setItem('toast_message', 'Failed to save: ' + (errorData.message || 'Unknown error'));
-        setIsSubmitting(false);
-      }
+      queryClient.setQueryData<unknown[]>(['teacher-students'], current => [
+        createdStudent,
+        ...(current ?? []).filter((student: unknown) => (
+          typeof student !== 'object' || student === null || !('id' in student) || student.id !== createdStudent.id
+        )),
+      ]);
+      await queryClient.invalidateQueries({ queryKey: ['teacher-students'], refetchType: 'none' });
+      localStorage.setItem('toast_message', 'Student record created successfully');
+      router.push('/teacher/students');
+      router.refresh();
     } catch (error) {
       console.error('API Error:', error);
-      localStorage.setItem('toast_message', 'Network error while saving');
+      localStorage.setItem('toast_message', error instanceof Error ? error.message : 'Failed to save student');
       setIsSubmitting(false);
     }
   };
@@ -124,74 +123,29 @@ export default function CreateStudentPage() {
                     <Label htmlFor="lrn" className="text-sm font-semibold dark:text-slate-300">Learner Reference Number (LRN) <span className="text-red-500">*</span></Label>
                     <Input id="lrn" name="lrn" value={formData.lrn} onChange={handleChange} required placeholder="12-digit LRN" className="bg-slate-50 dark:bg-[#0f1115] dark:border-white/10 dark:text-white h-12 text-base" />
                   </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="grade_level" className="text-sm font-semibold dark:text-slate-300">Grade Level <span className="text-red-500">*</span></Label>
-                    <select
-                      id="grade_level"
-                      name="grade_level"
-                      value={formData.grade_level}
-                      onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleChange(e as unknown as React.ChangeEvent<HTMLInputElement>)}
-                     
-                      required
-                      className="flex h-12 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-[#7a1315]/20 focus:border-[#7a1315]/30 dark:border-white/10 dark:bg-[#0f1115] dark:text-white"
-                    >
-                      <option value="">Select Grade</option>
-                      {options?.grade_levels?.map((gl: { id: number; name: string }) => (
-                        <option key={gl.id} value={gl.name}>{gl.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <Label htmlFor="section_id" className="text-sm font-semibold dark:text-slate-300">Section <span className="text-red-500">*</span></Label>
-                    <select
-                      id="section_id"
-                      name="section_id"
-                      value={formData.section_id}
-                      onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleChange(e as unknown as React.ChangeEvent<HTMLInputElement>)}
-                     
-                      required
-                      className="flex h-12 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-[#7a1315]/20 focus:border-[#7a1315]/30 dark:border-white/10 dark:bg-[#0f1115] dark:text-white"
-                    >
-                      <option value="">Select Section</option>
-                      {options?.sections?.map((section: { id: number, name: string, grade_level?: string }) => (
-                        <option key={section.id} value={section.id}>
-                          {section.name} {section.grade_level ? `(${section.grade_level})` : ''}
-                        </option>
-                      ))}
-                    </select>
+                  <div className="space-y-3 md:col-span-2">
+                    <Label className="text-sm font-semibold dark:text-slate-300">Grade Level &amp; Section</Label>
+                    {hasAcademicAssignment ? (
+                      <div className="flex min-h-16 items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-blue-950 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-100">
+                        <GraduationCap aria-hidden="true" className="h-5 w-5 shrink-0 text-blue-700 dark:text-blue-300" />
+                        <div>
+                          <p className="font-bold">{assignment?.grade_level} — {assignment?.section_name}</p>
+                          <p className="text-xs text-blue-700 dark:text-blue-300">Automatically applied from Account Settings</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div role="alert" className="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950 sm:flex-row sm:items-center sm:justify-between dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+                        <div>
+                          <p className="font-bold">Academic assignment required</p>
+                          <p className="mt-1 text-sm">Choose your grade level and section once in Account Settings.</p>
+                        </div>
+                        <Link href="/teacher/settings" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-amber-900 px-4 py-2 text-sm font-bold text-white hover:bg-amber-800 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                          <Settings aria-hidden="true" className="h-4 w-4" /> Open Settings
+                        </Link>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="space-y-3 md:col-span-2 mt-2">
-                    <Label className="text-sm font-semibold dark:text-slate-300">Assign Subjects (Optional)</Label>
-                    <p className="text-xs text-slate-500 mb-2">Select the subjects you teach this student.</p>
-                    <div className="flex flex-wrap gap-2">
-                      {options?.subjects?.map((subject: { id: number, name: string }) => {
-                        const isSelected = formData.subjects.includes(subject.id);
-                        return (
-                          <button
-                            key={subject.id}
-                            type="button"
-                            onClick={() => {
-                              setFormData(prev => ({
-                                ...prev,
-                                subjects: isSelected 
-                                  ? prev.subjects.filter(id => id !== subject.id)
-                                  : [...prev.subjects, subject.id]
-                              }));
-                            }}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
-                              isSelected 
-                                ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm' 
-                                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 dark:bg-[#161920] dark:border-white/10 dark:text-slate-300'
-                            }`}
-                          >
-                            {subject.name}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
                 </div>
               </div>
               
@@ -224,7 +178,7 @@ export default function CreateStudentPage() {
                     Cancel
                   </Button>
                 </Link>
-                <Button type="submit" disabled={isSubmitting} className="bg-[#0B3A82] hover:bg-[#092f69] text-white shadow-sm font-bold text-base h-12 px-10 min-w-[240px]">
+                <Button type="submit" disabled={isSubmitting || !hasAcademicAssignment} className="bg-[#0B3A82] hover:bg-[#092f69] text-white shadow-sm font-bold text-base h-12 px-10 min-w-[240px] disabled:cursor-not-allowed disabled:opacity-60">
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-5 h-5 mr-2 animate-spin" />

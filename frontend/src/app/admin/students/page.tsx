@@ -100,14 +100,35 @@ export default function StudentsManagementPage() {
 
   const bulkDelete = async () => {
     if (!confirm(`Delete ${selectedIds.length} selected student(s)?`)) return;
+    const idsToDelete = [...selectedIds];
+    const results = await Promise.allSettled(idsToDelete.map(id => api.delete(`/api/students/${id}`)));
+    const deletedIds = idsToDelete.filter((_, index) => results[index].status === 'fulfilled');
+    const failedIds = idsToDelete.filter((_, index) => results[index].status === 'rejected');
+
+    setRecords(previous => previous.filter(record => !deletedIds.includes(record.id)));
+    setSelectedIds(failedIds);
+    setStats(previous => previous ? { ...previous, totalStudents: Math.max(0, previous.totalStudents - deletedIds.length) } : previous);
+    localStorage.setItem(
+      'toast_message',
+      failedIds.length === 0
+        ? `${deletedIds.length} student(s) deleted successfully`
+        : `${deletedIds.length} deleted; ${failedIds.length} could not be deleted`
+    );
+    window.dispatchEvent(new Event('toast-trigger'));
+  };
+
+  const deleteRecord = async () => {
+    if (!recordToDelete) return;
+
     try {
-      await Promise.all(selectedIds.map(id => api.delete(`/api/students/${id}`)));
-      setRecords(prev => prev.filter(r => !selectedIds.includes(r.id)));
-      setSelectedIds([]);
-      localStorage.setItem('toast_message', `${selectedIds.length} student(s) deleted successfully`);
-      window.dispatchEvent(new Event('toast-trigger'));
-    } catch {
-      localStorage.setItem('toast_message', 'Failed to delete some records');
+      await api.delete(`/api/students/${recordToDelete.id}`);
+      setRecords(previous => previous.filter(record => record.id !== recordToDelete.id));
+      setSelectedIds(previous => previous.filter(id => id !== recordToDelete.id));
+      setStats(previous => previous ? { ...previous, totalStudents: Math.max(0, previous.totalStudents - 1) } : previous);
+      localStorage.setItem('toast_message', 'Student deleted successfully');
+    } catch (error) {
+      localStorage.setItem('toast_message', error instanceof Error ? error.message : 'Failed to delete student');
+    } finally {
       window.dispatchEvent(new Event('toast-trigger'));
     }
   };
@@ -156,8 +177,8 @@ export default function StudentsManagementPage() {
   });
 
   const totalPages = Math.ceil(filteredRecords.length / ITEMS_PER_PAGE);
-  const start = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedRecords = filteredRecords.slice(start, start + ITEMS_PER_PAGE);
+  const pageStart = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedRecords = filteredRecords.slice(pageStart, pageStart + ITEMS_PER_PAGE);
 
   const getStatusElement = (status: string) => {
     const s = status.toLowerCase();
@@ -501,14 +522,7 @@ export default function StudentsManagementPage() {
           setIsDeleteModalOpen(false);
           setRecordToDelete(null);
         }}
-        onConfirm={() => {
-          if (recordToDelete) {
-            // Delete API call would go here
-            setRecords(prev => prev.filter(r => r.id !== recordToDelete.id));
-            localStorage.setItem('toast_message', 'Student deleted successfully');
-            window.location.reload(); // Simple reload to show toast, or handle locally
-          }
-        }}
+        onConfirm={deleteRecord}
       />
     </>
   );

@@ -108,6 +108,8 @@ $registerAuthenticatedRoutes = function () {
         Route::delete('/teacher/leaves/{id}', [TeacherController::class, 'deleteLeave']);
 
         // Teacher Student Management
+        Route::get('/teacher/settings', [TeacherStudentController::class, 'settings']);
+        Route::put('/teacher/settings', [TeacherStudentController::class, 'updateSettings']);
         Route::get('/teacher/students/options', [TeacherStudentController::class, 'options']);
         Route::apiResource('teacher/students', TeacherStudentController::class)->except(['create', 'edit']);
     });
@@ -156,6 +158,7 @@ $registerAuthenticatedRoutes = function () {
      * Principal / Admin Endpoints
      */
     Route::middleware('role:super-admin,admin')->group(function () {
+        Route::delete('/students/{id}', [StudentController::class, 'destroy']);
         Route::apiResource('admin/grade-levels', \App\Http\Controllers\Admin\GradeLevelController::class);
         Route::apiResource('admin/sections', \App\Http\Controllers\Admin\SectionController::class);
         Route::apiResource('admin/subjects', \App\Http\Controllers\Admin\SubjectController::class);

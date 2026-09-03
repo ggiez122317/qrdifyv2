@@ -216,6 +216,20 @@ class StudentController extends Controller
     /**
      * Student dashboard — for the logged-in student.
      */
+    /**
+     * Permanently delete a student and records linked through cascading keys.
+     */
+    public function destroy($id): JsonResponse
+    {
+        $student = User::students()->findOrFail($id);
+
+        DB::transaction(function () use ($student) {
+            $student->delete();
+        });
+
+        return response()->json(['message' => 'Student deleted successfully.']);
+    }
+
     public function dashboard(Request $request): JsonResponse
     {
         $user = auth()->user();

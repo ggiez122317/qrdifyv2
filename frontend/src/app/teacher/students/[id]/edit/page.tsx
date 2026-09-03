@@ -26,8 +26,7 @@ export default function EditStudentPage() {
     section_id: '',
     parent_name: '',
     parent_phone: '',
-    photo_base64: '',
-    subjects: [] as number[]
+    photo_base64: ''
   });
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
@@ -56,8 +55,7 @@ export default function EditStudentPage() {
             section_id: data.student_profile?.section_id?.toString() || data.student_profile?.section?.id?.toString() || '',
             parent_name: data.student_profile?.parent_name || '',
             parent_phone: data.student_profile?.parent_phone || '',
-            photo_base64: '',
-            subjects: data.subjects ? data.subjects.map((s: { id: number }) => s.id) : []
+            photo_base64: ''
           });
           setPhotoUrl(data.photo_url || null);
         }
@@ -181,36 +179,6 @@ export default function EditStudentPage() {
                     </select>
                   </div>
 
-                  <div className="space-y-3 md:col-span-2 mt-2">
-                    <Label className="text-sm font-semibold dark:text-slate-300">Assign Subjects (Optional)</Label>
-                    <p className="text-xs text-slate-500 mb-2">Select the subjects you teach this student.</p>
-                    <div className="flex flex-wrap gap-2">
-                      {options?.subjects?.map((subject: { id: number, name: string }) => {
-                        const isSelected = formData.subjects.includes(subject.id);
-                        return (
-                          <button
-                            key={subject.id}
-                            type="button"
-                            onClick={() => {
-                              setFormData(prev => ({
-                                ...prev,
-                                subjects: isSelected 
-                                  ? prev.subjects.filter(id => id !== subject.id)
-                                  : [...prev.subjects, subject.id]
-                              }));
-                            }}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
-                              isSelected 
-                                ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm' 
-                                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 dark:bg-[#161920] dark:border-white/10 dark:text-slate-300'
-                            }`}
-                          >
-                            {subject.name}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
                 </div>
               </div>
               
