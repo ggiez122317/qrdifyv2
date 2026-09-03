@@ -32,9 +32,15 @@ export default function SettingsPage() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await api.get('/api/principal/settings');
+        const res = await api.get<
+          Omit<Partial<typeof settings>, 'phone_number'> & { phone_number?: string | null }
+        >('/api/principal/settings');
         // Merge with existing defaults in case backend doesn't have all new fields yet
-        setSettings(prev => ({ ...prev, ...res.data }));
+        setSettings(prev => ({
+          ...prev,
+          ...res.data,
+          phone_number: res.data.phone_number ?? prev.phone_number,
+        }));
       } catch (err) {
         console.error('Failed to load settings', err);
       } finally {
@@ -317,7 +323,7 @@ export default function SettingsPage() {
                   type="button"
                   variant="outline"
                   onClick={handleTestSms}
-                  disabled={isTestingSms || !settings.phone_number.trim()}
+                  disabled={isTestingSms || !settings.phone_number?.trim()}
                   className="h-[46px] rounded-xl px-6 font-bold text-slate-700 border-slate-200 bg-slate-50 hover:bg-slate-100 flex items-center gap-2 shrink-0 w-full sm:w-auto"
                 >
                   <Send className="w-4 h-4" />
