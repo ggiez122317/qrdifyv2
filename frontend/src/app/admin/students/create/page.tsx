@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,6 +11,7 @@ import { ChevronLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import apiClient from '@/lib/axios';
 import { getImageUrl } from '@/lib/utils';
 
 interface Teacher {
@@ -45,9 +47,9 @@ export default function CreateStudentPage() {
   const [isTeacherDropdownOpen, setIsTeacherDropdownOpen] = useState(false);
 
   useEffect(() => {
-    api.get('/api/grade-levels').then(r => setGradeLevels(r.data));
-    api.get('/api/sections/list-all').then(r => setSections(r.data));
-    api.get('/api/teachers').then(r => setTeachers(r.data.data || r.data));
+    apiClient.get('/api/grade-levels').then(r => setGradeLevels(r.data));
+    apiClient.get('/api/sections/list-all').then(r => setSections(r.data));
+    apiClient.get('/api/teachers').then(r => setTeachers(r.data.data || r.data));
   }, []);
 
   const [activeSide, setActiveSide] = useState<'front' | 'back'>('front');
@@ -81,9 +83,12 @@ export default function CreateStudentPage() {
       await api.students.create(formData as Record<string, unknown>);
       localStorage.setItem('toast_message', 'Student record created successfully');
       router.push('/admin/students');
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Extract specific validation errors from Laravel 422 response
-      const responseData = error?.response?.data;
+      const responseData = axios.isAxiosError<{
+        errors?: Record<string, string[]>;
+        message?: string;
+      }>(error) ? error.response?.data : undefined;
       let msg = 'Failed to save student.';
       
       if (responseData?.errors) {
@@ -92,7 +97,7 @@ export default function CreateStudentPage() {
         msg = fieldErrors.join(' ');
       } else if (responseData?.message) {
         msg = responseData.message;
-      } else if (error?.message) {
+      } else if (error instanceof Error) {
         msg = error.message;
       }
       
