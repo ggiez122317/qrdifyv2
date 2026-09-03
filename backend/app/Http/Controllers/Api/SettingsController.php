@@ -17,6 +17,12 @@ use Illuminate\Validation\ValidationException;
 
 class SettingsController extends Controller
 {
+    private const PRINCIPAL_SETTING_KEYS = [
+        'school_start_time',
+        'late_threshold',
+        'school_end_time',
+    ];
+
     public function __construct(
         private readonly SettingsService $settings,
         private readonly PhoneNumberNormalizer $phoneNumbers,
@@ -31,13 +37,18 @@ class SettingsController extends Controller
         return response()->json($this->settings->all());
     }
 
+    public function indexPrincipal(): JsonResponse
+    {
+        return response()->json($this->onlySettings(self::PRINCIPAL_SETTING_KEYS));
+    }
+
     /**
      * Update settings and invalidate the cache.
      */
     public function update(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'settings' => 'required|array',
+            'settings' => 'required|array:school_start_time,late_threshold,school_end_time,enable_sms_notifications,scan_deduplication_seconds,enable_push_notifications,enable_email_notifications,notify_check_in,notify_check_out,notify_late,notify_early,compact_tables,principal_name,principal_position,principal_signature,school_year,timezone,date_format,default_theme,phone_number',
             'settings.school_start_time' => 'sometimes|date_format:H:i',
             'settings.late_threshold' => 'sometimes|date_format:H:i',
             'settings.school_end_time' => 'sometimes|date_format:H:i',
@@ -60,42 +71,19 @@ class SettingsController extends Controller
             'settings.phone_number' => 'sometimes|nullable|string|max:30',
         ]);
 
-        $allowedSettings = $validated['settings'];
+        return $this->persistSettings($validated['settings']);
+    }
 
-        DB::beginTransaction();
-        try {
-            if (array_key_exists('principal_signature', $allowedSettings)) {
-                $allowedSettings['principal_signature'] = $this->storePrincipalSignature(
-                    $allowedSettings['principal_signature']
-                );
-            }
+    public function updatePrincipal(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'settings' => 'required|array:school_start_time,late_threshold,school_end_time',
+            'settings.school_start_time' => 'sometimes|date_format:H:i',
+            'settings.late_threshold' => 'sometimes|date_format:H:i',
+            'settings.school_end_time' => 'sometimes|date_format:H:i',
+        ]);
 
-            foreach ($allowedSettings as $key => $value) {
-                if (is_bool($value)) {
-                    $value = $value ? 'true' : 'false';
-                }
-
-                Setting::updateOrCreate(
-                    ['key' => $key],
-                    ['value' => $value, 'type' => $this->settingType($value)]
-                );
-            }
-            DB::commit();
-
-            // Clear cache so the next read fetches fresh settings
-            $this->settings->clearCache();
-
-            return response()->json([
-                'message' => 'Settings updated successfully',
-                'settings' => $this->settings->all(),
-            ]);
-        } catch (ValidationException $e) {
-            DB::rollBack();
-            throw $e;
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['message' => 'Failed to update settings', 'error' => $e->getMessage()], 500);
-        }
+        return $this->persistSettings($validated['settings'], self::PRINCIPAL_SETTING_KEYS);
     }
 
     public function testSms(Request $request): JsonResponse
@@ -132,6 +120,53 @@ class SettingsController extends Controller
             'delivery_id' => $delivery->id,
             'recipient' => $recipient,
         ], 202);
+    }
+
+    private function persistSettings(array $allowedSettings, ?array $responseKeys = null): JsonResponse
+    {
+        DB::beginTransaction();
+        try {
+            if (array_key_exists('principal_signature', $allowedSettings)) {
+                $allowedSettings['principal_signature'] = $this->storePrincipalSignature(
+                    $allowedSettings['principal_signature']
+                );
+            }
+
+            foreach ($allowedSettings as $key => $value) {
+                if (is_bool($value)) {
+                    $value = $value ? 'true' : 'false';
+                }
+
+                Setting::updateOrCreate(
+                    ['key' => $key],
+                    ['value' => $value, 'type' => $this->settingType($value)]
+                );
+            }
+            DB::commit();
+
+            // Clear cache so the next read fetches fresh settings
+            $this->settings->clearCache();
+
+            $savedSettings = $responseKeys === null
+                ? $this->settings->all()
+                : $this->onlySettings($responseKeys);
+
+            return response()->json([
+                'message' => 'Settings updated successfully',
+                'settings' => $savedSettings,
+            ]);
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            throw $e;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Failed to update settings', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    private function onlySettings(array $keys): array
+    {
+        return array_intersect_key($this->settings->all(), array_flip($keys));
     }
 
     private function storePrincipalSignature(?string $signature): string
