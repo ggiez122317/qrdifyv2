@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ScanRequest;
 use App\Http\Resources\AttendanceResource;
+use App\Http\Resources\UserResource;
 use App\Models\Attendance;
 use App\Models\User;
 use App\Services\AttendanceService;
@@ -93,7 +94,7 @@ class AttendanceController extends Controller
 
         $message = $result['duplicate']
             ? 'Duplicate scan ignored'
-            : "{$result['type']} — {$result['status']}";
+            : "{$result['type']}: {$result['status']}";
 
         return response()->json([
             'duplicate' => $result['duplicate'],
@@ -118,21 +119,64 @@ class AttendanceController extends Controller
     public function today(Request $request): JsonResponse
     {
         $perPage = min((int) $request->get('per_page', 100), 100);
-        $date = $request->get('date');
-        $search = $request->get('search');
+        $date = $request->get('date') ?: now()->toDateString();
+        $search = trim((string) $request->get('search', ''));
         $status = $request->get('status');
+
+        // An absent user has no attendance row for the selected date. Return
+        // those users in the same shape as attendance rows when requested.
+        if ($status === 'absent') {
+            $query = User::query()
+                ->with(['roles', 'studentProfile', 'teacherProfile'])
+                ->whereHas('roles', fn ($q) => $q->whereIn('name', ['student', 'teacher']))
+                ->where(function ($q) use ($date) {
+                    $q->whereDoesntHave('attendances', fn ($attendanceQuery) => $attendanceQuery->forDate($date))
+                        ->orWhereHas('attendances', fn ($attendanceQuery) => $attendanceQuery
+                            ->forDate($date)
+                            ->where('status', 'absent'));
+                });
+
+            if ($search !== '') {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('id_number', 'like', "%{$search}%")
+                        ->orWhereHas('roles', fn ($roleQuery) => $roleQuery->where('name', 'like', "%{$search}%"));
+                });
+            }
+
+            $users = $query->orderBy('name')->paginate($perPage);
+            $users->through(fn (User $user) => [
+                'id' => -$user->id,
+                'user_id' => $user->id,
+                'date' => $date,
+                'time_in' => null,
+                'time_out' => null,
+                'status' => 'absent',
+                'am_status' => 'absent',
+                'pm_status' => 'absent',
+                'user' => (new UserResource($user))->resolve($request),
+                'created_at' => null,
+            ]);
+
+            return response()->json($users);
+        }
 
         $query = Attendance::with(['user:id,name,photo_url,id_number', 'user.roles', 'user.studentProfile', 'user.teacherProfile'])
             ->forDate($date);
 
-        if ($search) {
+        if ($search !== '') {
             $query->whereHas('user', function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('id_number', 'like', "%{$search}%");
+                $q->where(function ($userQuery) use ($search) {
+                    $userQuery->where('name', 'like', "%{$search}%")
+                        ->orWhere('id_number', 'like', "%{$search}%")
+                        ->orWhereHas('roles', fn ($roleQuery) => $roleQuery->where('name', 'like', "%{$search}%"));
+                });
             });
         }
 
-        if ($status && $status !== 'all') {
+        if ($status === 'present') {
+            $query->whereIn('status', ['present', 'early']);
+        } elseif ($status && $status !== 'all') {
             $query->where('status', $status);
         }
 

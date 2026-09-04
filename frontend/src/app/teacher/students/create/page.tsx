@@ -129,7 +129,7 @@ export default function CreateStudentPage() {
                       <div className="flex min-h-16 items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-blue-950 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-100">
                         <GraduationCap aria-hidden="true" className="h-5 w-5 shrink-0 text-blue-700 dark:text-blue-300" />
                         <div>
-                          <p className="font-bold">{assignment?.grade_level} — {assignment?.section_name}</p>
+                          <p className="font-bold">{assignment?.grade_level} - {assignment?.section_name}</p>
                           <p className="text-xs text-blue-700 dark:text-blue-300">Automatically applied from Account Settings</p>
                         </div>
                       </div>
