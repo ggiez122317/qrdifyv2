@@ -56,6 +56,10 @@ class SendSmsDelivery implements ShouldQueue
         ])->save();
 
         try {
+            if ($delivery->provider !== config('sms.provider')) {
+                throw new SmsGatewayException('SMS provider changed. Review this delivery before retrying with a different provider.');
+            }
+
             $result = $gateway->send($delivery->recipient, $delivery->message);
 
             $delivery->forceFill([

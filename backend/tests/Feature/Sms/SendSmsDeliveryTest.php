@@ -16,6 +16,42 @@ class SendSmsDeliveryTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        config()->set('sms.provider', 'huawei_router');
+    }
+
+    public function test_a_provider_switch_cannot_send_old_deliveries_through_the_new_provider(): void
+    {
+        config()->set('sms.provider', 'httpsms');
+        foreach (['huawei_router', 'simulated'] as $provider) {
+            $delivery = $this->makeDelivery(['provider' => $provider]);
+            $gateway = $this->mock(SmsGateway::class);
+            $gateway->shouldNotReceive('send');
+            try {
+                (new SendSmsDelivery($delivery->id))->handle($gateway);
+                $this->fail('Provider changes must prevent sending.');
+            } catch (SmsGatewayException $exception) {
+                $this->assertStringContainsString('provider changed', $exception->getMessage());
+            }
+            $this->assertSame($provider, $delivery->fresh()->provider);
+            $this->assertNull($delivery->fresh()->accepted_at);
+        }
+    }
+
+    public function test_it_records_an_httpsms_api_acceptance(): void
+    {
+        config()->set('sms.provider', 'httpsms');
+        $delivery = $this->makeDelivery(['provider' => 'httpsms']);
+        $gateway = $this->mock(SmsGateway::class);
+        $gateway->shouldReceive('send')->once()->andReturn(new SmsSendResult('httpsms', '{"status":"pending"}'));
+        (new SendSmsDelivery($delivery->id))->handle($gateway);
+        $this->assertSame('accepted', $delivery->fresh()->status);
+        $this->assertSame('httpsms', $delivery->fresh()->provider);
+        $this->assertNotNull($delivery->fresh()->accepted_at);
+    }
+
     public function test_it_records_a_router_accepted_delivery(): void
     {
         $delivery = $this->makeDelivery();

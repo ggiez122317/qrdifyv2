@@ -8,6 +8,7 @@ use App\Models\TeacherProfile;
 use App\Models\User;
 use App\Services\ScanCacheService;
 use App\Services\Sms\HuaweiRouterSmsGateway;
+use App\Services\Sms\HttpSmsGateway;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Permission\Events\RoleAttached;
 use Spatie\Permission\Events\RoleDetached;
@@ -20,6 +21,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(SmsGateway::class, function () {
             return match (config('sms.provider')) {
                 'huawei_router' => new HuaweiRouterSmsGateway,
+                'httpsms' => new HttpSmsGateway,
                 default => throw new \InvalidArgumentException(
                     'Unsupported SMS provider: '.config('sms.provider')
                 ),
