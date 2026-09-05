@@ -1,9 +1,12 @@
 # httpSMS provider
 
-Set these in the backend's ignored `.env`:
+This implementation lives on `httpsms_integration`, based on local `main`, in
+`C:\dev\work\system2\qrdifyv2`. The separate `qrdifyv2-sms-lab` worktree stays on
+`sms_load_testing` for Huawei modem and simulator experiments.
+
+Set these credentials in the primary backend's ignored `.env`:
 
 ```dotenv
-SMS_PROVIDER=httpsms
 HTTPSMS_API_KEY=
 HTTPSMS_FROM_NUMBER=
 HTTPSMS_CONNECT_TIMEOUT=3
@@ -16,7 +19,16 @@ on that phone and keep it online with an active SIM capable of sending SMS.
 
 Official API documentation: https://docs.httpsms.com/
 
-After changing providers, stop the old queue worker and run `php artisan config:clear`.
+Leave `SMS_PROVIDER` unset in the primary `.env` to select the provider by branch:
+`httpsms_integration` defaults to `httpsms`, while `main` and `sms_integration`
+default to `huawei_router`. An explicit environment override takes precedence.
+Never commit the real API key or phone numbers.
+
+To switch, stop the backend and queue worker, switch branches in `qrdifyv2`, run
+`php artisan config:clear` from `backend`, then restart those processes. Restart the
+frontend too if it is running. Branch switching does not change `.env`, the database,
+or previously stored delivery records.
+
 Start XAMPP MySQL and then one worker:
 
 ```powershell
@@ -33,7 +45,7 @@ and provider status without copying the response's message body or phone numbers
 
 Jobs whose recorded provider differs from the active provider are rejected before
 sending. Review old failed deliveries explicitly instead of retrying all old jobs
-after a switch. Simulation load commands continue to require `SMS_PROVIDER=simulated`.
+after a switch. The simulator load command belongs to the separate lab branch.
 
 The existing queue retries still apply to gateway exceptions. If an API connection
 times out after acceptance, a queue retry may duplicate the message. There are no

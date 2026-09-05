@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'provider' => env('SMS_PROVIDER', 'huawei_router'),
+    'provider' => env('SMS_PROVIDER', 'httpsms'),
     'queue' => env('SMS_QUEUE', 'sms'),
     'school_name' => env('SMS_SCHOOL_NAME', env('APP_NAME', 'School')),
 
