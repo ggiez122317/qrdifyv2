@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable @next/next/no-img-element */
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -26,17 +26,46 @@ interface AttendanceRecord {
   id: number;
   user_id: number;
   date: string;
-  time_in: string;
+  time_in: string | null;
   time_out: string | null;
   status: string;
   user: {
     name: string;
     photo_url?: string | null;
-    roles: Array<{ name: string }>;
+    roles: Array<string | { name: string }>;
     student_profile?: { grade?: string | number; section?: string } | null;
     teacher_profile?: { department?: string } | null;
   };
 }
+
+interface AttendancePage {
+  data: AttendanceRecord[];
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+  from: number | null;
+  to: number | null;
+}
+
+interface AttendanceStats {
+  overview: {
+    present: number;
+    late: number;
+    absent: number;
+  };
+  total_users: number;
+}
+
+const emptyAttendancePage: AttendancePage = {
+  data: [],
+  current_page: 1,
+  last_page: 1,
+  per_page: 10,
+  total: 0,
+  from: null,
+  to: null,
+};
 
 export default function HistoryPage() {
   const queryClient = useQueryClient();
@@ -55,36 +84,45 @@ export default function HistoryPage() {
 
   const isToday = selectedDate === new Date().toISOString().split('T')[0];
 
-  const { data: records = [], isLoading } = useQuery<AttendanceRecord[]>({
-    queryKey: ['attendanceToday', selectedDate, debouncedSearch, statusFilter],
+  const { data: attendancePage = emptyAttendancePage, isLoading } = useQuery<AttendancePage>({
+    queryKey: ['guardAttendanceHistory', selectedDate, debouncedSearch, statusFilter, currentPage],
     queryFn: async () => {
       const res = await api.get('/api/attendance/today', { 
         params: { 
           date: selectedDate,
           search: debouncedSearch || undefined,
-          status: statusFilter === 'all' ? undefined : statusFilter
+          status: statusFilter === 'all' ? undefined : statusFilter,
+          page: currentPage,
+          per_page: itemsPerPage,
         } 
       });
-      return Array.isArray(res.data) ? res.data : (res.data.data || []);
+      return res.data;
     },
     refetchInterval: isToday ? 15000 : false, // Poll every 15s for today's data
   });
 
-  // Filter and Search logic
-  const filteredRecords = useMemo(() => {
-    return records.filter((record) => {
-      const matchesSearch = record.user?.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || record.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
-  }, [records, searchTerm, statusFilter]);
+  const { data: stats } = useQuery<AttendanceStats>({
+    queryKey: ['guardAttendanceStats', selectedDate],
+    queryFn: async () => {
+      const res = await api.get('/api/attendance/stats', { params: { date: selectedDate } });
+      return res.data;
+    },
+    refetchInterval: isToday ? 15000 : false,
+  });
 
-  // Pagination logic
-  const totalPages = Math.ceil(filteredRecords.length / itemsPerPage);
-  const paginatedRecords = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredRecords.slice(start, start + itemsPerPage);
-  }, [filteredRecords, currentPage]);
+  const records = attendancePage.data;
+  const totalPages = attendancePage.last_page;
+  const presentCount = stats?.overview.present ?? 0;
+  const lateCount = stats?.overview.late ?? 0;
+  const absentCount = stats?.overview.absent ?? 0;
+  const totalUsers = stats?.total_users ?? 0;
+  const totalRecords = presentCount + lateCount;
+  const hasActiveFilters = searchTerm.trim() !== '' || statusFilter !== 'all';
+
+  const getRoleName = (record: AttendanceRecord) => {
+    const role = record.user?.roles?.[0];
+    return typeof role === 'string' ? role : role?.name || 'Unknown';
+  };
 
   const getStatusBadge = (status: string) => {
     switch(status) {
@@ -163,7 +201,6 @@ export default function HistoryPage() {
                   }}
                 >
                   <option value="all">All Status</option>
-                  <option value="early">Early</option>
                   <option value="present">Present</option>
                   <option value="late">Late</option>
                   <option value="absent">Absent</option>
@@ -186,8 +223,8 @@ export default function HistoryPage() {
             </div>
             <div className="py-1">
               <p className="text-[13px] font-semibold text-slate-500 mb-1">Total Records</p>
-              <p className="text-[28px] font-bold text-slate-900 leading-none mb-1.5">{records.length}</p>
-              <p className="text-[11px] font-semibold text-slate-400">Today</p>
+              <p className="text-[28px] font-bold text-slate-900 leading-none mb-1.5">{totalRecords}</p>
+              <p className="text-[11px] font-semibold text-slate-400">Selected date</p>
             </div>
           </div>
           
@@ -201,9 +238,9 @@ export default function HistoryPage() {
             </div>
             <div className="py-1">
               <p className="text-[13px] font-semibold text-slate-500 mb-1">Present</p>
-              <p className="text-[28px] font-bold text-slate-900 leading-none mb-1.5">{records.filter(r => r.status === 'present' || r.status === 'early').length}</p>
+              <p className="text-[28px] font-bold text-slate-900 leading-none mb-1.5">{presentCount}</p>
               <p className="text-[11px] font-semibold text-slate-400">
-                {records.length > 0 ? Math.round((records.filter(r => r.status === 'present' || r.status === 'early').length / records.length) * 100) : 0}% of total
+                {totalUsers > 0 ? Math.round((presentCount / totalUsers) * 100) : 0}% of total
               </p>
             </div>
           </div>
@@ -218,9 +255,9 @@ export default function HistoryPage() {
             </div>
             <div className="py-1">
               <p className="text-[13px] font-semibold text-slate-500 mb-1">Late</p>
-              <p className="text-[28px] font-bold text-slate-900 leading-none mb-1.5">{records.filter(r => r.status === 'late').length}</p>
+              <p className="text-[28px] font-bold text-slate-900 leading-none mb-1.5">{lateCount}</p>
               <p className="text-[11px] font-semibold text-slate-400">
-                {records.length > 0 ? Math.round((records.filter(r => r.status === 'late').length / records.length) * 100) : 0}% of total
+                {totalUsers > 0 ? Math.round((lateCount / totalUsers) * 100) : 0}% of total
               </p>
             </div>
           </div>
@@ -235,9 +272,9 @@ export default function HistoryPage() {
             </div>
             <div className="py-1">
               <p className="text-[13px] font-semibold text-slate-500 mb-1">Absent</p>
-              <p className="text-[28px] font-bold text-slate-900 leading-none mb-1.5">{records.filter(r => r.status === 'absent').length}</p>
+              <p className="text-[28px] font-bold text-slate-900 leading-none mb-1.5">{absentCount}</p>
               <p className="text-[11px] font-semibold text-slate-400">
-                {records.length > 0 ? Math.round((records.filter(r => r.status === 'absent').length / records.length) * 100) : 0}% of total
+                {totalUsers > 0 ? Math.round((absentCount / totalUsers) * 100) : 0}% of total
               </p>
             </div>
           </div>
@@ -259,7 +296,7 @@ export default function HistoryPage() {
               <TableBody>
                 {isLoading ? (
                   <TableLoadingState colSpan={5} message="Loading history..." />
-                ) : paginatedRecords.length === 0 ? (
+                ) : records.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="h-[400px] text-center border-b-0">
                       <div className="flex flex-col items-center justify-center">
@@ -296,24 +333,35 @@ export default function HistoryPage() {
                               </svg>
                            </div>
                         </div>
-                        <h3 className="text-[22px] font-bold text-slate-900 mb-2.5">No records found</h3>
-                        <p className="text-slate-500 text-[15px] mb-8 font-medium">There are no attendance logs for the selected date.</p>
+                        <h3 className="text-[22px] font-bold text-slate-900 mb-2.5">
+                          {hasActiveFilters ? 'No matching records' : 'No records found'}
+                        </h3>
+                        <p className="text-slate-500 text-[15px] mb-8 font-medium">
+                          {hasActiveFilters
+                            ? 'Try changing the search or status filter.'
+                            : 'There are no attendance logs for the selected date.'}
+                        </p>
                         <button 
                           onClick={() => {
-                            setSearchTerm('');
-                            setStatusFilter('all');
-                            queryClient.invalidateQueries({ queryKey: ['attendanceToday'] });
+                            if (hasActiveFilters) {
+                              setSearchTerm('');
+                              setStatusFilter('all');
+                              setCurrentPage(1);
+                            } else {
+                              queryClient.invalidateQueries({ queryKey: ['guardAttendanceHistory'] });
+                              queryClient.invalidateQueries({ queryKey: ['guardAttendanceStats'] });
+                            }
                           }}
                           className="flex items-center gap-2 px-6 py-3 bg-[#0B3A82] hover:bg-[#092558] text-white font-bold text-sm rounded-none transition-all shadow-lg shadow-[#0B3A82]/20 active:scale-[0.98]"
                         >
                           <RefreshCw className="w-4 h-4" />
-                          Refresh Records
+                          {hasActiveFilters ? 'Clear Filters' : 'Refresh Records'}
                         </button>
                       </div>
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedRecords.map((record) => (
+                  records.map((record) => (
                     <TableRow key={record.id} className="hover:bg-slate-50/50 transition-colors border-b border-slate-100">
                       <TableCell className="pl-6">
                         <div className="flex items-center gap-4">
@@ -343,12 +391,12 @@ export default function HistoryPage() {
                           )}
                           <div>
                             <p className="font-bold text-slate-800">{record.user?.name || 'Unknown'}</p>
-                            {record.user?.roles?.[0]?.name === 'student' && record.user.student_profile && (
+                            {getRoleName(record) === 'student' && record.user.student_profile && (
                               <p className="text-xs text-slate-500 font-medium">
                                 Grade {record.user.student_profile.grade} - {record.user.student_profile.section}
                               </p>
                             )}
-                            {record.user?.roles?.[0]?.name === 'teacher' && record.user.teacher_profile && (
+                            {getRoleName(record) === 'teacher' && record.user.teacher_profile && (
                               <p className="text-xs text-slate-500 font-medium">
                                 {record.user.teacher_profile.department} Dept.
                               </p>
@@ -358,10 +406,10 @@ export default function HistoryPage() {
                       </TableCell>
                       <TableCell className="text-center">
                         <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-[11px] font-bold bg-blue-50 text-blue-600 uppercase tracking-wide">
-                          {record.user?.roles?.[0]?.name || 'Unknown'}
+                          {getRoleName(record)}
                         </span>
                       </TableCell>
-                      <TableCell className="text-center font-bold text-slate-700">{record.time_in}</TableCell>
+                      <TableCell className="text-center font-bold text-slate-700">{record.time_in || '--:--'}</TableCell>
                       <TableCell className="text-center font-bold text-slate-400">{record.time_out || '--:--'}</TableCell>
                       <TableCell className="text-right pr-6">
                          <div className="flex items-center justify-end gap-6">
@@ -384,7 +432,7 @@ export default function HistoryPage() {
           {/* Pagination */}
           <div className="flex items-center justify-between px-6 py-4 bg-white border-t border-slate-100">
             <p className="text-[13px] text-slate-500 font-medium">
-              Showing <span className="font-bold text-slate-700">{filteredRecords.length === 0 ? 0 : ((currentPage - 1) * itemsPerPage) + 1}</span> to <span className="font-bold text-slate-700">{Math.min(currentPage * itemsPerPage, filteredRecords.length)}</span> of <span className="font-bold text-slate-700">{filteredRecords.length}</span> results
+              Showing <span className="font-bold text-slate-700">{attendancePage.from ?? 0}</span> to <span className="font-bold text-slate-700">{attendancePage.to ?? 0}</span> of <span className="font-bold text-slate-700">{attendancePage.total}</span> results
             </p>
             <div className="flex items-center gap-3">
               <Button 
@@ -403,7 +451,7 @@ export default function HistoryPage() {
                 variant="outline" 
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages || totalPages === 0}
+                disabled={currentPage >= totalPages}
                 className="h-8 w-8 p-0 rounded-lg border-slate-200 text-slate-500 hover:text-slate-900"
               >
                 <ChevronRight className="h-4 w-4" />

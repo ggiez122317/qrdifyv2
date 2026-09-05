@@ -9,10 +9,9 @@ import Lenis from 'lenis';
 import Image from 'next/image';
 import { 
   School, Menu, Star, CheckCircle2,
-  ScanLine, LayoutDashboard, LineChart, ShieldCheck, 
-  Smartphone, Users, ArrowRight, PlayCircle, Shield,
-  Settings, MonitorSmartphone, FileText, ShieldAlert, X,
-  Lock, Cloud, FileKey2, KeyRound, Briefcase, Bell
+  ScanLine, ShieldCheck,
+  Smartphone, Users, ArrowRight, Shield,
+  FileText, Briefcase, Bell
 } from 'lucide-react';
 
 export default function LandingPage() {
@@ -172,7 +171,7 @@ export default function LandingPage() {
                 </h1>
                 
                 <p className="text-[18px] sm:text-[22px] text-slate-500 mb-10 font-medium leading-[1.6] max-w-[640px]">
-                  QR codes and Smart IDs. Real-time monitoring, automated reports, and parent notifications — all in one platform built for your school.
+                  QR codes and Smart IDs. Get real-time monitoring, automated reports, and parent notifications in one platform built for your school.
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4 mb-8 justify-center w-full">
@@ -364,7 +363,7 @@ export default function LandingPage() {
               Built for School Safety
             </h2>
             <p className="text-[18px] text-blue-100/80 font-medium max-w-[600px] mx-auto mb-20">
-              Your students&apos; attendance data is protected with industry-leading security. We ensure that only authorized teachers, staff, and administrators can access sensitive records — keeping your school&apos;s information safe at all times.
+              Your students&apos; attendance data is protected with industry-leading security. Only authorized teachers, staff, and administrators can access sensitive records, keeping your school&apos;s information safe at all times.
             </p>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -390,12 +389,12 @@ export default function LandingPage() {
               Designed for everyone.
             </h2>
             <p className="text-[18px] text-slate-500 font-medium mb-16 max-w-[520px]">
-              One platform, multiple roles — each with the right tools and the right access.
+              One platform with the right tools and access for every role.
             </p>
             
             <div className="grid md:grid-cols-5 gap-10">
               {[
-                { icon: Shield,       title: 'Admin',     desc: 'Full system access — manage users, settings, reports, and school operations.' },
+                { icon: Shield,       title: 'Admin',     desc: 'Full system access to manage users, settings, reports, and school operations.' },
                 { icon: Users,        title: 'Teacher',   desc: 'Take attendance, track student records, and stay connected with parents.' },
                 { icon: Briefcase,    title: 'Principal', desc: 'Monitor school-wide attendance, view analytics, and generate summary reports.' },
                 { icon: School,       title: 'Student',   desc: 'Scan QR or tap Smart ID to record attendance quickly and accurately.' },

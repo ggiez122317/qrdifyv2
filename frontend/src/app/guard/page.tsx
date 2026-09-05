@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/axios';
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
 import { Clock, UserCheck, UserX, Calendar, ChevronDown, Check, ArrowUp, ScanFace } from 'lucide-react';
@@ -44,7 +44,6 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
 };
 
 export default function GuardStation() {
-  const queryClient = useQueryClient();
   const [greeting] = useState(() => {
     if (typeof window !== 'undefined') {
       const hour = new Date().getHours();
@@ -187,9 +186,7 @@ export default function GuardStation() {
                 </div>
              </div>
              <p className="text-4xl font-extrabold text-slate-800 mb-4">{(stats?.overview.present ?? 0) + (stats?.overview.late ?? 0)}</p>
-             <p className="text-xs font-medium text-slate-400 flex items-center gap-1">
-               <span className="text-slate-300">—</span> Students & Teachers
-             </p>
+             <p className="text-xs font-medium text-slate-400">Students and teachers</p>
           </div>
 
           <div className="bg-white rounded-none p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden">
@@ -200,9 +197,7 @@ export default function GuardStation() {
                 </div>
              </div>
              <p className="text-4xl font-extrabold text-slate-800 mb-4">{stats?.overview.present || 0}</p>
-             <p className="text-xs font-medium text-slate-400 flex items-center gap-1">
-               <span className="text-slate-300">—</span> 0% from yesterday
-             </p>
+             <p className="text-xs font-medium text-slate-400">Recorded for selected date</p>
           </div>
 
           <div className="bg-white rounded-none p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden">
@@ -213,9 +208,7 @@ export default function GuardStation() {
                 </div>
              </div>
              <p className="text-4xl font-extrabold text-slate-800 mb-4">{stats?.overview.late || 0}</p>
-             <p className="text-xs font-medium text-slate-400 flex items-center gap-1">
-               <span className="text-slate-300">—</span> 0% from yesterday
-             </p>
+             <p className="text-xs font-medium text-slate-400">Recorded for selected date</p>
           </div>
 
           <div className="bg-white rounded-none p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden">

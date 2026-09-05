@@ -8,8 +8,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Mail, Lock, ShieldCheck, Wifi, LineChart, Bell, Shield, ArrowRight, Eye, EyeOff, Home, Users, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, Bell, ArrowRight, Eye, EyeOff, Home } from 'lucide-react';
 import Image from 'next/image';
+
+interface LoginResponse {
+  access_token: string;
+  user: {
+    roles: string[];
+    needs_password_change: boolean;
+  };
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,7 +28,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState(false);
 
-  const handleSuccessfulLogin = (data: any) => {
+  const handleSuccessfulLogin = (data: LoginResponse) => {
     localStorage.setItem('token', data.access_token);
     api.defaults.headers.common['Authorization'] = `Bearer ${data.access_token}`;
     queryClient.clear();
@@ -100,27 +108,10 @@ export default function LoginPage() {
                 <span className="text-[#0B3A82]">for Modern Schools.</span>
               </h1>
               <p className="text-[19px] text-slate-700 font-medium leading-relaxed max-w-lg drop-shadow-sm">
-                Manage attendance with secure QR technology, real-time insights, and effortless reporting — all in one intelligent platform.
+                Manage attendance with secure QR technology, real-time insights, and effortless reporting in one intelligent platform.
               </p>
             </div>
 
-            {/* Features List - no containers, clean inline icons */}
-            <div className="space-y-6 mb-8">
-              {[
-                { icon: ShieldCheck, title: 'QR Attendance', desc: 'Instant and accurate scanning' },
-                { icon: ShieldCheck, title: 'Smart ID System', desc: 'Secure student identification' },
-                { icon: LineChart, title: 'Real-time Dashboard', desc: 'Live attendance monitoring' },
-                { icon: Lock, title: 'Secure & Reliable', desc: 'Enterprise-grade protection' }
-              ].map((feature, i) => (
-                <div key={i} className="flex items-center gap-5">
-                  <feature.icon className="w-8 h-8 text-[#0B3A82] shrink-0 drop-shadow-sm" strokeWidth={2} />
-                  <div>
-                    <h3 className="text-[20px] font-bold text-slate-800 drop-shadow-sm">{feature.title}</h3>
-                    <p className="text-[16px] text-slate-600 drop-shadow-sm">{feature.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
 
         </div>

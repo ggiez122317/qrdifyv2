@@ -234,7 +234,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const isStudentRole = user?.roles?.[0] === 'student';
     if (!isStudentRole || typeof navigator === 'undefined' || !navigator.geolocation) return;
 
-    let watchId: number;
+    let watchId: number | undefined;
     let lastSent = 0;
 
     const startTracking = () => {
@@ -243,7 +243,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           const now = Date.now();
           if (now - lastSent > 15000) {
             lastSent = now;
-            api.post('/v1/student/location', {
+            api.post('/api/student/location', {
               latitude: position.coords.latitude,
               longitude: position.coords.longitude
             }).then(res => {
@@ -254,11 +254,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 localStorage.setItem('toast_message', 'WARNING: You are outside the school campus!');
                 window.dispatchEvent(new Event('toast-trigger'));
               }
-            }).catch(err => console.error('Location report error', err));
+            }).catch(() => console.warn('Unable to report the current location.'));
           }
         },
         (error) => {
-          console.warn('Geolocation error:', error);
+          if (error.code === error.PERMISSION_DENIED) {
+            console.info('Location access was not granted.');
+            return;
+          }
+
+          const reason = error.code === error.TIMEOUT
+            ? 'Location request timed out.'
+            : 'Current location is unavailable.';
+          console.warn(reason);
         },
         { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
       );
@@ -267,7 +275,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     startTracking();
 
     return () => {
-      if (watchId) navigator.geolocation.clearWatch(watchId);
+      if (watchId !== undefined) navigator.geolocation.clearWatch(watchId);
     };
   }, [user]);
 

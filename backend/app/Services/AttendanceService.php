@@ -284,7 +284,7 @@ class AttendanceService
             ->groupBy('status')
             ->pluck('count', 'status');
 
-        $present = (int) $statusCounts->get('present', 0);
+        $present = (int) $statusCounts->get('present', 0) + (int) $statusCounts->get('early', 0);
         $late = (int) $statusCounts->get('late', 0);
 
         $totalUsers = User::whereHas('roles', fn ($q) => $q->whereIn('name', ['student', 'teacher']))->count();
