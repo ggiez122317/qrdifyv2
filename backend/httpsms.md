@@ -1,6 +1,6 @@
 # httpSMS provider
 
-This implementation lives on `httpsms_integration`, based on local `main`, in
+This implementation is integrated into `main` from `httpsms_integration` in
 `C:\dev\work\system2\qrdifyv2`. The separate `qrdifyv2-sms-lab` worktree stays on
 `sms_load_testing` for Huawei modem and simulator experiments.
 
@@ -19,9 +19,11 @@ on that phone and keep it online with an active SIM capable of sending SMS.
 
 Official API documentation: https://docs.httpsms.com/
 
-Leave `SMS_PROVIDER` unset in the primary `.env` to select the provider by branch:
-`httpsms_integration` defaults to `httpsms`, while `main` and `sms_integration`
-default to `huawei_router`. An explicit environment override takes precedence.
+Leave `SMS_PROVIDER` unset in the primary `.env` to use the default `httpsms` on
+both `main` and `httpsms_integration`. Huawei support remains available through
+an explicit `SMS_PROVIDER=huawei_router` override with the router credentials set.
+The separate modem lab remains independent of this merge. An explicit environment
+override takes precedence over the default in the checked-out code.
 Never commit the real API key or phone numbers.
 
 To switch, stop the backend and queue worker, switch branches in `qrdifyv2`, run
